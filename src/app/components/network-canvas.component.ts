@@ -29,20 +29,32 @@ import { EDGES_RAW, TN, TOPICS, TopicNode, clusterColor } from '../topicnet-data
     </div>
   `,
   styles: `
+    :host {
+      display: flex;
+      flex: 1 1 0%;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+    }
     .tn-canvas-wrap {
-      flex: 1;
+      flex: 1 1 0%;
       display: flex;
       position: relative;
       overflow: hidden;
       background: ${TN.bg};
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
     }
-
     .tn-svg {
       width: 100%;
       height: 100%;
       display: block;
+      min-width: 0;
+      min-height: 0;
     }
-
     .tn-stats {
       position: absolute;
       bottom: 16px;
@@ -57,7 +69,6 @@ import { EDGES_RAW, TN, TOPICS, TopicNode, clusterColor } from '../topicnet-data
       font-size: 12px;
       color: ${TN.dim};
     }
-
     .tn-stats strong {
       font-weight: 600;
       color: ${TN.mid};
