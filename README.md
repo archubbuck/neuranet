@@ -4,13 +4,21 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 
 ## Development server
 
-To start a local development server, run:
+Start the API server first in one terminal:
 
 ```bash
-ng serve
+npm run start:api
+```
+
+Then start the Angular development server in a second terminal:
+
+```bash
+npm start
 ```
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+
+The UI reads and writes documents through `/api/docs` and data is stored in a SQLite database at `data/topic-visualizer.db`.
 
 ## Code scaffolding
 

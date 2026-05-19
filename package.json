@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --proxy-config proxy.conf.json",
+    "start:api": "node server/index.js",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test --no-watch --no-progress",
@@ -19,7 +20,9 @@
     "@angular/platform-browser": "^21.2.0",
     "@angular/router": "^21.2.0",
     "d3": "^7.9.0",
+    "express": "^5.1.0",
     "rxjs": "~7.8.0",
+    "better-sqlite3": "^11.10.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {

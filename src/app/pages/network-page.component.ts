@@ -1,15 +1,16 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { DetailPanelComponent } from '../components/detail-panel.component';
 import { NavbarComponent } from '../components/navbar.component';
 import { NetworkCanvasComponent } from '../components/network-canvas.component';
 import { SidebarComponent } from '../components/sidebar.component';
-import { TN, TopicNode, loadDocs } from '../topicnet-data';
+import { TN, TopicNode } from '../topicnet-data';
+import { DocsApiService } from '../services/docs-api.service';
 
 @Component({
   selector: 'app-network-page',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, NavbarComponent, SidebarComponent, NetworkCanvasComponent, DetailPanelComponent],
   template: `
     <div class="tn-shell">
@@ -48,27 +49,44 @@ import { TN, TopicNode, loadDocs } from '../topicnet-data';
     </div>
   `,
   styles: `
+    :host {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      min-width: 0;
+      min-height: 0;
+    }
     .tn-shell {
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      width: 100vw;
+      flex: 1 1 0%;
+      width: 100%;
+      height: 100%;
       background: ${TN.bg};
       overflow: hidden;
+      min-width: 0;
+      min-height: 0;
     }
-
     .tn-main {
-      flex: 1;
+      flex: 1 1 0%;
       display: flex;
       overflow: hidden;
       position: relative;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
     }
-
     .tn-canvas-shell {
-      flex: 1;
+      flex: 1 1 0%;
       display: flex;
       overflow: hidden;
       position: relative;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
     }
   `,
 })
@@ -78,9 +96,15 @@ export class NetworkPageComponent {
   selectedNode: TopicNode | null = null;
   detailOpen = false;
   activeCluster: string | null = null;
-  docsCount = loadDocs().length;
+  docsCount = 0;
+  private readonly router = inject(Router);
+  private readonly docsApi = inject(DocsApiService);
 
-  constructor(private readonly router: Router) {}
+  constructor() {
+    this.docsApi.listDocs().subscribe((docs) => {
+      this.docsCount = docs.length;
+    });
+  }
 
   onTab(tab: 'network' | 'explore' | 'upload'): void {
     if (tab === 'upload') {
