@@ -3,6 +3,7 @@ import {
   Component,
   ElementRef,
   EventEmitter,
+  ChangeDetectionStrategy,
   Input,
   OnChanges,
   OnDestroy,
@@ -12,11 +13,11 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as d3 from 'd3';
-import { EDGES_RAW, TN, TOPICS, TopicNode, clusterColor } from '../topicnet-data';
+import { CLUSTER_DEFS, ClusterDef, TN, TopicEdge, TOPICS, TopicNode, clusterColor } from '../topicnet-data';
 
 @Component({
   selector: 'app-network-canvas',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
   template: `
     <div class="tn-canvas-wrap">
@@ -78,6 +79,9 @@ import { EDGES_RAW, TN, TOPICS, TopicNode, clusterColor } from '../topicnet-data
 export class NetworkCanvasComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('svgRoot', { static: true }) svgRoot?: ElementRef<SVGSVGElement>;
 
+  @Input() nodes: TopicNode[] = TOPICS;
+  @Input() edges: TopicEdge[] = [];
+  @Input() clusters: ClusterDef[] = CLUSTER_DEFS;
   @Input() selectedNode: TopicNode | null = null;
   @Input() activeCluster: string | null = null;
   @Input() docsCount = 0;
@@ -89,14 +93,23 @@ export class NetworkCanvasComponent implements AfterViewInit, OnChanges, OnDestr
   private nodeSelection: d3.Selection<SVGGElement, any, SVGGElement, unknown> | null = null;
   private linkSelection: d3.Selection<SVGLineElement, any, SVGGElement, unknown> | null = null;
 
-  readonly topicsLength = TOPICS.length;
-  readonly edgeLength = EDGES_RAW.length;
+  get topicsLength(): number {
+    return this.nodes.length;
+  }
+
+  get edgeLength(): number {
+    return this.edges.length;
+  }
 
   ngAfterViewInit(): void {
     this.initGraph();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if ((changes['nodes'] || changes['edges'] || changes['clusters']) && this.svgRoot) {
+      this.initGraph();
+      return;
+    }
     if (changes['selectedNode']) {
       this.updateSelectionStyles();
     }
@@ -137,8 +150,10 @@ export class NetworkCanvasComponent implements AfterViewInit, OnChanges, OnDestr
 
     svg.append('rect').attr('width', '100%').attr('height', '100%').attr('fill', 'url(#dot-grid)');
 
-    const nodes = TOPICS.map((topic) => ({ ...topic }));
-    const edges = EDGES_RAW.map(([source, target]) => ({ source, target }));
+    const nodes = this.nodes.map((topic) => ({ ...topic }));
+    const edges = this.edges.map((edge) => ({ source: edge.source, target: edge.target, kind: edge.kind ?? 'related' }));
+    const colorMap = new Map(this.clusters.map((cluster) => [cluster.id, cluster.color]));
+    const resolveColor = (clusterId: string) => colorMap.get(clusterId) ?? clusterColor(clusterId);
 
     const zoomGroup = svg.append('g').attr('class', 'zoom-g');
     this.zoomGroup = zoomGroup;
@@ -181,15 +196,15 @@ export class NetworkCanvasComponent implements AfterViewInit, OnChanges, OnDestr
       .append('circle')
       .attr('class', 'halo')
       .attr('r', (d: any) => d.r)
-      .attr('fill', (d: any) => clusterColor(d.cluster))
+      .attr('fill', (d: any) => resolveColor(d.cluster))
       .attr('opacity', 0.15);
 
     nodeSelection
       .append('circle')
       .attr('class', 'body')
       .attr('r', (d: any) => d.r)
-      .attr('fill', (d: any) => `${clusterColor(d.cluster)}bb`)
-      .attr('stroke', (d: any) => clusterColor(d.cluster))
+      .attr('fill', (d: any) => `${resolveColor(d.cluster)}bb`)
+      .attr('stroke', (d: any) => resolveColor(d.cluster))
       .attr('stroke-width', 1.5);
 
     nodeSelection

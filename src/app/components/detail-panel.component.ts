@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CLUSTER_DEFS, TN, TopicNode, clusterColor, getNeighbours } from '../topicnet-data';
+import { CLUSTER_DEFS, ClusterDef, TN, TopicEdge, TopicNode, clusterColor } from '../topicnet-data';
 
 @Component({
   selector: 'app-detail-panel',
@@ -231,6 +231,9 @@ import { CLUSTER_DEFS, TN, TopicNode, clusterColor, getNeighbours } from '../top
 export class DetailPanelComponent {
   @Input() node: TopicNode | null = null;
   @Input() open = false;
+  @Input() nodes: TopicNode[] = [];
+  @Input() edges: TopicEdge[] = [];
+  @Input() clusters: ClusterDef[] = CLUSTER_DEFS;
   @Output() close = new EventEmitter<void>();
 
   get colourSource(): TopicNode | null {
@@ -245,11 +248,24 @@ export class DetailPanelComponent {
     if (!this.node) {
       return '';
     }
-    return CLUSTER_DEFS.find((cluster) => cluster.id === this.node?.cluster)?.label ?? this.node.cluster;
+    return this.clusters.find((cluster) => cluster.id === this.node?.cluster)?.label ?? this.node.cluster;
   }
 
   get neighbours(): TopicNode[] {
-    return this.node ? getNeighbours(this.node.id) : [];
+    if (!this.node) {
+      return [];
+    }
+
+    const ids = new Set<string>();
+    for (const edge of this.edges) {
+      if (edge.source === this.node.id) {
+        ids.add(edge.target);
+      }
+      if (edge.target === this.node.id) {
+        ids.add(edge.source);
+      }
+    }
+    return this.nodes.filter((candidate) => ids.has(candidate.id));
   }
 
   protected readonly clusterColor = clusterColor;

@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CLUSTER_DEFS, TN } from '../topicnet-data';
+import { CLUSTER_DEFS, ClusterDef, TN } from '../topicnet-data';
 
 @Component({
   selector: 'app-sidebar',
@@ -120,9 +120,12 @@ import { CLUSTER_DEFS, TN } from '../topicnet-data';
 export class SidebarComponent {
   @Input() open = true;
   @Input() activeCluster: string | null = null;
+  @Input() clusters: ClusterDef[] = CLUSTER_DEFS;
 
   @Output() clusterClick = new EventEmitter<string>();
 
-  readonly clusters = CLUSTER_DEFS;
-  readonly maxCount = Math.max(...CLUSTER_DEFS.map((cluster) => cluster.count));
+  get maxCount(): number {
+    const counts = this.clusters.map((cluster) => cluster.count);
+    return Math.max(1, ...counts);
+  }
 }

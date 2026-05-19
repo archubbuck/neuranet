@@ -5,7 +5,7 @@ import { DetailPanelComponent } from '../components/detail-panel.component';
 import { NavbarComponent } from '../components/navbar.component';
 import { NetworkCanvasComponent } from '../components/network-canvas.component';
 import { SidebarComponent } from '../components/sidebar.component';
-import { TN, TopicNode } from '../topicnet-data';
+import { CLUSTER_DEFS, EDGES_RAW, TN, TOPICS, ClusterDef, TopicEdge, TopicNode } from '../topicnet-data';
 import { DocsApiService } from '../services/docs-api.service';
 
 @Component({
@@ -27,6 +27,7 @@ import { DocsApiService } from '../services/docs-api.service';
           *ngIf="activeTab === 'network' || activeTab === 'explore'"
           [open]="sidebarOpen"
           [activeCluster]="activeCluster"
+          [clusters]="clusters"
           (clusterClick)="toggleCluster($event)"
         ></app-sidebar>
 
@@ -35,6 +36,9 @@ import { DocsApiService } from '../services/docs-api.service';
             [selectedNode]="selectedNode"
             [activeCluster]="activeCluster"
             [docsCount]="docsCount"
+            [nodes]="nodes"
+            [edges]="edges"
+            [clusters]="clusters"
             (nodeClick)="onNodeClick($event)"
           ></app-network-canvas>
 
@@ -42,6 +46,9 @@ import { DocsApiService } from '../services/docs-api.service';
             *ngIf="activeTab === 'network' || activeTab === 'explore'"
             [node]="selectedNode"
             [open]="detailOpen"
+            [nodes]="nodes"
+            [edges]="edges"
+            [clusters]="clusters"
             (close)="closeDetail()"
           ></app-detail-panel>
         </div>
@@ -97,12 +104,33 @@ export class NetworkPageComponent {
   detailOpen = false;
   activeCluster: string | null = null;
   docsCount = 0;
+  nodes: TopicNode[] = [...TOPICS];
+  edges: TopicEdge[] = EDGES_RAW.map(([source, target]) => ({ source, target, kind: 'base' }));
+  clusters: ClusterDef[] = [...CLUSTER_DEFS];
   private readonly router = inject(Router);
   private readonly docsApi = inject(DocsApiService);
 
   constructor() {
     this.docsApi.listDocs().subscribe((docs) => {
       this.docsCount = docs.length;
+    });
+
+    this.docsApi.getNetworkOverlay().subscribe((overlay) => {
+      this.nodes = [...TOPICS, ...overlay.derivedNodes];
+      this.edges = [
+        ...EDGES_RAW.map(([source, target]) => ({ source, target, kind: 'base' })),
+        ...overlay.derivedEdges,
+      ];
+
+      const mergedClusters = [...CLUSTER_DEFS, ...overlay.derivedClusters];
+      const counts = new Map(mergedClusters.map((cluster) => [cluster.id, 0]));
+      for (const node of this.nodes) {
+        counts.set(node.cluster, (counts.get(node.cluster) ?? 0) + 1);
+      }
+      this.clusters = mergedClusters.map((cluster) => ({
+        ...cluster,
+        count: counts.get(cluster.id) ?? 0,
+      }));
     });
   }
 

@@ -15,8 +15,6 @@ export interface TopicNode {
   desc: string;
 }
 
-export const DOCS_STORAGE_KEY = 'topicnet.docs';
-
 export const CLUSTER_DEFS: ClusterDef[] = [
   { id: 'purple', label: 'AI / ML Core', color: '#7878ff', count: 7 },
   { id: 'orange', label: 'Data Science', color: '#ff8c42', count: 5 },
@@ -116,30 +114,17 @@ export interface TopicDoc {
   title: string;
   text: string;
   status: string;
+  derivedNodeSlugs?: string[];
 }
 
-export function loadDocs(): TopicDoc[] {
-  const fallback = [
-    { id: 1, title: 'Brain-Computer Interfaces', text: 'demo', status: 'done' },
-    { id: 2, title: 'Neural Networks Overview', text: 'demo', status: 'done' },
-  ];
-
-  try {
-    const raw = window.localStorage.getItem(DOCS_STORAGE_KEY);
-    if (!raw) {
-      return fallback;
-    }
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? (parsed as TopicDoc[]) : fallback;
-  } catch {
-    return fallback;
-  }
+export interface TopicEdge {
+  source: string;
+  target: string;
+  kind?: string;
 }
 
-export function persistDocs(docs: TopicDoc[]): void {
-  try {
-    window.localStorage.setItem(DOCS_STORAGE_KEY, JSON.stringify(docs));
-  } catch {
-    // Ignore localStorage failures and keep in-memory state.
-  }
+export interface NetworkOverlay {
+  derivedClusters: ClusterDef[];
+  derivedNodes: TopicNode[];
+  derivedEdges: TopicEdge[];
 }
