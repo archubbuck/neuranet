@@ -1,27 +1,52 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { TN } from '../topicnet-data';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   template: `
     <nav class="tn-nav">
       <div class="tn-logo-shell">
-        <div class="tn-logo-mark">◉</div>
-        <span class="tn-logo-text">TopicNet</span>
+        <a class="tn-logo-link" routerLink="/">
+          <div class="tn-logo-mark">◉</div>
+          <span class="tn-logo-text">TopicNet</span>
+        </a>
       </div>
 
-      <div class="tn-tabs">
-        <button type="button" class="tn-tab" [class.active]="activeTab === 'network'" (click)="tab.emit('network')">Network</button>
-        <button type="button" class="tn-tab" [class.active]="activeTab === 'explore'" (click)="tab.emit('explore')">Explore</button>
-        <button type="button" class="tn-tab" [class.active]="activeTab === 'upload'" (click)="tab.emit('upload')">Upload</button>
-      </div>
+      <!-- Workspace context: show name + tabs -->
+      <ng-container *ngIf="workspaceId; else defaultTabs">
+        <div class="tn-ws-context">
+          <span class="tn-ws-sep" [style.color]="TN.dim">/</span>
+          <span class="tn-ws-name" [style.color]="TN.text">{{ workspaceName || 'Workspace' }}</span>
+        </div>
+        <div class="tn-tabs">
+          <a
+            class="tn-tab"
+            [class.active]="activeTab === 'network'"
+            [routerLink]="['/workspace', workspaceId]"
+          >Network</a>
+          <a
+            class="tn-tab"
+            [class.active]="activeTab === 'upload'"
+            [routerLink]="['/workspace', workspaceId, 'upload']"
+          >Upload</a>
+        </div>
+      </ng-container>
+
+      <!-- Default tabs (legacy) -->
+      <ng-template #defaultTabs>
+        <div class="tn-tabs">
+          <button type="button" class="tn-tab" [class.active]="activeTab === 'network'" (click)="tab.emit('network')">Network</button>
+          <button type="button" class="tn-tab" [class.active]="activeTab === 'explore'" (click)="tab.emit('explore')">Explore</button>
+          <button type="button" class="tn-tab" [class.active]="activeTab === 'upload'" (click)="tab.emit('upload')">Upload</button>
+        </div>
+      </ng-template>
 
       <div class="tn-right">
         <button *ngIf="showSidebarToggle" type="button" class="tn-icon-btn" [class.active]="sidebarOpen" (click)="toggleSidebar.emit()">▤</button>
-        <button type="button" class="tn-icon-btn" title="Settings">⚙</button>
       </div>
     </nav>
   `,
@@ -134,13 +159,29 @@ import { TN } from '../topicnet-data';
         padding: 0 14px;
       }
     }
+
+    .tn-logo-link {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; cursor: pointer;
+    }
+
+    .tn-ws-context {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 20px; font-size: 14px; font-weight: 500;
+    }
+    .tn-ws-sep { font-size: 16px; }
+    .tn-ws-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   `,
 })
 export class NavbarComponent {
   @Input() activeTab: 'network' | 'explore' | 'upload' = 'network';
-  @Input() sidebarOpen = true;
-  @Input() showSidebarToggle = true;
+  @Input() sidebarOpen = false;
+  @Input() showSidebarToggle = false;
+  @Input() workspaceName = '';
+  @Input() workspaceId: number | null = null;
 
   @Output() tab = new EventEmitter<'network' | 'explore' | 'upload'>();
   @Output() toggleSidebar = new EventEmitter<void>();
+
+  protected readonly TN = TN;
 }

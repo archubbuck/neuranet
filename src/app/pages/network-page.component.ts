@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { DetailPanelComponent } from '../components/detail-panel.component';
@@ -109,13 +109,15 @@ export class NetworkPageComponent {
   clusters: ClusterDef[] = [...CLUSTER_DEFS];
   private readonly router = inject(Router);
   private readonly docsApi = inject(DocsApiService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   constructor() {
-    this.docsApi.listDocs().subscribe((docs) => {
+    this.docsApi.legacyListDocs().subscribe((docs) => {
       this.docsCount = docs.length;
+      this.cdr.markForCheck();
     });
 
-    this.docsApi.getNetworkOverlay().subscribe((overlay) => {
+    this.docsApi.legacyGetNetworkOverlay().subscribe((overlay) => {
       this.nodes = [...TOPICS, ...overlay.derivedNodes];
       this.edges = [
         ...EDGES_RAW.map(([source, target]) => ({ source, target, kind: 'base' })),
@@ -131,6 +133,7 @@ export class NetworkPageComponent {
         ...cluster,
         count: counts.get(cluster.id) ?? 0,
       }));
+      this.cdr.markForCheck();
     });
   }
 

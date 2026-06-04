@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TN, TopicDoc } from '../topicnet-data';
@@ -31,6 +31,8 @@ import { TN, TopicDoc } from '../topicnet-data';
         <button type="button" class="tn-add-btn" (click)="addDocument()" [disabled]="processing">
           {{ processing ? 'Processing...' : '+ Add Document' }}
         </button>
+
+        <p class="tn-error" *ngIf="saveError">{{ saveError }}</p>
 
         <div class="tn-queue-wrap" *ngIf="docs.length > 0">
           <div class="tn-queue-header">
@@ -169,6 +171,12 @@ import { TN, TopicDoc } from '../topicnet-data';
       opacity: 0.7;
     }
 
+    .tn-error {
+      margin: 10px 2px 0;
+      color: #fda4af;
+      font-size: 12px;
+    }
+
     .tn-queue-wrap {
       margin-top: 24px;
       background: ${TN.panel};
@@ -235,8 +243,9 @@ import { TN, TopicDoc } from '../topicnet-data';
     }
   `,
 })
-export class UploadViewComponent {
+export class UploadViewComponent implements OnChanges {
   @Input() docs: TopicDoc[] = [];
+  @Input() saveError = '';
   @Output() add = new EventEmitter<TopicDoc>();
   @Output() viewNetwork = new EventEmitter<void>();
 
@@ -244,6 +253,25 @@ export class UploadViewComponent {
   text = '';
   dragging = false;
   processing = false;
+  private knownDocCount = 0;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['docs']) {
+      const previousCount = this.knownDocCount;
+      const nextCount = this.docs.length;
+      this.knownDocCount = nextCount;
+
+      if (this.processing && nextCount > previousCount) {
+        this.title = '';
+        this.text = '';
+        this.processing = false;
+      }
+    }
+
+    if (changes['saveError'] && this.processing && this.saveError) {
+      this.processing = false;
+    }
+  }
 
   onDragOver(event: DragEvent): void {
     event.preventDefault();
@@ -265,16 +293,11 @@ export class UploadViewComponent {
     }
 
     this.processing = true;
-    setTimeout(() => {
-      this.add.emit({
-        id: Date.now(),
-        title: this.title || 'Untitled document',
-        text: this.text,
-        status: 'done',
-      });
-      this.title = '';
-      this.text = '';
-      this.processing = false;
-    }, 800);
+    this.add.emit({
+      id: Date.now(),
+      title: this.title || 'Untitled document',
+      text: this.text,
+      status: 'done',
+    });
   }
 }

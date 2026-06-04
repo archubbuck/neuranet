@@ -1,3 +1,5 @@
+// ── Core network types ──
+
 export interface ClusterDef {
   id: string;
   label: string;
@@ -15,6 +17,45 @@ export interface TopicNode {
   desc: string;
 }
 
+// ── Workspace & data source types ──
+
+export interface Workspace {
+  id: number;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  sourceCount?: number;
+}
+
+export type DataSourceType = 'reddit';
+
+export interface RedditSourceConfig {
+  threadUrl: string;
+}
+
+/** Union of all data source config shapes, discriminated by sourceType. */
+export type DataSourceConfig = RedditSourceConfig;
+
+export type DataSourceStatus = 'pending' | 'fetching' | 'done' | 'error';
+
+export interface DataSource {
+  id: number;
+  workspaceId: number;
+  sourceType: DataSourceType;
+  config: DataSourceConfig;
+  status: DataSourceStatus;
+  statusMessage?: string;
+  createdAt: string;
+}
+
+/** A TopicNode with metadata for radial depth-based layouts. */
+export interface DepthNode extends TopicNode {
+  isCentral: boolean;
+  depth: number;
+}
+
+/** @deprecated Static seed topics — workspaces now start empty with all topics derived from data sources. */
 export const CLUSTER_DEFS: ClusterDef[] = [
   { id: 'purple', label: 'AI / ML Core', color: '#7878ff', count: 7 },
   { id: 'orange', label: 'Data Science', color: '#ff8c42', count: 5 },
@@ -24,6 +65,7 @@ export const CLUSTER_DEFS: ClusterDef[] = [
   { id: 'green', label: 'Applications', color: '#6bcb77', count: 3 },
 ];
 
+/** @deprecated Static seed topics — workspaces now start empty with all topics derived from data sources. */
 export const TOPICS: TopicNode[] = [
   { id: 'ml', label: 'Machine Learning', cluster: 'purple', r: 44, importance: 10, degree: 6, desc: 'Algorithms that learn patterns from data to make predictions or decisions without explicit programming.' },
   { id: 'dl', label: 'Deep Learning', cluster: 'purple', r: 28, importance: 8, degree: 5, desc: 'Multi-layer neural networks capable of learning hierarchical representations from raw data.' },
@@ -61,6 +103,7 @@ export const TOPICS: TopicNode[] = [
   { id: 'protein', label: 'Protein Folding', cluster: 'teal', r: 11, importance: 3, degree: 1, desc: 'Predicting three-dimensional protein structure from amino acid sequence.' },
 ];
 
+/** @deprecated Static seed edges — workspaces now derive all edges from data sources. */
 export const EDGES_RAW: Array<[string, string]> = [
   ['ml', 'dl'], ['ml', 'ds'], ['ml', 'nlp'], ['ml', 'cv'], ['ml', 'la'], ['ml', 'auto'],
   ['dl', 'nn'], ['dl', 'rl'], ['dl', 'tl'], ['dl', 'cv'],

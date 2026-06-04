@@ -23,11 +23,11 @@ describe('DocsApiService', () => {
   it('loads docs from the API', () => {
     let docsLength = 0;
 
-    service.listDocs().subscribe((docs) => {
+    service.listDocs(1).subscribe((docs) => {
       docsLength = docs.length;
     });
 
-    const req = httpMock.expectOne('/api/docs');
+    const req = httpMock.expectOne('/api/workspaces/1/docs');
     expect(req.request.method).toBe('GET');
     req.flush([
       { id: 1, title: 'Doc A', text: 'Text', status: 'done' },
@@ -40,11 +40,11 @@ describe('DocsApiService', () => {
   it('creates a new doc through the API', () => {
     let createdId = 0;
 
-    service.createDoc({ title: 'Created', text: 'Body', status: 'done' }).subscribe((doc) => {
+    service.createDoc(1, { title: 'Created', text: 'Body', status: 'done' }).subscribe((doc) => {
       createdId = doc.id;
     });
 
-    const req = httpMock.expectOne('/api/docs');
+    const req = httpMock.expectOne('/api/workspaces/1/docs');
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ title: 'Created', text: 'Body', status: 'done' });
     req.flush({ id: 7, title: 'Created', text: 'Body', status: 'done' });
@@ -55,11 +55,11 @@ describe('DocsApiService', () => {
   it('loads derived network overlay from the API', () => {
     let nodeCount = 0;
 
-    service.getNetworkOverlay().subscribe((overlay) => {
+    service.getNetworkOverlay(1).subscribe((overlay) => {
       nodeCount = overlay.derivedNodes.length;
     });
 
-    const req = httpMock.expectOne('/api/network');
+    const req = httpMock.expectOne('/api/workspaces/1/network');
     expect(req.request.method).toBe('GET');
     req.flush({
       derivedClusters: [{ id: 'derived-vision', label: 'Vision Concepts', color: '#33aabb', count: 2 }],
@@ -73,11 +73,11 @@ describe('DocsApiService', () => {
   it('returns empty overlay when network API fails', () => {
     let edgeCount = -1;
 
-    service.getNetworkOverlay().subscribe((overlay) => {
+    service.getNetworkOverlay(1).subscribe((overlay) => {
       edgeCount = overlay.derivedEdges.length;
     });
 
-    const req = httpMock.expectOne('/api/network');
+    const req = httpMock.expectOne('/api/workspaces/1/network');
     req.flush({ message: 'failed' }, { status: 500, statusText: 'Server Error' });
 
     expect(edgeCount).toBe(0);
