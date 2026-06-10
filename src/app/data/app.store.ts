@@ -284,25 +284,14 @@ export class AppStore {
 
 	/**
 	 * Reassign all nodes from `fromSlug` to `toSlug`, then delete the
-	 * source cluster. The operation is frontend-orchestrated (not atomic
-	 * on the server), but we optimistically update signals and re-fetch
-	 * on failure so the UI never lies.
+	 * source cluster. Atomic on the server (`POST /api/clusters/dissolve`);
+	 * we re-fetch afterwards so the UI shows server truth.
 	 */
 	async dissolveCluster(fromSlug: string, toSlug: string): Promise<void> {
-		const sourceNodes = this.nodes().filter((n) => n.cluster === fromSlug);
 		try {
-			// Reassign every node in the source cluster to the target.
-			for (const n of sourceNodes) {
-				await this.api.updateNode(n.id, { clusterSlug: toSlug });
-			}
-			// Delete the now-empty source cluster.
-			await this.api.deleteCluster(fromSlug);
-			// Refresh the full dataset so everything is consistent.
+			await this.api.dissolveClusters({ sourceSlugs: [fromSlug], targetSlug: toSlug });
 			await this.loadAll();
 		} catch {
-			// Best-effort: if anything failed, re-fetch so the UI shows
-			// server truth.  Errors are surfaced via the toast in the
-			// calling component.
 			await this.loadAll();
 			throw new Error(`Failed to dissolve cluster. The data has been refreshed.`);
 		}
@@ -329,22 +318,13 @@ export class AppStore {
 	}
 
 	/**
-	 * Merge multiple categories into one target. All nodes from each source
-	 * cluster are reassigned to the target, then the now-empty source
-	 * clusters are deleted.
+	 * Merge multiple categories into one target. Atomic on the server:
+	 * all nodes are reassigned and the empty source clusters deleted in
+	 * a single transaction.
 	 */
 	async mergeCategories(sourceSlugs: string[], targetSlug: string): Promise<void> {
-		// Collect all nodes belonging to source clusters.
-		const allNodeSlugs = this.nodes()
-			.filter((n) => sourceSlugs.includes(n.cluster))
-			.map((n) => n.id);
 		try {
-			if (allNodeSlugs.length > 0) {
-				await this.api.bulkReassignNodes({ nodeSlugs: allNodeSlugs, clusterSlug: targetSlug });
-			}
-			for (const slug of sourceSlugs) {
-				await this.api.deleteCluster(slug);
-			}
+			await this.api.dissolveClusters({ sourceSlugs, targetSlug });
 			await this.loadAll();
 		} catch {
 			await this.loadAll();
@@ -440,9 +420,7 @@ export class AppStore {
 	}
 
 	async bulkDeleteNodes(slugs: string[]): Promise<void> {
-		for (const slug of slugs) {
-			await this.api.deleteNode(slug);
-		}
+		await this.api.bulkDeleteNodes({ nodeSlugs: slugs });
 		this._network.update((net) => ({
 			...net,
 			derivedNodes: net.derivedNodes.filter((n) => !slugs.includes(n.id)),

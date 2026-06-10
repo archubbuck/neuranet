@@ -459,6 +459,39 @@ app.delete('/api/clusters/:slug', (req, res) => {
 });
 
 // ═══════════════════════════════════════════
+// Dissolve / Merge Clusters (atomic)
+// ═══════════════════════════════════════════
+
+app.post('/api/clusters/dissolve', (req, res) => {
+  const targetSlug = typeof req.body.targetSlug === 'string' ? req.body.targetSlug.trim() : '';
+  const sourceSlugs = Array.isArray(req.body.sourceSlugs) ? req.body.sourceSlugs.map((s) => String(s).trim()).filter(Boolean) : [];
+
+  if (!targetSlug) { res.status(400).json({ message: 'targetSlug is required' }); return; }
+  if (sourceSlugs.length === 0) { res.status(400).json({ message: 'sourceSlugs must be a non-empty array' }); return; }
+  if (sourceSlugs.includes(targetSlug)) { res.status(400).json({ message: 'target cluster cannot be in sourceSlugs' }); return; }
+
+  if (!db.prepare('SELECT slug FROM derived_clusters WHERE slug = ?').get(targetSlug)) {
+    res.status(404).json({ message: 'target cluster not found' }); return;
+  }
+  for (const src of sourceSlugs) {
+    if (!db.prepare('SELECT slug FROM derived_clusters WHERE slug = ?').get(src)) {
+      res.status(404).json({ message: `source cluster not found: ${src}` }); return;
+    }
+  }
+
+  const placeholders = sourceSlugs.map(() => '?').join(',');
+  const result = db.transaction(() => {
+    const reassigned = db.prepare(`UPDATE derived_nodes SET cluster_slug = ? WHERE cluster_slug IN (${placeholders})`)
+      .run(targetSlug, ...sourceSlugs).changes;
+    const deletedClusters = db.prepare(`DELETE FROM derived_clusters WHERE slug IN (${placeholders})`)
+      .run(...sourceSlugs).changes;
+    return { reassigned, deletedClusters };
+  })();
+
+  res.json(result);
+});
+
+// ═══════════════════════════════════════════
 // Node CRUD
 // ═══════════════════════════════════════════
 
@@ -496,6 +529,33 @@ app.delete('/api/nodes/:slug', (req, res) => {
   });
   tx();
   res.json({ deleted: true });
+});
+
+// ═══════════════════════════════════════════
+// Bulk Delete Nodes (atomic)
+// ═══════════════════════════════════════════
+
+app.post('/api/nodes/bulk-delete', (req, res) => {
+  const nodeSlugs = Array.isArray(req.body.nodeSlugs) ? req.body.nodeSlugs.map((s) => String(s).trim()).filter(Boolean) : [];
+  if (nodeSlugs.length === 0) { res.status(400).json({ message: 'nodeSlugs must be a non-empty array' }); return; }
+
+  for (const slug of nodeSlugs) {
+    if (!db.prepare('SELECT slug FROM derived_nodes WHERE slug = ?').get(slug)) {
+      res.status(404).json({ message: `node not found: ${slug}` }); return;
+    }
+  }
+
+  const placeholders = nodeSlugs.map(() => '?').join(',');
+  const deleted = db.transaction(() => {
+    db.prepare(`DELETE FROM node_links WHERE source_slug IN (${placeholders}) OR target_slug IN (${placeholders})`)
+      .run(...nodeSlugs, ...nodeSlugs);
+    db.prepare(`DELETE FROM doc_node_links WHERE node_slug IN (${placeholders})`)
+      .run(...nodeSlugs);
+    return db.prepare(`DELETE FROM derived_nodes WHERE slug IN (${placeholders})`)
+      .run(...nodeSlugs).changes;
+  })();
+
+  res.json({ deleted });
 });
 
 // ═══════════════════════════════════════════

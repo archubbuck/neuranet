@@ -455,6 +455,92 @@ describe('Source CRUD', () => {
 	});
 });
 
+describe('POST /api/clusters/dissolve', () => {
+	it('atomically reassigns nodes to the target and deletes source clusters', async () => {
+		seedFixture();
+		const res = await request('POST', '/api/clusters/dissolve', {
+			sourceSlugs: ['c-alpha'],
+			targetSlug: 'c-beta',
+		});
+		expect(res.status).toBe(200);
+		expect(res.body).toMatchObject({ reassigned: 2, deletedClusters: 1 });
+
+		// Both alpha nodes now belong to c-beta; c-alpha is gone.
+		expect(db.prepare("SELECT COUNT(*) AS n FROM derived_nodes WHERE cluster_slug = 'c-beta'").get().n).toBe(3);
+		expect(db.prepare("SELECT COUNT(*) AS n FROM derived_clusters WHERE slug = 'c-alpha'").get().n).toBe(0);
+		// Edges between reassigned nodes survive.
+		expect(db.prepare('SELECT COUNT(*) AS n FROM node_links').get().n).toBe(1);
+	});
+
+	it('supports dissolving multiple source clusters at once (merge)', async () => {
+		seedFixture();
+		db.prepare('INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?)')
+			.run('c-gamma', 'Gamma', '#FFFFFF');
+		const res = await request('POST', '/api/clusters/dissolve', {
+			sourceSlugs: ['c-alpha', 'c-beta'],
+			targetSlug: 'c-gamma',
+		});
+		expect(res.status).toBe(200);
+		expect(res.body).toMatchObject({ reassigned: 3, deletedClusters: 2 });
+		expect(db.prepare('SELECT COUNT(*) AS n FROM derived_clusters').get().n).toBe(1);
+	});
+
+	it('rejects when the target is among the sources', async () => {
+		seedFixture();
+		const res = await request('POST', '/api/clusters/dissolve', {
+			sourceSlugs: ['c-alpha', 'c-beta'],
+			targetSlug: 'c-alpha',
+		});
+		expect(res.status).toBe(400);
+	});
+
+	it('returns 404 when the target cluster does not exist', async () => {
+		seedFixture();
+		const res = await request('POST', '/api/clusters/dissolve', {
+			sourceSlugs: ['c-alpha'],
+			targetSlug: 'no-such',
+		});
+		expect(res.status).toBe(404);
+	});
+
+	it('returns 404 when a source cluster does not exist', async () => {
+		seedFixture();
+		const res = await request('POST', '/api/clusters/dissolve', {
+			sourceSlugs: ['no-such'],
+			targetSlug: 'c-beta',
+		});
+		expect(res.status).toBe(404);
+	});
+});
+
+describe('POST /api/nodes/bulk-delete', () => {
+	it('deletes multiple nodes and their incident edges atomically', async () => {
+		seedFixture();
+		const res = await request('POST', '/api/nodes/bulk-delete', {
+			nodeSlugs: ['n-alpha-1', 'n-alpha-2'],
+		});
+		expect(res.status).toBe(200);
+		expect(res.body).toMatchObject({ deleted: 2 });
+		expect(db.prepare('SELECT COUNT(*) AS n FROM derived_nodes').get().n).toBe(1);
+		expect(db.prepare('SELECT COUNT(*) AS n FROM node_links').get().n).toBe(0);
+	});
+
+	it('rejects an empty nodeSlugs array', async () => {
+		seedFixture();
+		const res = await request('POST', '/api/nodes/bulk-delete', { nodeSlugs: [] });
+		expect(res.status).toBe(400);
+	});
+
+	it('returns 404 when any node does not exist (and deletes nothing)', async () => {
+		seedFixture();
+		const res = await request('POST', '/api/nodes/bulk-delete', {
+			nodeSlugs: ['n-alpha-1', 'no-such'],
+		});
+		expect(res.status).toBe(404);
+		expect(db.prepare('SELECT COUNT(*) AS n FROM derived_nodes').get().n).toBe(3);
+	});
+});
+
 describe('write atomicity', () => {
 	// Inject a mid-write failure with a RAISE(ABORT) trigger: if the route
 	// wraps its writes in a transaction, earlier inserts must roll back.

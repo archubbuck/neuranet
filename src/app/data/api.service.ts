@@ -156,6 +156,28 @@ export class ApiService {
 			),
 		);
 	}
+
+	/** Atomically reassign all nodes from source clusters to the target, then delete the sources. */
+	async dissolveClusters(input: {
+		sourceSlugs: string[];
+		targetSlug: string;
+	}): Promise<{ reassigned: number; deletedClusters: number }> {
+		return firstValueFrom(
+			this.http.post<{ reassigned: number; deletedClusters: number }>(
+				`${API}/clusters/dissolve`,
+				input,
+			),
+		);
+	}
+
+	/** Atomically delete several nodes and their incident edges. */
+	async bulkDeleteNodes(input: {
+		nodeSlugs: string[];
+	}): Promise<{ deleted: number }> {
+		return firstValueFrom(
+			this.http.post<{ deleted: number }>(`${API}/nodes/bulk-delete`, input),
+		);
+	}
 }
 
 export interface SearchHit {
