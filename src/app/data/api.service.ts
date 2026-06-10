@@ -2,13 +2,13 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import type {
-	DataSource,
-	DataSourceCreateInput,
-	Doc,
-	FetchSourceResult,
-	NetworkPayload,
-	ReportsResponse,
-	SearchResponse,
+  DataSource,
+  DataSourceCreateInput,
+  Doc,
+  FetchSourceResult,
+  NetworkPayload,
+  ReportsResponse,
+  SearchResponse,
 } from './types';
 
 const API = '/api';
@@ -24,160 +24,146 @@ const API = '/api';
  */
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-	private readonly http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
-	// ── data sources ───────────────────────────────────────────────────
+  // ── data sources ───────────────────────────────────────────────────
 
-	async listSources(): Promise<DataSource[]> {
-		return firstValueFrom(this.http.get<DataSource[]>(`${API}/sources`));
-	}
+  async listSources(): Promise<DataSource[]> {
+    return firstValueFrom(this.http.get<DataSource[]>(`${API}/sources`));
+  }
 
-	async createSource(input: DataSourceCreateInput): Promise<DataSource> {
-		return firstValueFrom(this.http.post<DataSource>(`${API}/sources`, input));
-	}
+  async createSource(input: DataSourceCreateInput): Promise<DataSource> {
+    return firstValueFrom(this.http.post<DataSource>(`${API}/sources`, input));
+  }
 
-	async deleteSource(sourceId: number): Promise<{ deleted: true }> {
-		return firstValueFrom(
-			this.http.delete<{ deleted: true }>(`${API}/sources/${sourceId}`),
-		);
-	}
+  async deleteSource(sourceId: number): Promise<{ deleted: true }> {
+    return firstValueFrom(this.http.delete<{ deleted: true }>(`${API}/sources/${sourceId}`));
+  }
 
-	async fetchSource(sourceId: number): Promise<FetchSourceResult> {
-		return firstValueFrom(
-			this.http.post<FetchSourceResult>(`${API}/sources/${sourceId}/fetch`, {}),
-		);
-	}
+  async fetchSource(sourceId: number): Promise<FetchSourceResult> {
+    return firstValueFrom(
+      this.http.post<FetchSourceResult>(`${API}/sources/${sourceId}/fetch`, {}),
+    );
+  }
 
-	// ── network + docs ─────────────────────────────────────────────────
+  // ── network + docs ─────────────────────────────────────────────────
 
-	async getNetwork(): Promise<NetworkPayload> {
-		return firstValueFrom(this.http.get<NetworkPayload>(`${API}/network`));
-	}
+  async getNetwork(): Promise<NetworkPayload> {
+    return firstValueFrom(this.http.get<NetworkPayload>(`${API}/network`));
+  }
 
-	async listDocs(): Promise<Doc[]> {
-		return firstValueFrom(this.http.get<Doc[]>(`${API}/docs`));
-	}
+  async listDocs(): Promise<Doc[]> {
+    return firstValueFrom(this.http.get<Doc[]>(`${API}/docs`));
+  }
 
-	// ── search, reports, cluster + node CRUD ───────────────────────────
+  // ── search, reports, cluster + node CRUD ───────────────────────────
 
-	async search(q: string): Promise<SearchResponse> {
-		const params = new URLSearchParams({ q });
-		return firstValueFrom(
-			this.http.get<SearchResponse>(`${API}/search?${params.toString()}`),
-		);
-	}
+  async search(q: string): Promise<SearchResponse> {
+    const params = new URLSearchParams({ q });
+    return firstValueFrom(this.http.get<SearchResponse>(`${API}/search?${params.toString()}`));
+  }
 
-	async getReports(): Promise<ReportsResponse> {
-		return firstValueFrom(this.http.get<ReportsResponse>(`${API}/reports`));
-	}
+  async getReports(): Promise<ReportsResponse> {
+    return firstValueFrom(this.http.get<ReportsResponse>(`${API}/reports`));
+  }
 
-	async createCluster(
-		input: { label: string; color?: string },
-	): Promise<{ id: string; label: string; color: string }> {
-		return firstValueFrom(
-			this.http.post<{ id: string; label: string; color: string }>(
-				`${API}/clusters`,
-				input,
-			),
-		);
-	}
+  async createCluster(input: {
+    label: string;
+    color?: string;
+  }): Promise<{ id: string; label: string; color: string }> {
+    return firstValueFrom(
+      this.http.post<{ id: string; label: string; color: string }>(`${API}/clusters`, input),
+    );
+  }
 
-	async updateCluster(
-		slug: string,
-		patch: { label?: string; color?: string },
-	): Promise<{ id: string; label: string; color: string }> {
-		return firstValueFrom(
-			this.http.put<{ id: string; label: string; color: string }>(
-				`${API}/clusters/${encodeURIComponent(slug)}`,
-				patch,
-			),
-		);
-	}
+  async updateCluster(
+    slug: string,
+    patch: { label?: string; color?: string },
+  ): Promise<{ id: string; label: string; color: string }> {
+    return firstValueFrom(
+      this.http.put<{ id: string; label: string; color: string }>(
+        `${API}/clusters/${encodeURIComponent(slug)}`,
+        patch,
+      ),
+    );
+  }
 
-	async deleteCluster(slug: string): Promise<{ deleted: true }> {
-		return firstValueFrom(
-			this.http.delete<{ deleted: true }>(
-				`${API}/clusters/${encodeURIComponent(slug)}`,
-			),
-		);
-	}
+  async deleteCluster(slug: string): Promise<{ deleted: true }> {
+    return firstValueFrom(
+      this.http.delete<{ deleted: true }>(`${API}/clusters/${encodeURIComponent(slug)}`),
+    );
+  }
 
-	async updateNode(
-		slug: string,
-		patch: { label?: string; description?: string; clusterSlug?: string },
-	): Promise<{ id: string; label: string; desc: string; cluster: string }> {
-		return firstValueFrom(
-			this.http.put<{ id: string; label: string; desc: string; cluster: string }>(
-				`${API}/nodes/${encodeURIComponent(slug)}`,
-				patch,
-			),
-		);
-	}
+  async updateNode(
+    slug: string,
+    patch: { label?: string; description?: string; clusterSlug?: string },
+  ): Promise<{ id: string; label: string; desc: string; cluster: string }> {
+    return firstValueFrom(
+      this.http.put<{ id: string; label: string; desc: string; cluster: string }>(
+        `${API}/nodes/${encodeURIComponent(slug)}`,
+        patch,
+      ),
+    );
+  }
 
-	async deleteNode(slug: string): Promise<{ deleted: true }> {
-		return firstValueFrom(
-			this.http.delete<{ deleted: true }>(
-				`${API}/nodes/${encodeURIComponent(slug)}`,
-			),
-		);
-	}
+  async deleteNode(slug: string): Promise<{ deleted: true }> {
+    return firstValueFrom(
+      this.http.delete<{ deleted: true }>(`${API}/nodes/${encodeURIComponent(slug)}`),
+    );
+  }
 
-	async createNode(input: {
-		label: string;
-		clusterSlug: string;
-		desc?: string;
-	}): Promise<{ id: string; label: string; desc: string; cluster: string }> {
-		return firstValueFrom(
-			this.http.post<{ id: string; label: string; desc: string; cluster: string }>(
-				`${API}/nodes`,
-				input,
-			),
-		);
-	}
+  async createNode(input: {
+    label: string;
+    clusterSlug: string;
+    desc?: string;
+  }): Promise<{ id: string; label: string; desc: string; cluster: string }> {
+    return firstValueFrom(
+      this.http.post<{ id: string; label: string; desc: string; cluster: string }>(
+        `${API}/nodes`,
+        input,
+      ),
+    );
+  }
 
-	async mergeNodes(input: {
-		targetSlug: string;
-		sourceSlugs: string[];
-	}): Promise<{ id: string; label: string; desc: string; cluster: string }> {
-		return firstValueFrom(
-			this.http.post<{ id: string; label: string; desc: string; cluster: string }>(
-				`${API}/nodes/merge`,
-				input,
-			),
-		);
-	}
+  async mergeNodes(input: {
+    targetSlug: string;
+    sourceSlugs: string[];
+  }): Promise<{ id: string; label: string; desc: string; cluster: string }> {
+    return firstValueFrom(
+      this.http.post<{ id: string; label: string; desc: string; cluster: string }>(
+        `${API}/nodes/merge`,
+        input,
+      ),
+    );
+  }
 
-	async bulkReassignNodes(input: {
-		nodeSlugs: string[];
-		clusterSlug: string;
-	}): Promise<{ reassigned: number; clusterSlug: string }> {
-		return firstValueFrom(
-			this.http.post<{ reassigned: number; clusterSlug: string }>(
-				`${API}/nodes/bulk-reassign`,
-				input,
-			),
-		);
-	}
+  async bulkReassignNodes(input: {
+    nodeSlugs: string[];
+    clusterSlug: string;
+  }): Promise<{ reassigned: number; clusterSlug: string }> {
+    return firstValueFrom(
+      this.http.post<{ reassigned: number; clusterSlug: string }>(
+        `${API}/nodes/bulk-reassign`,
+        input,
+      ),
+    );
+  }
 
-	/** Atomically reassign all nodes from source clusters to the target, then delete the sources. */
-	async dissolveClusters(input: {
-		sourceSlugs: string[];
-		targetSlug: string;
-	}): Promise<{ reassigned: number; deletedClusters: number }> {
-		return firstValueFrom(
-			this.http.post<{ reassigned: number; deletedClusters: number }>(
-				`${API}/clusters/dissolve`,
-				input,
-			),
-		);
-	}
+  /** Atomically reassign all nodes from source clusters to the target, then delete the sources. */
+  async dissolveClusters(input: {
+    sourceSlugs: string[];
+    targetSlug: string;
+  }): Promise<{ reassigned: number; deletedClusters: number }> {
+    return firstValueFrom(
+      this.http.post<{ reassigned: number; deletedClusters: number }>(
+        `${API}/clusters/dissolve`,
+        input,
+      ),
+    );
+  }
 
-	/** Atomically delete several nodes and their incident edges. */
-	async bulkDeleteNodes(input: {
-		nodeSlugs: string[];
-	}): Promise<{ deleted: number }> {
-		return firstValueFrom(
-			this.http.post<{ deleted: number }>(`${API}/nodes/bulk-delete`, input),
-		);
-	}
+  /** Atomically delete several nodes and their incident edges. */
+  async bulkDeleteNodes(input: { nodeSlugs: string[] }): Promise<{ deleted: number }> {
+    return firstValueFrom(this.http.post<{ deleted: number }>(`${API}/nodes/bulk-delete`, input));
+  }
 }

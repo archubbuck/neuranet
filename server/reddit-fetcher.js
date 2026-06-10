@@ -66,9 +66,7 @@ function flattenComments(commentData, depth = 0, maxDepth = 3) {
   const results = [];
 
   // commentData can be an object or an array from the "children" of a "Listing"
-  const children = Array.isArray(commentData)
-    ? commentData
-    : commentData.data?.children ?? [];
+  const children = Array.isArray(commentData) ? commentData : (commentData.data?.children ?? []);
 
   for (const child of children) {
     if (child.kind !== 't1') continue; // skip "more" links etc.

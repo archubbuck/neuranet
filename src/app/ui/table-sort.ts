@@ -13,8 +13,8 @@
 export type SortDir = 'asc' | 'desc';
 
 export interface SortColumn {
-	readonly column: string;
-	readonly dir: SortDir;
+  readonly column: string;
+  readonly dir: SortDir;
 }
 
 export type SortAccessors<T> = Record<string, (row: T) => number | string | null>;
@@ -34,33 +34,33 @@ export type ColumnFilters = Record<string, string>;
  *   (preserves primary).
  */
 export function toggleSort(
-	current: readonly SortColumn[],
-	column: string,
-	shiftKey: boolean,
+  current: readonly SortColumn[],
+  column: string,
+  shiftKey: boolean,
 ): SortColumn[] {
-	const idx = current.findIndex((s) => s.column === column);
+  const idx = current.findIndex((s) => s.column === column);
 
-	if (shiftKey) {
-		if (idx === -1) return [...current, { column, dir: 'asc' }];
-		const next = [...current];
-		next.splice(idx, 1);
-		return next;
-	}
+  if (shiftKey) {
+    if (idx === -1) return [...current, { column, dir: 'asc' }];
+    const next = [...current];
+    next.splice(idx, 1);
+    return next;
+  }
 
-	// Plain click
-	if (idx === 0) {
-		// Already primary
-		if (current[0].dir === 'asc') {
-			// asc → desc
-			return [{ column, dir: 'desc' }, ...current.slice(1)];
-		}
-		// desc → remove (promote first secondary if any)
-		return current.slice(1);
-	}
+  // Plain click
+  if (idx === 0) {
+    // Already primary
+    if (current[0].dir === 'asc') {
+      // asc → desc
+      return [{ column, dir: 'desc' }, ...current.slice(1)];
+    }
+    // desc → remove (promote first secondary if any)
+    return current.slice(1);
+  }
 
-	// Not primary (either sub-sort at idx>0, or not in list at all)
-	const without = idx === -1 ? [...current] : [...current.slice(0, idx), ...current.slice(idx + 1)];
-	return [{ column, dir: 'asc' }, ...without];
+  // Not primary (either sub-sort at idx>0, or not in list at all)
+  const without = idx === -1 ? [...current] : [...current.slice(0, idx), ...current.slice(idx + 1)];
+  return [{ column, dir: 'asc' }, ...without];
 }
 
 // ── Apply sorts ─────────────────────────────────────────────────────────
@@ -71,24 +71,24 @@ export function toggleSort(
  * of equal elements).  `null` values sort last.
  */
 export function applySorts<T>(
-	rows: readonly T[],
-	sorts: readonly SortColumn[],
-	accessors: SortAccessors<T>,
+  rows: readonly T[],
+  sorts: readonly SortColumn[],
+  accessors: SortAccessors<T>,
 ): T[] {
-	if (sorts.length === 0) return [...rows];
+  if (sorts.length === 0) return [...rows];
 
-	const comparators = sorts.map((s) => {
-		const acc = accessors[s.column];
-		return makeComparator(s, acc);
-	});
+  const comparators = sorts.map((s) => {
+    const acc = accessors[s.column];
+    return makeComparator(s, acc);
+  });
 
-	return [...rows].sort((a, b) => {
-		for (const cmp of comparators) {
-			const r = cmp(a, b);
-			if (r !== 0) return r;
-		}
-		return 0;
-	});
+  return [...rows].sort((a, b) => {
+    for (const cmp of comparators) {
+      const r = cmp(a, b);
+      if (r !== 0) return r;
+    }
+    return 0;
+  });
 }
 
 // ── Column filters ──────────────────────────────────────────────────────
@@ -99,43 +99,43 @@ export function applySorts<T>(
  * string).  Filters are ANDed together.
  */
 export function applyColumnFilters<T>(
-	rows: readonly T[],
-	filters: ColumnFilters,
-	accessors: SortAccessors<T>,
+  rows: readonly T[],
+  filters: ColumnFilters,
+  accessors: SortAccessors<T>,
 ): T[] {
-	const active = Object.entries(filters).filter(([, v]) => v.trim() !== '');
-	if (active.length === 0) return [...rows];
+  const active = Object.entries(filters).filter(([, v]) => v.trim() !== '');
+  if (active.length === 0) return [...rows];
 
-	return rows.filter((row) =>
-		active.every(([col, val]) => {
-			const acc = accessors[col];
-			if (!acc) return true;
-			const cell = acc(row);
-			if (cell == null) return false;
-			return String(cell).toLowerCase().includes(val.trim().toLowerCase());
-		}),
-	);
+  return rows.filter((row) =>
+    active.every(([col, val]) => {
+      const acc = accessors[col];
+      if (!acc) return true;
+      const cell = acc(row);
+      if (cell == null) return false;
+      return String(cell).toLowerCase().includes(val.trim().toLowerCase());
+    }),
+  );
 }
 
 // ── Internals ───────────────────────────────────────────────────────────
 
 function makeComparator<T>(
-	sort: SortColumn,
-	acc: ((row: T) => number | string | null) | undefined,
+  sort: SortColumn,
+  acc: ((row: T) => number | string | null) | undefined,
 ): (a: T, b: T) => number {
-	if (!acc) return () => 0;
-	const dir = sort.dir === 'asc' ? 1 : -1;
-	return (a, b) => {
-		const va = acc(a);
-		const vb = acc(b);
-		return cmpValues(va, vb) * dir;
-	};
+  if (!acc) return () => 0;
+  const dir = sort.dir === 'asc' ? 1 : -1;
+  return (a, b) => {
+    const va = acc(a);
+    const vb = acc(b);
+    return cmpValues(va, vb) * dir;
+  };
 }
 
 function cmpValues(a: number | string | null, b: number | string | null): number {
-	if (a == null && b == null) return 0;
-	if (a == null) return 1;
-	if (b == null) return -1;
-	if (typeof a === 'number' && typeof b === 'number') return a - b;
-	return String(a).localeCompare(String(b));
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  return String(a).localeCompare(String(b));
 }

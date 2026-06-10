@@ -1,9 +1,4 @@
-import {
-	ChangeDetectionStrategy,
-	Component,
-	computed,
-	inject,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AppStore } from '../data/app.store';
 import { ViewportService } from '../core/viewport.service';
@@ -18,65 +13,65 @@ import { ToastComponent } from '../ui/overlays/toast.component';
  * Mirrors the prototype's `App` layout switch.
  */
 @Component({
-	selector: 'app-shell',
-	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [RouterOutlet, SidebarComponent, MobileNavComponent, ToastComponent],
-	template: `
-		@if (isMobile()) {
-			<div class="layout mobile">
-				<main class="content"><router-outlet /></main>
-				<app-mobile-nav />
-			</div>
-		} @else {
-			<div class="layout desktop">
-				<app-sidebar />
-				<main class="content"><router-outlet /></main>
-			</div>
-		}
-		<app-toast />
-	`,
-	styles: [
-		`
-			:host {
-				display: block;
-				height: 100%;
-				width: 100%;
-				background: #090e1c;
-				color: #f1f5f9;
-			}
-			.layout {
-				display: flex;
-				height: 100%;
-				width: 100%;
-			}
-			.layout.desktop {
-				flex-direction: row;
-			}
-			.layout.mobile {
-				flex-direction: column;
-			}
-			.content {
-				flex: 1 1 auto;
-				min-width: 0;
-				min-height: 0;
-				display: flex;
-				flex-direction: column;
-				overflow: hidden;
-			}
-		`,
-	],
+  selector: 'app-shell',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterOutlet, SidebarComponent, MobileNavComponent, ToastComponent],
+  template: `
+    @if (isMobile()) {
+      <div class="layout mobile">
+        <main class="content"><router-outlet /></main>
+        <app-mobile-nav />
+      </div>
+    } @else {
+      <div class="layout desktop">
+        <app-sidebar />
+        <main class="content"><router-outlet /></main>
+      </div>
+    }
+    <app-toast />
+  `,
+  styles: [
+    `
+      :host {
+        display: block;
+        height: 100%;
+        width: 100%;
+        background: #090e1c;
+        color: #f1f5f9;
+      }
+      .layout {
+        display: flex;
+        height: 100%;
+        width: 100%;
+      }
+      .layout.desktop {
+        flex-direction: row;
+      }
+      .layout.mobile {
+        flex-direction: column;
+      }
+      .content {
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+    `,
+  ],
 })
 export class AppShellComponent {
-	private readonly viewport = inject(ViewportService);
-	protected readonly isMobile = computed(() => this.viewport.state().isMobile);
+  private readonly viewport = inject(ViewportService);
+  protected readonly isMobile = computed(() => this.viewport.state().isMobile);
 
-	constructor() {
-		// Bootstrap the global dataset once the shell mounts. The shell still
-		// renders if the backend is unavailable, but the failure is surfaced
-		// to the user instead of being silently swallowed.
-		const toast = inject(ToastService);
-		void inject(AppStore)
-			.loadAll()
-			.catch(() => toast.show('Failed to load data. Is the API running?', 'error'));
-	}
+  constructor() {
+    // Bootstrap the global dataset once the shell mounts. The shell still
+    // renders if the backend is unavailable, but the failure is surfaced
+    // to the user instead of being silently swallowed.
+    const toast = inject(ToastService);
+    void inject(AppStore)
+      .loadAll()
+      .catch(() => toast.show('Failed to load data. Is the API running?', 'error'));
+  }
 }

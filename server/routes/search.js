@@ -22,22 +22,29 @@ function makeSnippet(text, needle) {
 
 router.get('/search', (req, res) => {
   const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
-  if (q.length < 2) { res.json({ results: [] }); return; }
+  if (q.length < 2) {
+    res.json({ results: [] });
+    return;
+  }
 
   const like = `%${q.replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
-  const nodeRows = db.prepare(
-    `SELECT slug AS id, label, description AS desc, cluster_slug AS cluster
+  const nodeRows = db
+    .prepare(
+      `SELECT slug AS id, label, description AS desc, cluster_slug AS cluster
      FROM derived_nodes
      WHERE lower(label) LIKE lower(?) ESCAPE '\\' OR lower(description) LIKE lower(?) ESCAPE '\\'
      LIMIT 25`,
-  ).all(like, like);
+    )
+    .all(like, like);
 
-  const docRows = db.prepare(
-    `SELECT id, title, text
+  const docRows = db
+    .prepare(
+      `SELECT id, title, text
      FROM docs
      WHERE lower(title) LIKE lower(?) ESCAPE '\\' OR lower(text) LIKE lower(?) ESCAPE '\\'
      LIMIT 25`,
-  ).all(like, like);
+    )
+    .all(like, like);
 
   const results = [];
   for (const row of nodeRows) {

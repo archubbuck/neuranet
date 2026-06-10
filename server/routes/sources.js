@@ -8,7 +8,14 @@ const config = require('../config');
 const redditFetcher = require('../reddit-fetcher');
 const schemas = require('../schemas');
 const { validateBody } = require('../middleware/validate');
-const { slugify, titleCase, colorFromSlug, tokenize, topKeywords, scoreTopicMatch } = require('../lib/derivation');
+const {
+  slugify,
+  titleCase,
+  colorFromSlug,
+  tokenize,
+  topKeywords,
+  scoreTopicMatch,
+} = require('../lib/derivation');
 
 const router = express.Router();
 
@@ -27,15 +34,19 @@ const fetchLimiter = rateLimit({
 router.post('/sources', validateBody(schemas.createSource), (req, res) => {
   const { sourceType, config: sourceConfig } = req.body;
 
-  const result = db.prepare('INSERT INTO data_sources (source_type, config_json) VALUES (?, ?)')
+  const result = db
+    .prepare('INSERT INTO data_sources (source_type, config_json) VALUES (?, ?)')
     .run(sourceType, JSON.stringify(sourceConfig));
-  const source = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(Number(result.lastInsertRowid));
+  const source = db
+    .prepare('SELECT * FROM data_sources WHERE id = ?')
+    .get(Number(result.lastInsertRowid));
   source.config = JSON.parse(source.config_json);
   res.status(201).json(source);
 });
 
 router.get('/sources', (_req, res) => {
-  const sources = db.prepare('SELECT * FROM data_sources ORDER BY created_at DESC')
+  const sources = db
+    .prepare('SELECT * FROM data_sources ORDER BY created_at DESC')
     .all()
     .map((row) => ({ ...row, config: JSON.parse(row.config_json) }));
   res.json(sources);
@@ -43,19 +54,29 @@ router.get('/sources', (_req, res) => {
 
 router.delete('/sources/:sourceId', (req, res) => {
   const source = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(req.params.sourceId);
-  if (!source) { res.status(404).json({ message: 'data source not found' }); return; }
+  if (!source) {
+    res.status(404).json({ message: 'data source not found' });
+    return;
+  }
   db.prepare('DELETE FROM data_sources WHERE id = ?').run(req.params.sourceId);
   res.json({ deleted: true });
 });
 
 router.post('/sources/:sourceId/fetch', fetchLimiter, async (req, res) => {
   const source = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(req.params.sourceId);
-  if (!source) { res.status(404).json({ message: 'data source not found' }); return; }
+  if (!source) {
+    res.status(404).json({ message: 'data source not found' });
+    return;
+  }
   if (source.source_type !== 'reddit') {
-    res.status(400).json({ message: `fetch not supported for source type: ${source.source_type}` }); return;
+    res.status(400).json({ message: `fetch not supported for source type: ${source.source_type}` });
+    return;
   }
 
-  db.prepare('UPDATE data_sources SET status = ?, status_message = NULL WHERE id = ?').run('fetching', source.id);
+  db.prepare('UPDATE data_sources SET status = ?, status_message = NULL WHERE id = ?').run(
+    'fetching',
+    source.id,
+  );
 
   try {
     const sourceConfig = JSON.parse(source.config_json);
@@ -71,25 +92,39 @@ router.post('/sources/:sourceId/fetch', fetchLimiter, async (req, res) => {
       const centralClusterSlug = `reddit-${threadData.threadId}`;
       const centralClusterLabel = `${centralLabel.substring(0, 40)} Discussion`;
 
-      db.prepare('INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?) ON CONFLICT(slug) DO NOTHING')
-        .run(centralClusterSlug, centralClusterLabel, colorFromSlug(centralClusterSlug));
-      db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth, is_central) VALUES (?, ?, ?, ?, ?, ?, 0, 1) ON CONFLICT(slug) DO UPDATE SET label=excluded.label')
-        .run(centralSlug, centralLabel, centralDesc, centralClusterSlug, 36, 10);
+      db.prepare(
+        'INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?) ON CONFLICT(slug) DO NOTHING',
+      ).run(centralClusterSlug, centralClusterLabel, colorFromSlug(centralClusterSlug));
+      db.prepare(
+        'INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth, is_central) VALUES (?, ?, ?, ?, ?, ?, 0, 1) ON CONFLICT(slug) DO UPDATE SET label=excluded.label',
+      ).run(centralSlug, centralLabel, centralDesc, centralClusterSlug, 36, 10);
 
       // Depth-1 topics from title + body
       const combinedText = `${threadData.title} ${threadData.body || ''}`;
       const depth1Keywords = topKeywords(combinedText, config.derivation.threadKeywordCount);
 
-      let nodes = 1, edges = 0;
+      let nodes = 1,
+        edges = 0;
       const depth1Slugs = [];
 
-      const insertNode = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (?, ?, ?, ?, ?, ?, 1) ON CONFLICT(slug) DO NOTHING');
-      const insertEdge = db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?) ON CONFLICT(source_slug, target_slug) DO NOTHING');
+      const insertNode = db.prepare(
+        'INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (?, ?, ?, ?, ?, ?, 1) ON CONFLICT(slug) DO NOTHING',
+      );
+      const insertEdge = db.prepare(
+        'INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?) ON CONFLICT(source_slug, target_slug) DO NOTHING',
+      );
 
       for (let i = 0; i < depth1Keywords.length; i += 1) {
         const kw = depth1Keywords[i];
         const nodeSlug = `reddit-${threadData.threadId}-d1-${slugify(kw)}`;
-        insertNode.run(nodeSlug, titleCase(kw), `Topic from Reddit thread: ${titleCase(kw)}`, centralClusterSlug, Math.max(14, 24 - i * 2), Math.max(5, 9 - i));
+        insertNode.run(
+          nodeSlug,
+          titleCase(kw),
+          `Topic from Reddit thread: ${titleCase(kw)}`,
+          centralClusterSlug,
+          Math.max(14, 24 - i * 2),
+          Math.max(5, 9 - i),
+        );
         depth1Slugs.push(nodeSlug);
         nodes += 1;
         insertEdge.run(centralSlug, nodeSlug, 'central-topic');
@@ -98,24 +133,37 @@ router.post('/sources/:sourceId/fetch', fetchLimiter, async (req, res) => {
 
       // Depth-2 from comments
       const topLevelComments = threadData.comments.filter((c) => c.depth === 0);
-      const insertD2Node = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (?, ?, ?, ?, ?, ?, 2) ON CONFLICT(slug) DO NOTHING');
+      const insertD2Node = db.prepare(
+        'INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (?, ?, ?, ?, ?, ?, 2) ON CONFLICT(slug) DO NOTHING',
+      );
       const getD1Label = db.prepare('SELECT label FROM derived_nodes WHERE slug = ?');
 
       for (const comment of topLevelComments.slice(0, config.derivation.maxTopLevelComments)) {
         const commentKeywords = topKeywords(comment.body, config.derivation.commentKeywordCount);
         const commentTokenSet = new Set(tokenize(comment.body));
         for (const kw of commentKeywords) {
-          let bestParent = depth1Slugs[0], bestScore = 0;
+          let bestParent = depth1Slugs[0],
+            bestScore = 0;
           for (const d1Slug of depth1Slugs) {
             const d1Node = getD1Label.get(d1Slug);
             if (!d1Node) continue;
             const s = scoreTopicMatch(commentTokenSet, d1Node.label);
-            if (s > bestScore) { bestScore = s; bestParent = d1Slug; }
+            if (s > bestScore) {
+              bestScore = s;
+              bestParent = d1Slug;
+            }
           }
           if (bestScore === 0) continue;
 
           const nodeSlug = `reddit-${threadData.threadId}-d2-${slugify(kw)}`;
-          insertD2Node.run(nodeSlug, titleCase(kw), `Sub-topic from discussion: ${titleCase(kw)}`, centralClusterSlug, 12, 4);
+          insertD2Node.run(
+            nodeSlug,
+            titleCase(kw),
+            `Sub-topic from discussion: ${titleCase(kw)}`,
+            centralClusterSlug,
+            12,
+            4,
+          );
           nodes += 1;
           insertEdge.run(bestParent, nodeSlug, 'topic-subtopic');
           edges += 1;
@@ -128,8 +176,11 @@ router.post('/sources/:sourceId/fetch', fetchLimiter, async (req, res) => {
         edges += 1;
       }
 
-      db.prepare('UPDATE data_sources SET status = ?, status_message = ? WHERE id = ?')
-        .run('done', `Extracted ${nodes} nodes and ${edges} edges`, source.id);
+      db.prepare('UPDATE data_sources SET status = ?, status_message = ? WHERE id = ?').run(
+        'done',
+        `Extracted ${nodes} nodes and ${edges} edges`,
+        source.id,
+      );
 
       return { nodeCount: nodes, edgeCount: edges };
     })();
@@ -138,8 +189,11 @@ router.post('/sources/:sourceId/fetch', fetchLimiter, async (req, res) => {
     updated.config = JSON.parse(updated.config_json);
     res.json({ source: updated, nodeCount, edgeCount });
   } catch (err) {
-    db.prepare('UPDATE data_sources SET status = ?, status_message = ? WHERE id = ?')
-      .run('error', err.message, source.id);
+    db.prepare('UPDATE data_sources SET status = ?, status_message = ? WHERE id = ?').run(
+      'error',
+      err.message,
+      source.id,
+    );
     // Log internally; never leak raw error details to the client.
     console.error(`[fetch] source ${source.id} failed:`, err);
     res.status(500).json({ message: 'failed to fetch or derive from source' });
