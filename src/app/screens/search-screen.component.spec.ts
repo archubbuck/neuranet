@@ -57,4 +57,26 @@ describe('SearchScreenComponent', () => {
 			],
 		});
 	});
+
+	it('cancels the pending debounce when destroyed mid-wait', async () => {
+		const fixture = TestBed.createComponent(SearchScreenComponent);
+		fixture.detectChanges();
+		const input = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
+			'input[type="search"]',
+		);
+		input!.value = 'climate';
+		input!.dispatchEvent(new Event('input'));
+		fixture.detectChanges();
+		TestBed.tick();
+
+		// Destroy while the 220ms debounce is still pending …
+		fixture.destroy();
+		vi.advanceTimersByTime(250);
+		vi.useRealTimers();
+		await Promise.resolve();
+
+		// … no search request may be issued by the dead component.
+		const http = TestBed.inject(HttpTestingController);
+		http.expectNone('/api/search?q=climate');
+	});
 });

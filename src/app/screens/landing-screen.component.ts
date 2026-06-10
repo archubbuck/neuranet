@@ -1,6 +1,7 @@
 import {
 	ChangeDetectionStrategy,
 	Component,
+	DestroyRef,
 	inject,
 	signal,
 } from '@angular/core';
@@ -178,11 +179,21 @@ export class LandingScreenComponent {
 
 	/* ---- internal ---- */
 	private animId: number | null = null;
+	private startTimerId: ReturnType<typeof setTimeout> | null = null;
+	private destroyed = false;
 	private travelProgress = 0;
 	private nodeCounter = 0;
 	private lastReachedIdx = -1;           // index of the last node reached
 	private fadeTargets: number[] = [];
 	private shrinkData: { sourceIdx: number; targetIdx: number; progress: number; fromX: number; fromY: number; toX: number; toY: number } | null = null;
+
+	constructor() {
+		inject(DestroyRef).onDestroy(() => {
+			this.destroyed = true;
+			if (this.startTimerId !== null) clearTimeout(this.startTimerId);
+			if (this.animId !== null) cancelAnimationFrame(this.animId);
+		});
+	}
 
 	/* ---- helpers ---- */
 	private rand(min: number, max: number) {
@@ -231,7 +242,7 @@ export class LandingScreenComponent {
 		this.activeTargetIdx.set(secondIdx);
 		this.travelProgress = 0;
 
-		setTimeout(() => this.runLoop());
+		this.startTimerId = setTimeout(() => this.runLoop());
 	}
 
 	private reset() {
@@ -250,7 +261,7 @@ export class LandingScreenComponent {
 
 	/* ---- main loop ---- */
 	private runLoop() {
-		if (this.phase() === 'idle') return;
+		if (this.destroyed || this.phase() === 'idle') return;
 
 		if (this.phase() === 'travel') this.tickTravel();
 

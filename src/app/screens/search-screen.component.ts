@@ -147,15 +147,14 @@ export class SearchScreenComponent {
 	protected readonly loading = signal<boolean>(false);
 	protected readonly error = signal<string | null>(null);
 
-	private debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	private currentRequestId = 0;
 
 	constructor() {
 		// Debounced server-side search. Fires whenever the query changes;
-		// ignored if query is too short.
-		effect(() => {
+		// ignored if query is too short. onCleanup clears the pending timer
+		// on re-run AND on destroy so a dead component never issues requests.
+		effect((onCleanup) => {
 			const q = this.query().trim();
-			if (this.debounceTimer) clearTimeout(this.debounceTimer);
 			if (q.length < 2) {
 				this.results.set([]);
 				this.loading.set(false);
@@ -164,9 +163,10 @@ export class SearchScreenComponent {
 			}
 			this.loading.set(true);
 			const reqId = ++this.currentRequestId;
-			this.debounceTimer = setTimeout(() => {
+			const timer = setTimeout(() => {
 				void this.runSearch(q, reqId);
 			}, 220);
+			onCleanup(() => clearTimeout(timer));
 		});
 	}
 
