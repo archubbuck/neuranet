@@ -105,6 +105,37 @@ export interface Doc {
 	readonly derivedNodeSlugs: readonly string[];
 }
 
+// ───────────────────────────── Search & Reports ─────────────────────────────
+
+export interface SearchHit {
+	readonly type: 'node' | 'doc';
+	readonly id: string;
+	readonly label: string;
+	readonly snippet: string;
+	readonly meta: string;
+	readonly score: number;
+}
+
+export interface SearchResponse {
+	readonly results: readonly SearchHit[];
+}
+
+export interface ReportsResponse {
+	readonly totals: {
+		readonly nodes: number;
+		readonly clusters: number;
+		readonly edges: number;
+		readonly sources: number;
+		readonly docs: number;
+	};
+	readonly clusterDistribution: readonly {
+		readonly id: string;
+		readonly label: string;
+		readonly color: string;
+		readonly count: number;
+	}[];
+}
+
 // ───────────────────────────── UI state ─────────────────────────────
 
 export type Screen = 'network' | 'sources' | 'search' | 'reports' | 'settings';

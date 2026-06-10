@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { AppStore } from '../data/app.store';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ApiService } from '../data/api.service';
+import type { ReportsResponse } from '../data/types';
 
 interface ClusterStat {
 	readonly id: string;
@@ -11,9 +12,8 @@ interface ClusterStat {
 }
 
 /**
- * Reports screen — KPI surface. Derives counts from current
- * `AppStore` slices. Phase 5 swaps this for a real `/reports?range=30d`
- * endpoint with trend deltas.
+ * Reports screen — KPI surface backed by `GET /api/reports`, which
+ * aggregates in SQL instead of scanning the full client-side store.
  */
 @Component({
 	selector: 'app-reports-screen',
@@ -26,7 +26,10 @@ interface ClusterStat {
 				<p>Snapshot of the current dataset.</p>
 			</header>
 
-			<section class="kpis">
+			@if (error()) {
+				<p class="empty">{{ error() }}</p>
+			} @else {
+				<section class="kpis">
 				<div class="kpi">
 					<div class="v">{{ nodeCount() }}</div>
 					<div class="l">nodes</div>
@@ -68,6 +71,7 @@ interface ClusterStat {
 					</div>
 				}
 			</section>
+			}
 		</div>
 	`,
 	styles: [
@@ -202,32 +206,39 @@ interface ClusterStat {
 	],
 })
 export class ReportsScreenComponent {
-	private readonly store = inject(AppStore);
+	private readonly api = inject(ApiService);
 
-	protected readonly nodeCount = computed(() => this.store.nodes().length);
-	protected readonly edgeCount = computed(() => this.store.edges().length);
-	protected readonly clusterCount = computed(() => this.store.clusters().length);
-	protected readonly sourceCount = computed(() => this.store.sources().length);
-	protected readonly docCount = computed(() => this.store.docs().length);
+	protected readonly report = signal<ReportsResponse | null>(null);
+	protected readonly error = signal<string | null>(null);
+
+	constructor() {
+		void this.load();
+	}
+
+	private async load(): Promise<void> {
+		try {
+			this.report.set(await this.api.getReports());
+			this.error.set(null);
+		} catch {
+			this.error.set('Failed to load reports. Is the API running?');
+		}
+	}
+
+	protected readonly nodeCount = computed(() => this.report()?.totals.nodes ?? 0);
+	protected readonly edgeCount = computed(() => this.report()?.totals.edges ?? 0);
+	protected readonly clusterCount = computed(() => this.report()?.totals.clusters ?? 0);
+	protected readonly sourceCount = computed(() => this.report()?.totals.sources ?? 0);
+	protected readonly docCount = computed(() => this.report()?.totals.docs ?? 0);
 
 	protected readonly clusterStats = computed<readonly ClusterStat[]>(() => {
-		const counts = new Map<string, number>();
-		for (const n of this.store.nodes()) {
-			counts.set(n.cluster, (counts.get(n.cluster) ?? 0) + 1);
-		}
-		const max = Math.max(1, ...[...counts.values()]);
-		return this.store
-			.clusters()
-			.map<ClusterStat>((c) => {
-				const count = counts.get(c.id) ?? 0;
-				return {
-					id: c.id,
-					label: c.label,
-					color: c.color,
-					count,
-					pct: Math.round((count / max) * 100),
-				};
-			})
-			.sort((a, b) => b.count - a.count);
+		const dist = this.report()?.clusterDistribution ?? [];
+		const max = Math.max(1, ...dist.map((c) => c.count));
+		return dist.map<ClusterStat>((c) => ({
+			id: c.id,
+			label: c.label,
+			color: c.color,
+			count: c.count,
+			pct: Math.round((c.count / max) * 100),
+		}));
 	});
 }

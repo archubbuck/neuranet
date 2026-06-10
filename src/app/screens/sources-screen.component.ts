@@ -259,21 +259,7 @@ const TYPE_ICON: Record<SourceType, string> = {
 								<!-- Default cluster -->
 								<div class="td td-cluster">
 									@if (row.persistent) {
-										<button class="cluster-btn" type="button" (click)="toggleClusterMenu(row)">
-											<span>{{ defaultClusterLabel(row.defaultClusterId) }}</span>
-											<app-icon name="chevron-down" [size]="10" />
-										</button>
-										<app-popover [open]="clusterMenuFor() === row.sourceId"
-											(close)="clusterMenuFor.set(null)"
-											style="top: 36px; left: 0; width: 180px; padding: 6px;">
-											@for (c of store.clusters(); track c.id) {
-												<button class="cf-option" [class.cf-active]="c.id === row.defaultClusterId"
-													type="button" (click)="reassignCluster(row, c.id)">
-													<span class="cf-dot" [style.background]="c.color"></span>
-													<span>{{ c.label }}</span>
-												</button>
-											}
-										</app-popover>
+										<span>{{ defaultClusterLabel(row.defaultClusterId) }}</span>
 									} @else {
 										<span style="color: #475569;">—</span>
 									}
@@ -304,15 +290,6 @@ const TYPE_ICON: Record<SourceType, string> = {
 										<app-popover [open]="rowMenuFor() === row.key"
 											(close)="rowMenuFor.set(null)"
 											style="top: 32px; right: 0; width: 166px; padding: 6px;">
-											<button class="menu-item" type="button" (click)="reingest(row); rowMenuFor.set(null)">
-												<app-icon name="refresh" [size]="13" color="#94a3b8" />
-												<span>Re-ingest</span>
-											</button>
-											<button class="menu-item" type="button" (click)="togglePause(row); rowMenuFor.set(null)">
-												<app-icon name="pause" [size]="13" color="#94a3b8" />
-												<span>{{ row.status === 'fetching' ? 'Pause' : 'Resume' }}</span>
-											</button>
-											<div class="menu-sep"></div>
 											@if (row.persistent) {
 												<button class="menu-item danger" type="button"
 													(click)="disconnect(row); rowMenuFor.set(null)"
@@ -819,24 +796,11 @@ export class SourcesScreenComponent {
 		return total > 0 ? `${this.formatNum(total)} docs` : '0 docs';
 	});
 
-	// ── Cluster menu ───────────────────────────────────────────────────
-
-	protected readonly clusterMenuFor = signal<number | null>(null);
-
-	protected toggleClusterMenu(row: SourceRow): void {
-		const sid = row.sourceId;
-		this.clusterMenuFor.set(this.clusterMenuFor() === sid ? null : sid);
-	}
+	// ── Cluster display ──────────────────────────────────────────────────
 
 	protected defaultClusterLabel(clusterId: string | null): string {
 		if (!clusterId) return 'None';
 		return this.store.clusters().find((c) => c.id === clusterId)?.label ?? clusterId;
-	}
-
-	protected async reassignCluster(row: SourceRow, clusterId: string): Promise<void> {
-		this.clusterMenuFor.set(null);
-		// TODO: wire up to API when backend supports source.defaultClusterId
-		console.log('Reassign source', row.sourceId, 'to cluster', clusterId);
 	}
 
 	// ── Row action menu ────────────────────────────────────────────────
@@ -845,16 +809,6 @@ export class SourcesScreenComponent {
 
 	protected toggleRowMenu(key: string): void {
 		this.rowMenuFor.set(this.rowMenuFor() === key ? null : key);
-	}
-
-	protected reingest(row: SourceRow): void {
-		// TODO: wire up to API re-ingest endpoint
-		console.log('Re-ingest', row.key);
-	}
-
-	protected togglePause(row: SourceRow): void {
-		// TODO: wire up to API pause/resume endpoint
-		console.log('Toggle pause', row.key);
 	}
 
 	protected async disconnect(row: SourceRow): Promise<void> {

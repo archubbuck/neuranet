@@ -8,7 +8,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AppStore } from '../data/app.store';
-import { ApiService, type SearchHit } from '../data/api.service';
+import { ApiService } from '../data/api.service';
+import type { SearchHit } from '../data/types';
 import { IconComponent } from '../ui/icon.component';
 
 /**

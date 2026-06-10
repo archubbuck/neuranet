@@ -7,6 +7,7 @@ import {
 import { RouterOutlet } from '@angular/router';
 import { AppStore } from '../data/app.store';
 import { ViewportService } from '../core/viewport.service';
+import { ToastService } from '../core/toast.service';
 import { SidebarComponent } from './sidebar.component';
 import { MobileNavComponent } from './mobile-nav.component';
 import { ToastComponent } from '../ui/toast.component';
@@ -70,10 +71,12 @@ export class AppShellComponent {
 	protected readonly isMobile = computed(() => this.viewport.state().isMobile);
 
 	constructor() {
-		// Bootstrap the global dataset once the shell mounts. Errors are
-		// surfaced via the toast service from inside the store's actions; we
-		// intentionally swallow the promise here so the shell can render
-		// even if the backend is briefly unavailable.
-		void inject(AppStore).loadAll().catch(() => {});
+		// Bootstrap the global dataset once the shell mounts. The shell still
+		// renders if the backend is unavailable, but the failure is surfaced
+		// to the user instead of being silently swallowed.
+		const toast = inject(ToastService);
+		void inject(AppStore)
+			.loadAll()
+			.catch(() => toast.show('Failed to load data. Is the API running?', 'error'));
 	}
 }
