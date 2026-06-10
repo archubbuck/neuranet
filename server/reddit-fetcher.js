@@ -28,8 +28,12 @@ function normalizeUrl(rawUrl) {
   // Parse the URL
   const parsed = new URL(url);
 
-  // Validate it's a Reddit domain
-  if (!parsed.hostname.endsWith('reddit.com')) {
+  // Validate it's a genuine Reddit host. An exact-match allowlist (plus
+  // `.reddit.com` subdomains) prevents SSRF bypasses like
+  // `malicious-reddit.com`, which would pass a naive endsWith check.
+  const hostname = parsed.hostname.toLowerCase();
+  const isReddit = hostname === 'reddit.com' || hostname.endsWith('.reddit.com');
+  if (!isReddit) {
     throw new Error('Not a Reddit URL');
   }
 

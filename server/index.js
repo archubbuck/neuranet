@@ -2,7 +2,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const express = require('express');
 const Database = require('better-sqlite3');
+const { rateLimit } = require('express-rate-limit');
 const redditFetcher = require('./reddit-fetcher');
+const schemas = require('./schemas');
+const { validateBody } = require('./middleware/validate');
+const { errorHandler } = require('./middleware/error');
 
 const app = express();
 const port = Number(process.env.API_PORT || 3000);
@@ -157,6 +161,27 @@ try {
 
 app.use(express.json({ limit: '1mb' }));
 
+// Lenient global limiter (DoS backstop) + a strict per-source limiter on
+// the Reddit fetch route, which hits an external API and writes heavily.
+app.use(
+  rateLimit({
+    windowMs: 60_000,
+    limit: Number(process.env.TOPIC_VIZ_GLOBAL_RATE_MAX ?? 1_000),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'too many requests' },
+  }),
+);
+const fetchLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: Number(process.env.TOPIC_VIZ_FETCH_RATE_MAX ?? 5),
+  keyGenerator: (req) => `source-${req.params.sourceId}`,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: false,
+  message: { message: 'too many fetch requests for this source' },
+});
+
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
@@ -165,13 +190,8 @@ app.get('/api/health', (_req, res) => {
 // Data Source CRUD
 // ═══════════════════════════════════════════
 
-app.post('/api/sources', (req, res) => {
-  const sourceType = typeof req.body.sourceType === 'string' ? req.body.sourceType.trim() : '';
-  const config = req.body.config && typeof req.body.config === 'object' ? req.body.config : {};
-  if (!sourceType) { res.status(400).json({ message: 'sourceType is required' }); return; }
-  if (sourceType === 'reddit' && !config.threadUrl) {
-    res.status(400).json({ message: 'config.threadUrl is required for reddit sources' }); return;
-  }
+app.post('/api/sources', validateBody(schemas.createSource), (req, res) => {
+  const { sourceType, config } = req.body;
 
   const result = db.prepare('INSERT INTO data_sources (source_type, config_json) VALUES (?, ?)')
     .run(sourceType, JSON.stringify(config));
@@ -198,7 +218,7 @@ app.delete('/api/sources/:sourceId', (req, res) => {
 // Source Fetch (Reddit)
 // ═══════════════════════════════════════════
 
-app.post('/api/sources/:sourceId/fetch', async (req, res) => {
+app.post('/api/sources/:sourceId/fetch', fetchLimiter, async (req, res) => {
   const source = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(req.params.sourceId);
   if (!source) { res.status(404).json({ message: 'data source not found' }); return; }
   if (source.source_type !== 'reddit') {
@@ -290,7 +310,9 @@ app.post('/api/sources/:sourceId/fetch', async (req, res) => {
   } catch (err) {
     db.prepare('UPDATE data_sources SET status = ?, status_message = ? WHERE id = ?')
       .run('error', err.message, source.id);
-    res.status(500).json({ message: err.message });
+    // Log internally; never leak raw error details to the client.
+    console.error(`[fetch] source ${source.id} failed:`, err);
+    res.status(500).json({ message: 'failed to fetch or derive from source' });
   }
 });
 
@@ -403,31 +425,27 @@ app.get('/api/reports', (_req, res) => {
 // Cluster CRUD
 // ═══════════════════════════════════════════
 
-app.post('/api/clusters', (req, res) => {
-  const label = typeof req.body.label === 'string' ? req.body.label.trim() : '';
-  if (!label) { res.status(400).json({ message: 'label is required' }); return; }
+app.post('/api/clusters', validateBody(schemas.createCluster), (req, res) => {
+  const { label } = req.body;
 
   const slug = slugify(label);
   const exists = db.prepare('SELECT slug FROM derived_clusters WHERE slug = ?').get(slug);
   if (exists) { res.status(409).json({ message: 'a cluster with this name already exists' }); return; }
 
-  const color = typeof req.body.color === 'string' && req.body.color.trim()
-    ? req.body.color.trim()
-    : colorFromSlug(slug);
+  const color = req.body.color ?? colorFromSlug(slug);
 
   db.prepare('INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?)')
     .run(slug, label, color);
   res.status(201).json({ id: slug, label, color });
 });
 
-app.put('/api/clusters/:slug', (req, res) => {
+app.put('/api/clusters/:slug', validateBody(schemas.updateCluster), (req, res) => {
   const slug = req.params.slug;
   const cluster = db.prepare('SELECT * FROM derived_clusters WHERE slug = ?').get(slug);
   if (!cluster) { res.status(404).json({ message: 'cluster not found' }); return; }
 
-  const label = typeof req.body.label === 'string' ? req.body.label.trim() : cluster.label;
-  const color = typeof req.body.color === 'string' ? req.body.color.trim() : cluster.color;
-  if (!label) { res.status(400).json({ message: 'label cannot be empty' }); return; }
+  const label = req.body.label ?? cluster.label;
+  const color = req.body.color ?? cluster.color;
 
   db.prepare('UPDATE derived_clusters SET label = ?, color = ? WHERE slug = ?')
     .run(label, color, slug);
@@ -462,12 +480,9 @@ app.delete('/api/clusters/:slug', (req, res) => {
 // Dissolve / Merge Clusters (atomic)
 // ═══════════════════════════════════════════
 
-app.post('/api/clusters/dissolve', (req, res) => {
-  const targetSlug = typeof req.body.targetSlug === 'string' ? req.body.targetSlug.trim() : '';
-  const sourceSlugs = Array.isArray(req.body.sourceSlugs) ? req.body.sourceSlugs.map((s) => String(s).trim()).filter(Boolean) : [];
+app.post('/api/clusters/dissolve', validateBody(schemas.dissolveClusters), (req, res) => {
+  const { targetSlug, sourceSlugs } = req.body;
 
-  if (!targetSlug) { res.status(400).json({ message: 'targetSlug is required' }); return; }
-  if (sourceSlugs.length === 0) { res.status(400).json({ message: 'sourceSlugs must be a non-empty array' }); return; }
   if (sourceSlugs.includes(targetSlug)) { res.status(400).json({ message: 'target cluster cannot be in sourceSlugs' }); return; }
 
   if (!db.prepare('SELECT slug FROM derived_clusters WHERE slug = ?').get(targetSlug)) {
@@ -495,22 +510,21 @@ app.post('/api/clusters/dissolve', (req, res) => {
 // Node CRUD
 // ═══════════════════════════════════════════
 
-app.put('/api/nodes/:slug', (req, res) => {
+app.put('/api/nodes/:slug', validateBody(schemas.updateNode), (req, res) => {
   const slug = req.params.slug;
   const node = db.prepare('SELECT * FROM derived_nodes WHERE slug = ?').get(slug);
   if (!node) { res.status(404).json({ message: 'node not found' }); return; }
 
-  const label = typeof req.body.label === 'string' ? req.body.label.trim() : node.label;
-  const description = typeof req.body.description === 'string' ? req.body.description.trim() : node.description;
+  const label = req.body.label ?? node.label;
+  const description = req.body.description ?? node.description;
   let clusterSlug = node.cluster_slug;
-  if (typeof req.body.clusterSlug === 'string' && req.body.clusterSlug.trim()) {
-    const target = req.body.clusterSlug.trim();
+  if (req.body.clusterSlug) {
+    const target = req.body.clusterSlug;
     if (!db.prepare('SELECT slug FROM derived_clusters WHERE slug = ?').get(target)) {
       res.status(400).json({ message: 'target cluster does not exist' }); return;
     }
     clusterSlug = target;
   }
-  if (!label) { res.status(400).json({ message: 'label cannot be empty' }); return; }
 
   db.prepare('UPDATE derived_nodes SET label = ?, description = ?, cluster_slug = ? WHERE slug = ?')
     .run(label, description, clusterSlug, slug);
@@ -535,9 +549,8 @@ app.delete('/api/nodes/:slug', (req, res) => {
 // Bulk Delete Nodes (atomic)
 // ═══════════════════════════════════════════
 
-app.post('/api/nodes/bulk-delete', (req, res) => {
-  const nodeSlugs = Array.isArray(req.body.nodeSlugs) ? req.body.nodeSlugs.map((s) => String(s).trim()).filter(Boolean) : [];
-  if (nodeSlugs.length === 0) { res.status(400).json({ message: 'nodeSlugs must be a non-empty array' }); return; }
+app.post('/api/nodes/bulk-delete', validateBody(schemas.bulkDeleteNodes), (req, res) => {
+  const { nodeSlugs } = req.body;
 
   for (const slug of nodeSlugs) {
     if (!db.prepare('SELECT slug FROM derived_nodes WHERE slug = ?').get(slug)) {
@@ -562,13 +575,9 @@ app.post('/api/nodes/bulk-delete', (req, res) => {
 // Create Node (manual topic creation)
 // ═══════════════════════════════════════════
 
-app.post('/api/nodes', (req, res) => {
-  const label = typeof req.body.label === 'string' ? req.body.label.trim() : '';
-  const clusterSlug = typeof req.body.clusterSlug === 'string' ? req.body.clusterSlug.trim() : '';
-  const desc = typeof req.body.desc === 'string' ? req.body.desc.trim() : (label || 'Manually created topic');
-
-  if (!label) { res.status(400).json({ message: 'label is required' }); return; }
-  if (!clusterSlug) { res.status(400).json({ message: 'clusterSlug is required' }); return; }
+app.post('/api/nodes', validateBody(schemas.createNode), (req, res) => {
+  const { label, clusterSlug } = req.body;
+  const desc = req.body.desc ?? (label || 'Manually created topic');
 
   const cluster = db.prepare('SELECT slug FROM derived_clusters WHERE slug = ?').get(clusterSlug);
   if (!cluster) { res.status(400).json({ message: 'target cluster does not exist' }); return; }
@@ -587,12 +596,8 @@ app.post('/api/nodes', (req, res) => {
 // Merge Nodes
 // ═══════════════════════════════════════════
 
-app.post('/api/nodes/merge', (req, res) => {
-  const targetSlug = typeof req.body.targetSlug === 'string' ? req.body.targetSlug.trim() : '';
-  const sourceSlugs = Array.isArray(req.body.sourceSlugs) ? req.body.sourceSlugs.map((s) => String(s).trim()).filter(Boolean) : [];
-
-  if (!targetSlug) { res.status(400).json({ message: 'targetSlug is required' }); return; }
-  if (sourceSlugs.length === 0) { res.status(400).json({ message: 'sourceSlugs must be a non-empty array' }); return; }
+app.post('/api/nodes/merge', validateBody(schemas.mergeNodes), (req, res) => {
+  const { targetSlug, sourceSlugs } = req.body;
 
   const target = db.prepare('SELECT * FROM derived_nodes WHERE slug = ?').get(targetSlug);
   if (!target) { res.status(404).json({ message: 'target node not found' }); return; }
@@ -652,12 +657,8 @@ app.post('/api/nodes/merge', (req, res) => {
 // Bulk Reassign Nodes
 // ═══════════════════════════════════════════
 
-app.post('/api/nodes/bulk-reassign', (req, res) => {
-  const nodeSlugs = Array.isArray(req.body.nodeSlugs) ? req.body.nodeSlugs.map((s) => String(s).trim()).filter(Boolean) : [];
-  const clusterSlug = typeof req.body.clusterSlug === 'string' ? req.body.clusterSlug.trim() : '';
-
-  if (nodeSlugs.length === 0) { res.status(400).json({ message: 'nodeSlugs must be a non-empty array' }); return; }
-  if (!clusterSlug) { res.status(400).json({ message: 'clusterSlug is required' }); return; }
+app.post('/api/nodes/bulk-reassign', validateBody(schemas.bulkReassignNodes), (req, res) => {
+  const { nodeSlugs, clusterSlug } = req.body;
 
   const cluster = db.prepare('SELECT slug FROM derived_clusters WHERE slug = ?').get(clusterSlug);
   if (!cluster) { res.status(400).json({ message: 'target cluster does not exist' }); return; }
@@ -689,11 +690,8 @@ app.get('/api/docs', (_req, res) => {
   res.json(docs);
 });
 
-app.post('/api/docs', (req, res) => {
-  const title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
-  const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
-  const status = typeof req.body.status === 'string' && req.body.status.trim() ? req.body.status.trim() : 'done';
-  if (!text) { res.status(400).json({ message: 'text is required' }); return; }
+app.post('/api/docs', validateBody(schemas.createDoc), (req, res) => {
+  const { title, text, status } = req.body;
 
   const normalizedTitle = title || 'Untitled document';
 
@@ -738,6 +736,9 @@ app.post('/api/docs', (req, res) => {
   }
   res.status(201).json(created);
 });
+
+// Central error handler — must be registered after all routes.
+app.use(errorHandler);
 
 if (require.main === module) {
   app.listen(port, () => {

@@ -587,5 +587,52 @@ describe('write atomicity', () => {
 		// Source status should still be marked as error.
 		const src = db.prepare('SELECT status FROM data_sources WHERE id = ?').get(created.body.id);
 		expect(src.status).toBe('error');
+		// The client-facing message must not leak internal error details.
+		expect(res.body.message).not.toContain('injected failure');
+	});
+});
+
+describe('input validation', () => {
+	it('rejects POST /api/docs with a non-string text', async () => {
+		const res = await request('POST', '/api/docs', { title: 'x', text: 123 });
+		expect(res.status).toBe(400);
+		expect(res.body.errors).toBeDefined();
+		expect(db.prepare('SELECT COUNT(*) AS n FROM docs').get().n).toBe(0);
+	});
+
+	it('rejects POST /api/clusters with a non-string label', async () => {
+		const res = await request('POST', '/api/clusters', { label: 42 });
+		expect(res.status).toBe(400);
+	});
+
+	it('rejects POST /api/nodes/merge with a non-array sourceSlugs', async () => {
+		seedFixture();
+		const res = await request('POST', '/api/nodes/merge', {
+			targetSlug: 'n-alpha-1',
+			sourceSlugs: 'n-alpha-2',
+		});
+		expect(res.status).toBe(400);
+	});
+
+	it('rejects POST /api/sources with a non-object config', async () => {
+		const res = await request('POST', '/api/sources', { sourceType: 'reddit', config: 'nope' });
+		expect(res.status).toBe(400);
+	});
+
+	it('rejects PUT /api/nodes/:slug with a non-string clusterSlug', async () => {
+		seedFixture();
+		const res = await request('PUT', '/api/nodes/n-alpha-1', { clusterSlug: 99 });
+		expect(res.status).toBe(400);
+	});
+});
+
+describe('rate limiting', () => {
+	it('throttles repeated fetches of the same source with 429', async () => {
+		// The fetch limiter is keyed per source id; a nonexistent id still counts.
+		let last;
+		for (let i = 0; i < 6; i += 1) {
+			last = await request('POST', '/api/sources/999999/fetch');
+		}
+		expect(last.status).toBe(429);
 	});
 });
