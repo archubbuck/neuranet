@@ -31,8 +31,7 @@ const ZOOM_IN_FACTOR = 1.08;
 const ZOOM_OUT_FACTOR = 0.926;
 
 /**
- * Pan-/zoom-able SVG network graph. Mirrors the prototype's `NetworkGraph`
- * (`extracted_prototype/3104ab4c-…-.js`) but reads from `AppStore` signals
+ * Pan-/zoom-able SVG network graph. Reads from `AppStore` signals
  * and the API-computed layout helpers in `network-layout.ts`.
  *
  * Interactions:

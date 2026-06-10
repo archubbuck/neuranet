@@ -1,6 +1,5 @@
 /**
- * TopicNet design tokens. Ported verbatim from the React prototype
- * (`extracted_prototype/9b7c3d10-…-.js`) so visual styling stays in lockstep.
+ * TopicNet design tokens.
  *
  * Use these constants from TypeScript; the matching CSS custom properties
  * are exported by `src/styles.css` for stylesheet usage (e.g.
