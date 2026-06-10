@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { DeferBlockState, TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AppStore } from '../../data/app.store';
 import { NetworkScreenComponent } from './network-screen.component';
@@ -18,6 +18,11 @@ describe('NetworkScreenComponent', () => {
 		});
 		store = seeded.store;
 		fixture = TestBed.createComponent(NetworkScreenComponent);
+		fixture.detectChanges();
+		// The graph + overlays render inside a @defer block — complete it.
+		for (const block of await fixture.getDeferBlocks()) {
+			await block.render(DeferBlockState.Complete);
+		}
 		fixture.detectChanges();
 	});
 

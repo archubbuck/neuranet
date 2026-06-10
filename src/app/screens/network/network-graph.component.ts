@@ -80,27 +80,35 @@ const ZOOM_OUT_FACTOR = 0.926;
 				<rect x="-2000" y="-2000" width="6000" height="6000" fill="url(#tn-grid)" />
 
 				<g [attr.transform]="layerTransform()">
-					@for (e of edges(); track e.key) {
+					@for (e of edgeVms(); track e.key) {
 						<line
-							[attr.x1]="e.from.cx"
-							[attr.y1]="e.from.cy"
-							[attr.x2]="e.to.cx"
-							[attr.y2]="e.to.cy"
-							[attr.stroke]="edgeStroke(e.from.id, e.to.id, e.from.cluster)"
-							[attr.stroke-width]="edgeStrokeWidth(e.from.id, e.to.id)"
-							[attr.opacity]="edgeOpacity(e.from, e.to)"
+							[attr.x1]="e.x1"
+							[attr.y1]="e.y1"
+							[attr.x2]="e.x2"
+							[attr.y2]="e.y2"
+							[attr.stroke]="e.stroke"
+							[attr.stroke-width]="e.width"
+							[attr.opacity]="e.opacity"
 						/>
 					}
 
-					@for (n of nodes(); track n.id) {
+					@for (n of nodeVms(); track n.id) {
 						<g
 							class="node"
+							role="button"
+							tabindex="0"
+							[attr.aria-label]="'Topic: ' + n.label"
+							[attr.aria-pressed]="n.selected"
 							(click)="onNodeClick($event, n.id)"
+							(keydown.enter)="onNodeKeySelect($event, n.id)"
+							(keydown.space)="onNodeKeySelect($event, n.id)"
 							(pointerenter)="hover.set(n.id)"
 							(pointerleave)="hover.set(null)"
-							[style.opacity]="nodeOpacity(n)"
+							(focus)="hover.set(n.id)"
+							(blur)="hover.set(null)"
+							[style.opacity]="n.opacity"
 						>
-							@if (selectedId() === n.id) {
+							@if (n.selected) {
 								<circle
 									[attr.cx]="n.cx"
 									[attr.cy]="n.cy"
@@ -115,17 +123,17 @@ const ZOOM_OUT_FACTOR = 0.926;
 							<circle
 								[attr.cx]="n.cx"
 								[attr.cy]="n.cy"
-								[attr.r]="haloRadius(n)"
-								[attr.fill]="clusterColor(n.cluster)"
-								[attr.opacity]="haloOpacity(n)"
+								[attr.r]="n.haloRadius"
+								[attr.fill]="n.color"
+								[attr.opacity]="n.haloOpacity"
 							/>
 							<circle
 								[attr.cx]="n.cx"
 								[attr.cy]="n.cy"
 								[attr.r]="n.r"
-								[attr.fill]="clusterColor(n.cluster)"
+								[attr.fill]="n.color"
 								fill-opacity="0.92"
-								[attr.stroke]="clusterColor(n.cluster)"
+								[attr.stroke]="n.color"
 								stroke-width="1.5"
 								stroke-opacity="0.5"
 							/>
@@ -135,15 +143,15 @@ const ZOOM_OUT_FACTOR = 0.926;
 								[attr.r]="n.r * 0.28"
 								fill="rgba(255,255,255,0.35)"
 							/>
-							@if (showLabel(n)) {
+							@if (n.showLabel) {
 								<text
 									[attr.x]="n.cx"
 									[attr.y]="n.cy + n.r + 13"
 									text-anchor="middle"
-									[attr.font-size]="labelSize(n)"
+									[attr.font-size]="n.labelSize"
 									[attr.font-family]="FONT"
-									[attr.font-weight]="selectedId() === n.id ? 600 : 400"
-									[attr.fill]="labelFill(n)"
+									[attr.font-weight]="n.selected ? 600 : 400"
+									[attr.fill]="n.labelFill"
 								>
 									{{ n.label }}
 								</text>
@@ -183,6 +191,7 @@ const ZOOM_OUT_FACTOR = 0.926;
 			g.node {
 				cursor: pointer;
 				transition: opacity 200ms ease-out;
+				outline: none;
 			}
 			text {
 				pointer-events: none;
@@ -228,6 +237,61 @@ export class NetworkGraphComponent {
 		const m = new Map<string, string>();
 		for (const c of this.store.clusters()) m.set(c.id, c.color);
 		return m;
+	});
+
+	// ── precomputed view-models ──────────────────────────────────
+	// All per-element presentation values are computed once per state
+	// change instead of via method calls in the template (which would run
+	// for every SVG element on every change-detection cycle).
+
+	protected readonly nodeVms = computed(() => {
+		const selected = this.selectedId();
+		const hover = this.hover();
+		const focus = hover ?? selected;
+		const adj = focus != null ? this.adjacency().get(focus) : undefined;
+		const filter = this.store.filterClusters();
+		const colors = this.clusterColorMap();
+
+		const isNeighbour = (id: string) => focus != null && (focus === id || !!adj?.has(id));
+
+		return this.nodes().map((n) => {
+			const filtered = filter.size > 0 && !filter.has(n.cluster);
+			const focused = selected === n.id || hover === n.id;
+			const showLabel = !filtered && (focus == null || isNeighbour(n.id));
+			return {
+				...n,
+				selected: selected === n.id,
+				color: colors.get(n.cluster) ?? C.fg3,
+				opacity: filtered ? 0.08 : focus != null && !isNeighbour(n.id) ? 0.28 : 1,
+				haloRadius: n.r + (focused ? 12 : 8),
+				haloOpacity: focused ? 0.2 : 0.09,
+				showLabel,
+				labelSize: Math.max(9.5, Math.min(12, n.r * 0.62)),
+				labelFill: focused ? C.fg1 : C.fg2,
+			};
+		});
+	});
+
+	protected readonly edgeVms = computed(() => {
+		const focus = this.hover() ?? this.selectedId();
+		const filter = this.store.filterClusters();
+		const colors = this.clusterColorMap();
+
+		return this.edges().map((e) => {
+			const lit = focus != null && (focus === e.from.id || focus === e.to.id);
+			const faded =
+				filter.size > 0 && (!filter.has(e.from.cluster) || !filter.has(e.to.cluster));
+			return {
+				key: e.key,
+				x1: e.from.cx,
+				y1: e.from.cy,
+				x2: e.to.cx,
+				y2: e.to.cy,
+				stroke: lit ? (colors.get(e.from.cluster) ?? C.fg3) : 'rgba(255,255,255,0.13)',
+				width: lit ? 1.4 : 1,
+				opacity: faded ? 0.04 : focus == null ? 0.5 : lit ? 0.65 : 0.1,
+			};
+		});
 	});
 
 	protected readonly layerTransform = computed(() => {
@@ -320,10 +384,15 @@ export class NetworkGraphComponent {
 		}
 	}
 
-	// ── node click ─────────────────────────────────────────────────────
+	// ── node click / keyboard ───────────────────────────────────
 
 	onNodeClick(ev: MouseEvent, id: string): void {
 		ev.stopPropagation();
+		this.store.selectNode(this.selectedId() === id ? null : id);
+	}
+
+	onNodeKeySelect(ev: Event, id: string): void {
+		ev.preventDefault();
 		this.store.selectNode(this.selectedId() === id ? null : id);
 	}
 
@@ -331,87 +400,6 @@ export class NetworkGraphComponent {
 
 	protected clusterColor(clusterId: string): string {
 		return this.clusterColorMap().get(clusterId) ?? C.fg3;
-	}
-
-	private focusId(): string | null {
-		return this.hover() ?? this.selectedId();
-	}
-
-	private isNeighbour(id: string): boolean {
-		const focus = this.focusId();
-		if (focus == null) return false;
-		if (focus === id) return true;
-		const adj = this.adjacency().get(focus);
-		return !!adj && adj.has(id);
-	}
-
-	private anyFocus(): boolean {
-		return this.focusId() != null;
-	}
-
-	private isFiltered(n: PositionedNode): boolean {
-		const filter = this.store.filterClusters();
-		if (filter.size === 0) return false;
-		return !filter.has(n.cluster);
-	}
-
-	protected nodeOpacity(n: PositionedNode): number {
-		if (this.isFiltered(n)) return 0.08;
-		if (this.anyFocus() && !this.isNeighbour(n.id)) return 0.28;
-		return 1;
-	}
-
-	protected haloRadius(n: PositionedNode): number {
-		const focused =
-			this.selectedId() === n.id || this.hover() === n.id;
-		return n.r + (focused ? 12 : 8);
-	}
-
-	protected haloOpacity(n: PositionedNode): number {
-		const focused =
-			this.selectedId() === n.id || this.hover() === n.id;
-		return focused ? 0.2 : 0.09;
-	}
-
-	protected edgeStroke(fromId: string, toId: string, fromCluster: string): string {
-		if (!this.edgeLit(fromId, toId)) return 'rgba(255,255,255,0.13)';
-		return this.clusterColor(fromCluster);
-	}
-
-	protected edgeStrokeWidth(fromId: string, toId: string): number {
-		return this.edgeLit(fromId, toId) ? 1.4 : 1;
-	}
-
-	protected edgeOpacity(
-		from: PositionedNode,
-		to: PositionedNode,
-	): number {
-		const faded = this.isFiltered(from) || this.isFiltered(to);
-		if (faded) return 0.04;
-		if (!this.anyFocus()) return 0.5;
-		return this.edgeLit(from.id, to.id) ? 0.65 : 0.1;
-	}
-
-	private edgeLit(fromId: string, toId: string): boolean {
-		const focus = this.focusId();
-		if (focus == null) return false;
-		return focus === fromId || focus === toId;
-	}
-
-	protected showLabel(n: PositionedNode): boolean {
-		if (this.isFiltered(n)) return false;
-		if (!this.anyFocus()) return true;
-		return this.isNeighbour(n.id);
-	}
-
-	protected labelSize(n: PositionedNode): number {
-		return Math.max(9.5, Math.min(12, n.r * 0.62));
-	}
-
-	protected labelFill(n: PositionedNode): string {
-		const focused =
-			this.selectedId() === n.id || this.hover() === n.id;
-		return focused ? C.fg1 : C.fg2;
 	}
 }
 

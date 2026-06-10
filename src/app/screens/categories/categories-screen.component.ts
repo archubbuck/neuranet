@@ -13,7 +13,6 @@ import { Router } from '@angular/router';
 import { AppStore } from '../../data/app.store';
 import { formatCount } from '../../core/format';
 import { IconComponent } from '../../ui/primitives/icon.component';
-import { ModalComponent } from '../../ui/overlays/modal.component';
 import { PopoverComponent } from '../../ui/overlays/popover.component';
 import { CheckboxComponent } from '../../ui/primitives/checkbox.component';
 import { HBarListComponent, type HBarRow } from '../../ui/charts/hbar-list.component';
@@ -24,6 +23,8 @@ import { PageHeaderComponent } from '../../ui/primitives/page-header.component';
 import { SearchInputComponent } from '../../ui/primitives/search-input.component';
 import { TabsComponent } from '../../ui/primitives/tabs.component';
 import { ButtonComponent } from '../../ui/primitives/button.component';
+import { NewCategoryModalComponent } from './new-category-modal.component';
+import { SplitCategoryModalComponent } from './split-category-modal.component';
 import type { Cluster } from '../../data/types';
 import {
 	applySorts,
@@ -106,7 +107,6 @@ interface CatRow {
 		CommonModule,
 		FormsModule,
 		IconComponent,
-		ModalComponent,
 		PopoverComponent,
 		CheckboxComponent,
 		HBarListComponent,
@@ -117,6 +117,8 @@ interface CatRow {
 		SearchInputComponent,
 		TabsComponent,
 		ButtonComponent,
+		NewCategoryModalComponent,
+		SplitCategoryModalComponent,
 	],
 	template: `
 		<div class="root">
@@ -351,81 +353,21 @@ interface CatRow {
 		</div>
 
 		<!-- ═══ New Category modal ═══ -->
-		<app-modal [open]="creating()" title="New category" subtitle="Categories drive node color. You can assign nodes after creating it." (close)="cancelCreate()">
-			<div class="field">
-				<div class="field-label">Name</div>
-				<input class="field-input" type="text" [ngModel]="newLabel()" (ngModelChange)="newLabel.set($event)"
-					placeholder="e.g. Hardware &amp; chips" (keydown.enter)="commitCreate()" autofocus />
-			</div>
-			<div class="field">
-				<div class="field-label">Color</div>
-				<div class="color-grid">
-					@for (col of PALETTE; track col) {
-						<button class="color-swatch" type="button" [style.background]="col" [class.picked]="newColor() === col" (click)="newColor.set(col)"></button>
-					}
-				</div>
-			</div>
-			<div class="preview-row">
-				<span class="preview-dot" [style.background]="'radial-gradient(circle at 35% 35%, ' + newColor() + 'cc, ' + newColor() + '88)'" [style.boxShadow]="'0 0 16px ' + newColor() + '55'"></span>
-				<div>
-					<div class="preview-name">{{ newLabel().trim() || 'New category' }}</div>
-					<div class="preview-hint">preview — nodes will glow this color</div>
-				</div>
-			</div>
-			<div footer>
-				<button class="btn-ghost" type="button" (click)="cancelCreate()">Cancel</button>
-				<button class="btn-primary" type="button" (click)="commitCreate()">Create category</button>
-			</div>
-		</app-modal>
+		<app-new-category-modal
+			[open]="creating()"
+			[palette]="PALETTE"
+			(create)="commitCreate($event)"
+			(closed)="creating.set(false)"
+		/>
 
 		<!-- ═══ Split Category modal ═══ -->
-		<app-modal [open]="splitCat() !== null" [title]="'Split “' + (splitCat()?.label ?? '') + '”'" [width]="520"
-			subtitle="Pick nodes to move into a new category. The rest stay where they are."
-			(close)="splitCat.set(null)">
-			<div class="split-grid">
-				<div class="field" style="flex: 1">
-					<div class="field-label">New category name</div>
-					<input class="field-input" type="text" [ngModel]="splitName()" (ngModelChange)="splitName.set($event)"
-						placeholder="e.g. Transformers" autofocus />
-				</div>
-				<div class="field">
-					<div class="field-label">Color</div>
-					<div class="swatch-wrap">
-						<button class="swatch-btn" type="button" [style.background]="splitColor()" [style.boxShadow]="'0 0 8px ' + splitColor() + '66'" style="width: 36px; height: 36px; border-radius: 0;" (click)="splitColorOpen.set(!splitColorOpen())"></button>
-						<app-popover [open]="splitColorOpen()" style="top: 44px; left: 0; padding: 12px; width: max-content;" (close)="splitColorOpen.set(false)">
-							<div class="pop-label">Category color</div>
-							<div class="color-grid">
-								@for (col of PALETTE; track col) {
-									<button class="color-swatch" type="button" [style.background]="col" [class.picked]="col === splitColor()" (click)="splitColor.set(col); splitColorOpen.set(false)"></button>
-								}
-							</div>
-						</app-popover>
-					</div>
-				</div>
-			</div>
-			<div class="field-label">Nodes in “{{ splitCat()?.label ?? '' }}” ({{ splitMembers().length }})</div>
-			<div class="split-node-list">
-				@for (n of splitMembers(); track n.id) {
-					@let on = splitPicked().has(n.id);
-					<button class="split-node" type="button" [class.picked]="on" (click)="toggleSplitPick(n.id)">
-						<app-checkbox [checked]="on" (toggle)="toggleSplitPick(n.id)" />
-						<span class="split-node-dot" [style.background]="on ? splitColor() : (splitCat()?.color ?? '')" [style.boxShadow]="'0 0 6px ' + (on ? splitColor() : (splitCat()?.color ?? '')) + '80'"></span>
-						<span class="split-node-label">{{ n.label }}</span>
-						<span class="split-node-meta">{{ n.desc ?? '' }}</span>
-					</button>
-				}
-				@if (splitMembers().length === 0) {
-					<div style="padding: 16px; font-size: 12px; color: #475569;">No nodes in this category.</div>
-				}
-			</div>
-			@if (splitPicked().size >= splitMembers().length && splitMembers().length > 0) {
-				<p class="split-warn">Keep at least one node in the original category.</p>
-			}
-			<div footer>
-				<button class="btn-ghost" type="button" (click)="splitCat.set(null)">Cancel</button>
-				<button class="btn-primary" type="button" [disabled]="!canSplit()" (click)="commitSplit()">Split {{ splitPicked().size || '' }} node{{ splitPicked().size === 1 ? '' : 's' }} out</button>
-			</div>
-		</app-modal>
+		<app-split-category-modal
+			[cat]="splitCat()"
+			[members]="splitMembers()"
+			[palette]="PALETTE"
+			(split)="commitSplit($event)"
+			(closed)="splitCat.set(null)"
+		/>
 
 		<!-- ═══ Dissolve popover ═══ -->
 		@if (dissolvingId(); as sourceId) {
@@ -951,16 +893,11 @@ export class CategoriesScreenComponent {
 
 	// ── create modal ──
 	protected readonly creating = signal(false);
-	protected readonly newLabel = signal('');
-	protected readonly newColor = signal(PALETTE[0]);
 
-	protected openCreateModal(): void { this.newLabel.set(''); this.newColor.set(PALETTE[0]); this.creating.set(true); }
-	protected cancelCreate(): void { this.creating.set(false); }
+	protected openCreateModal(): void { this.creating.set(true); }
 
-	protected async commitCreate(): Promise<void> {
-		const label = this.newLabel().trim();
-		if (!label) return;
-		await this.store.createCluster(label, this.newColor());
+	protected async commitCreate(input: { label: string; color: string }): Promise<void> {
+		await this.store.createCluster(input.label, input.color);
 		this.creating.set(false);
 	}
 
@@ -1001,40 +938,20 @@ export class CategoriesScreenComponent {
 
 	// ── split ──
 	protected readonly splitCat = signal<CatRow | null>(null);
-	protected readonly splitPicked = signal<Set<string>>(new Set());
-	protected readonly splitName = signal('');
-	protected readonly splitColor = signal(PALETTE[0]);
-	protected readonly splitColorOpen = signal(false);
 
 	protected startSplit(r: CatRow): void {
 		this.splitCat.set(r);
-		this.splitPicked.set(new Set());
-		this.splitName.set('');
-		const alt = PALETTE.find((c) => c !== r.color) ?? PALETTE[1];
-		this.splitColor.set(alt);
-	}
-	protected toggleSplitPick(id: string): void {
-		this.splitPicked.update((prev) => {
-			const n = new Set(prev);
-			n.has(id) ? n.delete(id) : n.add(id);
-			return n;
-		});
 	}
 	protected readonly splitMembers = computed(() => {
 		const cat = this.splitCat();
 		if (!cat) return [];
 		return this.store.nodes().filter((n) => n.cluster === cat.id);
 	});
-	protected readonly canSplit = computed(() => {
-		const sz = this.splitPicked().size;
-		const total = this.splitMembers().length;
-		return sz > 0 && sz < total;
-	});
 
-	protected async commitSplit(): Promise<void> {
+	protected async commitSplit(input: { name: string; color: string; nodeIds: string[] }): Promise<void> {
 		const cat = this.splitCat();
-		if (!cat || !this.canSplit()) return;
-		await this.store.splitCategory(cat.id, [...this.splitPicked()], this.splitName().trim(), this.splitColor());
+		if (!cat) return;
+		await this.store.splitCategory(cat.id, input.nodeIds, input.name, input.color);
 		this.splitCat.set(null);
 	}
 

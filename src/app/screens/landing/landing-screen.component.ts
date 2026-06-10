@@ -60,7 +60,7 @@ const NODE_COLOR = '#FBBF24';
 			<svg #svgEl viewBox="0 0 800 600" class="canvas" (click)="onSvgClick()">
 
 				<!-- frozen connections -->
-				@for (conn of frozenConns(); track $index) {
+				@for (conn of frozenConns(); track conn.sourceIdx + '-' + conn.targetIdx) {
 					<line
 						[attr.x1]="nodes()[conn.sourceIdx].x"
 						[attr.y1]="nodes()[conn.sourceIdx].y"

@@ -40,21 +40,25 @@ import { ZoomControlsComponent } from './zoom-controls.component';
 			}
 
 			<div class="canvas-wrap">
-				<app-network-graph #graph />
+				@defer {
+					<app-network-graph #graph />
 
-				@if (!selectedId()) {
-					<div class="idle-hint">
-						<app-icon name="circle-dot" [size]="13" color="#475569" />
-						<span>Select a node to explore · scroll to zoom · drag to pan</span>
-					</div>
+					@if (!selectedId()) {
+						<div class="idle-hint">
+							<app-icon name="circle-dot" [size]="13" color="#475569" />
+							<span>Select a node to explore · scroll to zoom · drag to pan</span>
+						</div>
+					}
+
+					<app-stats-bar />
+					<app-zoom-controls
+						(zoomIn)="graph.zoom(1.2)"
+						(zoomOut)="graph.zoom(0.83)"
+						(reset)="graph.resetView()"
+					/>
+				} @placeholder {
+					<div class="graph-skeleton" aria-hidden="true"></div>
 				}
-
-				<app-stats-bar />
-				<app-zoom-controls
-					(zoomIn)="graph.zoom(1.2)"
-					(zoomOut)="graph.zoom(0.83)"
-					(reset)="graph.resetView()"
-				/>
 
 				@if (isMobile()) {
 					<button class="filter-pill" type="button" (click)="drawerOpen.set(true)">
@@ -95,6 +99,11 @@ import { ZoomControlsComponent } from './zoom-controls.component';
 				min-width: 0;
 				min-height: 0;
 				overflow: hidden;
+			}
+			.graph-skeleton {
+				position: absolute;
+				inset: 0;
+				background: #060912;
 			}
 			.idle-hint {
 				position: absolute;
