@@ -539,18 +539,30 @@ app.post('/api/nodes/merge', (req, res) => {
   }
 
   const tx = db.transaction(() => {
-    // Reassign all edges pointing to/from source nodes to the target.
     const placeholders = sourceSlugs.map(() => '?').join(',');
-    db.prepare(`UPDATE node_links SET source_slug = ? WHERE source_slug IN (${placeholders})`)
+
+    // Drop edges directly between the target and a source, or between two
+    // sources — reassigning them would create self-loops.
+    db.prepare(`DELETE FROM node_links WHERE source_slug = ? AND target_slug IN (${placeholders})`)
       .run(targetSlug, ...sourceSlugs);
-    db.prepare(`UPDATE node_links SET target_slug = ? WHERE target_slug IN (${placeholders})`)
+    db.prepare(`DELETE FROM node_links WHERE target_slug = ? AND source_slug IN (${placeholders})`)
+      .run(targetSlug, ...sourceSlugs);
+    db.prepare(`DELETE FROM node_links WHERE source_slug IN (${placeholders}) AND target_slug IN (${placeholders})`)
+      .run(...sourceSlugs, ...sourceSlugs);
+
+    // Reassign all edges pointing to/from source nodes to the target.
+    // OR IGNORE skips rows that would duplicate an edge the target already
+    // has (UNIQUE(source_slug, target_slug)); leftovers are swept below.
+    db.prepare(`UPDATE OR IGNORE node_links SET source_slug = ? WHERE source_slug IN (${placeholders})`)
+      .run(targetSlug, ...sourceSlugs);
+    db.prepare(`UPDATE OR IGNORE node_links SET target_slug = ? WHERE target_slug IN (${placeholders})`)
       .run(targetSlug, ...sourceSlugs);
 
     // Reassign all doc-node links from sources to target.
     db.prepare(`UPDATE OR IGNORE doc_node_links SET node_slug = ? WHERE node_slug IN (${placeholders})`)
       .run(targetSlug, ...sourceSlugs);
 
-    // Delete the now-empty source nodes.
+    // Delete the now-empty source nodes (and any duplicate edges OR IGNORE left behind).
     for (const src of sourceSlugs) {
       db.prepare('DELETE FROM node_links WHERE source_slug = ? OR target_slug = ?').run(src, src);
       db.prepare('DELETE FROM doc_node_links WHERE node_slug = ?').run(src);

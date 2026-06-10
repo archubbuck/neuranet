@@ -297,6 +297,67 @@ describe('POST /api/nodes/merge', () => {
 		expect(res.status).toBe(400);
 	});
 
+	it('merges nodes that share a common neighbour without violating edge uniqueness', async () => {
+		seedFixture();
+		// Both target (n-alpha-1) and source (n-alpha-2) link to n-beta-1.
+		// Reassigning the source edge produces a duplicate (n-alpha-1 → n-beta-1).
+		db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?)')
+			.run('n-alpha-1', 'n-beta-1', 'related-topic');
+		db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?)')
+			.run('n-alpha-2', 'n-beta-1', 'related-topic');
+
+		const res = await request('POST', '/api/nodes/merge', {
+			targetSlug: 'n-alpha-1',
+			sourceSlugs: ['n-alpha-2'],
+		});
+		expect(res.status).toBe(200);
+
+		// Exactly one edge between n-alpha-1 and n-beta-1 should remain.
+		const dupes = db.prepare(
+			'SELECT COUNT(*) AS n FROM node_links WHERE source_slug = ? AND target_slug = ?'
+		).get('n-alpha-1', 'n-beta-1');
+		expect(dupes.n).toBe(1);
+		// No edge may still reference the merged-away source.
+		const stale = db.prepare(
+			'SELECT COUNT(*) AS n FROM node_links WHERE source_slug = ? OR target_slug = ?'
+		).get('n-alpha-2', 'n-alpha-2');
+		expect(stale.n).toBe(0);
+	});
+
+	it('drops edges between target and source instead of leaving self-loops', async () => {
+		seedFixture(); // fixture contains edge n-alpha-1 → n-alpha-2
+
+		const res = await request('POST', '/api/nodes/merge', {
+			targetSlug: 'n-alpha-1',
+			sourceSlugs: ['n-alpha-2'],
+		});
+		expect(res.status).toBe(200);
+
+		const selfLoops = db.prepare(
+			'SELECT COUNT(*) AS n FROM node_links WHERE source_slug = target_slug'
+		).get();
+		expect(selfLoops.n).toBe(0);
+	});
+
+	it('drops edges between two merged sources instead of leaving self-loops', async () => {
+		seedFixture();
+		// Edge between the two sources being merged.
+		db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?)')
+			.run('n-alpha-2', 'n-beta-1', 'same-doc');
+
+		const res = await request('POST', '/api/nodes/merge', {
+			targetSlug: 'n-alpha-1',
+			sourceSlugs: ['n-alpha-2', 'n-beta-1'],
+		});
+		expect(res.status).toBe(200);
+
+		const selfLoops = db.prepare(
+			'SELECT COUNT(*) AS n FROM node_links WHERE source_slug = target_slug'
+		).get();
+		expect(selfLoops.n).toBe(0);
+		expect(db.prepare('SELECT COUNT(*) AS n FROM derived_nodes').get().n).toBe(1);
+	});
+
 	it('rejects merge when target does not exist', async () => {
 		seedFixture();
 		const res = await request('POST', '/api/nodes/merge', {
