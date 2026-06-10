@@ -1,0 +1,18 @@
+# Dependencies & Package Managers
+node_modules/
+.pnpm-store/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Build Outputs & Cache
+dist/
+build/
+.next/
+.nuxt/
+out/
+.cache/
+
+# Logs & Environments
+*.log
+.env*

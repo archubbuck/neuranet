@@ -7,44 +7,9 @@ const redditFetcher = require('./reddit-fetcher');
 const app = express();
 const port = Number(process.env.API_PORT || 3000);
 const dataDir = path.join(__dirname, '..', 'data');
-const dbPath = path.join(dataDir, 'topic-visualizer.db');
-
-const BASE_TOPICS = [
-  { id: 'ml', label: 'Machine Learning' },
-  { id: 'dl', label: 'Deep Learning' },
-  { id: 'nn', label: 'Neural Networks' },
-  { id: 'rl', label: 'Reinforcement Learning' },
-  { id: 'sl', label: 'Supervised Learning' },
-  { id: 'ul', label: 'Unsupervised Learning' },
-  { id: 'tl', label: 'Transfer Learning' },
-  { id: 'ds', label: 'Data Science' },
-  { id: 'fe', label: 'Feature Engineering' },
-  { id: 'stat', label: 'Statistics' },
-  { id: 'bi', label: 'Business Intelligence' },
-  { id: 'etl', label: 'Data Pipelines' },
-  { id: 'nlp', label: 'NLP' },
-  { id: 'llm', label: 'Large Language Models' },
-  { id: 'trans', label: 'Transformers' },
-  { id: 'embed', label: 'Word Embeddings' },
-  { id: 'sent', label: 'Sentiment Analysis' },
-  { id: 'cv', label: 'Computer Vision' },
-  { id: 'obj', label: 'Object Detection' },
-  { id: 'seg', label: 'Segmentation' },
-  { id: 'gan', label: 'GANs' },
-  { id: 'la', label: 'Linear Algebra' },
-  { id: 'prob', label: 'Probability Theory' },
-  { id: 'opt', label: 'Optimization' },
-  { id: 'auto', label: 'Automation' },
-  { id: 'rob', label: 'Robotics' },
-  { id: 'hci', label: 'Human-AI Interaction' },
-  { id: 'bc', label: 'Blockchain' },
-  { id: 'crypto', label: 'Cryptography' },
-  { id: 'dist', label: 'Distributed Systems' },
-  { id: 'p2p', label: 'P2P Networks' },
-  { id: 'bio', label: 'Bioinformatics' },
-  { id: 'genomics', label: 'Genomics' },
-  { id: 'protein', label: 'Protein Folding' },
-];
+// `TOPIC_VIZ_DB_PATH` lets tests point at an in-memory or temp database
+// (`:memory:` or `/tmp/foo.db`) instead of clobbering the dev DB.
+const dbPath = process.env.TOPIC_VIZ_DB_PATH || path.join(dataDir, 'topic-visualizer.db');
 
 const STOPWORDS = new Set([
   'about', 'above', 'after', 'again', 'against', 'almost', 'also', 'among', 'and', 'another', 'any',
@@ -148,6 +113,8 @@ db.exec(`
     cluster_slug TEXT NOT NULL,
     radius INTEGER NOT NULL,
     importance INTEGER NOT NULL,
+    depth INTEGER NOT NULL DEFAULT 0,
+    is_central INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (cluster_slug) REFERENCES derived_clusters(slug)
   );
@@ -171,38 +138,22 @@ db.exec(`
     FOREIGN KEY (node_slug) REFERENCES derived_nodes(slug)
   );
 
-  CREATE TABLE IF NOT EXISTS workspaces (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
   CREATE TABLE IF NOT EXISTS data_sources (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    workspace_id INTEGER NOT NULL,
     source_type TEXT NOT NULL,
     config_json TEXT NOT NULL DEFAULT '{}',
     status TEXT NOT NULL DEFAULT 'pending',
     status_message TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
 
-// ── Migrate existing tables: add workspace-scoping columns ──
-const migrateCol = (table, column, type) => {
-  try { db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`); } catch { /* already exists */ }
-};
-
-migrateCol('docs', 'workspace_id', 'INTEGER REFERENCES workspaces(id) ON DELETE CASCADE');
-migrateCol('derived_clusters', 'workspace_id', 'INTEGER REFERENCES workspaces(id) ON DELETE CASCADE');
-migrateCol('derived_nodes', 'workspace_id', 'INTEGER REFERENCES workspaces(id) ON DELETE CASCADE');
-migrateCol('derived_nodes', 'depth', 'INTEGER NOT NULL DEFAULT 0');
-migrateCol('derived_nodes', 'is_central', 'INTEGER NOT NULL DEFAULT 0');
-migrateCol('node_links', 'workspace_id', 'INTEGER REFERENCES workspaces(id) ON DELETE CASCADE');
-migrateCol('doc_node_links', 'workspace_id', 'INTEGER REFERENCES workspaces(id) ON DELETE CASCADE');
+// Migration: add sentiment column to derived_nodes if it doesn't exist.
+try {
+  db.exec(`ALTER TABLE derived_nodes ADD COLUMN sentiment REAL DEFAULT NULL`);
+} catch {
+  // Column already exists — ignore.
+}
 
 app.use(express.json({ limit: '1mb' }));
 
@@ -211,70 +162,10 @@ app.get('/api/health', (_req, res) => {
 });
 
 // ═══════════════════════════════════════════
-// Workspace CRUD
-// ═══════════════════════════════════════════
-
-app.post('/api/workspaces', (req, res) => {
-  const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
-  const description = typeof req.body.description === 'string' ? req.body.description.trim() : '';
-  if (!name) { res.status(400).json({ message: 'name is required' }); return; }
-
-  const result = db.prepare('INSERT INTO workspaces (name, description) VALUES (?, ?)').run(name, description);
-  const workspace = db.prepare('SELECT * FROM workspaces WHERE id = ?').get(Number(result.lastInsertRowid));
-  res.status(201).json(workspace);
-});
-
-app.get('/api/workspaces', (_req, res) => {
-  const workspaces = db.prepare(
-    `SELECT w.*, COUNT(ds.id) AS sourceCount
-     FROM workspaces w LEFT JOIN data_sources ds ON ds.workspace_id = w.id
-     GROUP BY w.id ORDER BY w.created_at DESC`
-  ).all();
-  res.json(workspaces);
-});
-
-app.get('/api/workspaces/:id', (req, res) => {
-  const workspace = db.prepare(
-    `SELECT w.*, COUNT(ds.id) AS sourceCount
-     FROM workspaces w LEFT JOIN data_sources ds ON ds.workspace_id = w.id
-     WHERE w.id = ? GROUP BY w.id`
-  ).get(req.params.id);
-  if (!workspace) { res.status(404).json({ message: 'workspace not found' }); return; }
-  res.json(workspace);
-});
-
-app.put('/api/workspaces/:id', (req, res) => {
-  const workspace = db.prepare('SELECT * FROM workspaces WHERE id = ?').get(req.params.id);
-  if (!workspace) { res.status(404).json({ message: 'workspace not found' }); return; }
-  const name = typeof req.body.name === 'string' ? req.body.name.trim() : workspace.name;
-  const description = typeof req.body.description === 'string' ? req.body.description.trim() : workspace.description;
-  db.prepare("UPDATE workspaces SET name = ?, description = ?, updated_at = datetime('now') WHERE id = ?")
-    .run(name, description, req.params.id);
-  res.json(db.prepare('SELECT * FROM workspaces WHERE id = ?').get(req.params.id));
-});
-
-app.delete('/api/workspaces/:id', (req, res) => {
-  const workspace = db.prepare('SELECT * FROM workspaces WHERE id = ?').get(req.params.id);
-  if (!workspace) { res.status(404).json({ message: 'workspace not found' }); return; }
-  db.prepare('DELETE FROM doc_node_links WHERE workspace_id = ?').run(req.params.id);
-  db.prepare('DELETE FROM node_links WHERE workspace_id = ?').run(req.params.id);
-  db.prepare('DELETE FROM derived_nodes WHERE workspace_id = ?').run(req.params.id);
-  db.prepare('DELETE FROM derived_clusters WHERE workspace_id = ?').run(req.params.id);
-  db.prepare('DELETE FROM docs WHERE workspace_id = ?').run(req.params.id);
-  db.prepare('DELETE FROM data_sources WHERE workspace_id = ?').run(req.params.id);
-  db.prepare('DELETE FROM workspaces WHERE id = ?').run(req.params.id);
-  res.json({ deleted: true });
-});
-
-// ═══════════════════════════════════════════
 // Data Source CRUD
 // ═══════════════════════════════════════════
 
-app.post('/api/workspaces/:id/sources', (req, res) => {
-  const workspaceId = Number(req.params.id);
-  if (!db.prepare('SELECT * FROM workspaces WHERE id = ?').get(workspaceId)) {
-    res.status(404).json({ message: 'workspace not found' }); return;
-  }
+app.post('/api/sources', (req, res) => {
   const sourceType = typeof req.body.sourceType === 'string' ? req.body.sourceType.trim() : '';
   const config = req.body.config && typeof req.body.config === 'object' ? req.body.config : {};
   if (!sourceType) { res.status(400).json({ message: 'sourceType is required' }); return; }
@@ -282,23 +173,22 @@ app.post('/api/workspaces/:id/sources', (req, res) => {
     res.status(400).json({ message: 'config.threadUrl is required for reddit sources' }); return;
   }
 
-  const result = db.prepare('INSERT INTO data_sources (workspace_id, source_type, config_json) VALUES (?, ?, ?)')
-    .run(workspaceId, sourceType, JSON.stringify(config));
+  const result = db.prepare('INSERT INTO data_sources (source_type, config_json) VALUES (?, ?)')
+    .run(sourceType, JSON.stringify(config));
   const source = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(Number(result.lastInsertRowid));
   source.config = JSON.parse(source.config_json);
   res.status(201).json(source);
 });
 
-app.get('/api/workspaces/:id/sources', (req, res) => {
-  const sources = db.prepare('SELECT * FROM data_sources WHERE workspace_id = ? ORDER BY created_at DESC')
-    .all(req.params.id)
+app.get('/api/sources', (_req, res) => {
+  const sources = db.prepare('SELECT * FROM data_sources ORDER BY created_at DESC')
+    .all()
     .map((row) => ({ ...row, config: JSON.parse(row.config_json) }));
   res.json(sources);
 });
 
-app.delete('/api/workspaces/:id/sources/:sourceId', (req, res) => {
-  const source = db.prepare('SELECT * FROM data_sources WHERE id = ? AND workspace_id = ?')
-    .get(req.params.sourceId, req.params.id);
+app.delete('/api/sources/:sourceId', (req, res) => {
+  const source = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(req.params.sourceId);
   if (!source) { res.status(404).json({ message: 'data source not found' }); return; }
   db.prepare('DELETE FROM data_sources WHERE id = ?').run(req.params.sourceId);
   res.json({ deleted: true });
@@ -308,10 +198,8 @@ app.delete('/api/workspaces/:id/sources/:sourceId', (req, res) => {
 // Source Fetch (Reddit)
 // ═══════════════════════════════════════════
 
-app.post('/api/workspaces/:id/sources/:sourceId/fetch', async (req, res) => {
-  const workspaceId = Number(req.params.id);
-  const source = db.prepare('SELECT * FROM data_sources WHERE id = ? AND workspace_id = ?')
-    .get(req.params.sourceId, workspaceId);
+app.post('/api/sources/:sourceId/fetch', async (req, res) => {
+  const source = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(req.params.sourceId);
   if (!source) { res.status(404).json({ message: 'data source not found' }); return; }
   if (source.source_type !== 'reddit') {
     res.status(400).json({ message: `fetch not supported for source type: ${source.source_type}` }); return;
@@ -327,13 +215,13 @@ app.post('/api/workspaces/:id/sources/:sourceId/fetch', async (req, res) => {
     const centralSlug = `reddit-${threadData.threadId}`;
     const centralLabel = threadData.title.substring(0, 120);
     const centralDesc = `Reddit thread: ${threadData.title.substring(0, 200)}`;
-    const centralClusterSlug = `ws${workspaceId}-reddit-${threadData.threadId}`;
+    const centralClusterSlug = `reddit-${threadData.threadId}`;
     const centralClusterLabel = `${centralLabel.substring(0, 40)} Discussion`;
 
-    db.prepare('INSERT INTO derived_clusters (slug, label, color, workspace_id) VALUES (?, ?, ?, ?) ON CONFLICT(slug) DO NOTHING')
-      .run(centralClusterSlug, centralClusterLabel, colorFromSlug(centralClusterSlug), workspaceId);
-    db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth, is_central, workspace_id) VALUES (?, ?, ?, ?, ?, ?, 0, 1, ?) ON CONFLICT(slug) DO UPDATE SET label=excluded.label')
-      .run(centralSlug, centralLabel, centralDesc, centralClusterSlug, 36, 10, workspaceId);
+    db.prepare('INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?) ON CONFLICT(slug) DO NOTHING')
+      .run(centralClusterSlug, centralClusterLabel, colorFromSlug(centralClusterSlug));
+    db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth, is_central) VALUES (?, ?, ?, ?, ?, ?, 0, 1) ON CONFLICT(slug) DO UPDATE SET label=excluded.label')
+      .run(centralSlug, centralLabel, centralDesc, centralClusterSlug, 36, 10);
 
     // Depth-1 topics from title + body
     const combinedText = `${threadData.title} ${threadData.body || ''}`;
@@ -342,22 +230,22 @@ app.post('/api/workspaces/:id/sources/:sourceId/fetch', async (req, res) => {
     let nodeCount = 1, edgeCount = 0;
     const depth1Slugs = [];
 
-    const insertNode = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth, workspace_id) VALUES (?, ?, ?, ?, ?, ?, 1, ?) ON CONFLICT(slug) DO NOTHING');
-    const insertEdge = db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind, workspace_id) VALUES (?, ?, ?, ?) ON CONFLICT(source_slug, target_slug) DO NOTHING');
+    const insertNode = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (?, ?, ?, ?, ?, ?, 1) ON CONFLICT(slug) DO NOTHING');
+    const insertEdge = db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?) ON CONFLICT(source_slug, target_slug) DO NOTHING');
 
     for (let i = 0; i < depth1Keywords.length; i += 1) {
       const kw = depth1Keywords[i];
-      const nodeSlug = `ws${workspaceId}-reddit-${threadData.threadId}-d1-${slugify(kw)}`;
-      insertNode.run(nodeSlug, titleCase(kw), `Topic from Reddit thread: ${titleCase(kw)}`, centralClusterSlug, Math.max(14, 24 - i * 2), Math.max(5, 9 - i), workspaceId);
+      const nodeSlug = `reddit-${threadData.threadId}-d1-${slugify(kw)}`;
+      insertNode.run(nodeSlug, titleCase(kw), `Topic from Reddit thread: ${titleCase(kw)}`, centralClusterSlug, Math.max(14, 24 - i * 2), Math.max(5, 9 - i));
       depth1Slugs.push(nodeSlug);
       nodeCount += 1;
-      insertEdge.run(centralSlug, nodeSlug, 'central-topic', workspaceId);
+      insertEdge.run(centralSlug, nodeSlug, 'central-topic');
       edgeCount += 1;
     }
 
     // Depth-2 from comments
     const topLevelComments = threadData.comments.filter((c) => c.depth === 0);
-    const insertD2Node = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth, workspace_id) VALUES (?, ?, ?, ?, ?, ?, 2, ?) ON CONFLICT(slug) DO NOTHING');
+    const insertD2Node = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (?, ?, ?, ?, ?, ?, 2) ON CONFLICT(slug) DO NOTHING');
 
     for (const comment of topLevelComments.slice(0, 15)) {
       const commentKeywords = topKeywords(comment.body, 3);
@@ -372,17 +260,17 @@ app.post('/api/workspaces/:id/sources/:sourceId/fetch', async (req, res) => {
         }
         if (bestScore === 0) continue;
 
-        const nodeSlug = `ws${workspaceId}-reddit-${threadData.threadId}-d2-${slugify(kw)}`;
-        insertD2Node.run(nodeSlug, titleCase(kw), `Sub-topic from discussion: ${titleCase(kw)}`, centralClusterSlug, 12, 4, workspaceId);
+        const nodeSlug = `reddit-${threadData.threadId}-d2-${slugify(kw)}`;
+        insertD2Node.run(nodeSlug, titleCase(kw), `Sub-topic from discussion: ${titleCase(kw)}`, centralClusterSlug, 12, 4);
         nodeCount += 1;
-        insertEdge.run(bestParent, nodeSlug, 'topic-subtopic', workspaceId);
+        insertEdge.run(bestParent, nodeSlug, 'topic-subtopic');
         edgeCount += 1;
       }
     }
 
     // Cross-link depth-1
     for (let i = 1; i < depth1Slugs.length; i += 1) {
-      insertEdge.run(depth1Slugs[i - 1], depth1Slugs[i], 'related-topic', workspaceId);
+      insertEdge.run(depth1Slugs[i - 1], depth1Slugs[i], 'related-topic');
       edgeCount += 1;
     }
 
@@ -400,67 +288,359 @@ app.post('/api/workspaces/:id/sources/:sourceId/fetch', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════
-// Workspace-scoped network
+// Network
 // ═══════════════════════════════════════════
 
-app.get('/api/workspaces/:id/network', (req, res) => {
-  const workspaceId = Number(req.params.id);
-  const derivedClusters = db.prepare('SELECT slug AS id, label, color FROM derived_clusters WHERE workspace_id = ? ORDER BY id ASC').all(workspaceId);
+app.get('/api/network', (_req, res) => {
+  const derivedClusters = db.prepare('SELECT slug AS id, label, color FROM derived_clusters ORDER BY id ASC').all();
   const derivedNodes = db.prepare(
     `SELECT dn.slug AS id, dn.label, dn.description AS desc, dn.cluster_slug AS cluster,
-            dn.radius AS r, dn.importance, dn.depth, dn.is_central AS isCentral,
-            COALESCE((SELECT COUNT(*) FROM node_links nl WHERE nl.workspace_id = dn.workspace_id AND (nl.source_slug = dn.slug OR nl.target_slug = dn.slug)), 0) AS degree
-     FROM derived_nodes dn WHERE dn.workspace_id = ? ORDER BY dn.id ASC`
-  ).all(workspaceId).map((row) => ({ ...row, isCentral: Boolean(row.isCentral) }));
-  const derivedEdges = db.prepare('SELECT source_slug AS source, target_slug AS target, link_kind AS kind FROM node_links WHERE workspace_id = ? ORDER BY id ASC').all(workspaceId);
+            dn.radius AS r, dn.importance, dn.depth, dn.is_central AS isCentral, dn.sentiment,
+            COALESCE((SELECT COUNT(*) FROM node_links nl WHERE nl.source_slug = dn.slug OR nl.target_slug = dn.slug), 0) AS degree
+     FROM derived_nodes dn ORDER BY dn.id ASC`
+  ).all().map((row) => ({ ...row, isCentral: Boolean(row.isCentral), sentiment: row.sentiment ?? undefined }));
+  const derivedEdges = db.prepare('SELECT source_slug AS source, target_slug AS target, link_kind AS kind FROM node_links ORDER BY id ASC').all();
   res.json({ derivedClusters, derivedNodes, derivedEdges });
 });
 
 // ═══════════════════════════════════════════
-// Workspace-scoped docs
+// Search (LIKE-based)
+// ═══════════════════════════════════════════
+//
+// Returns ranked matches across nodes (label + description) and docs
+// (title + text). Uses parameterised LIKE rather than FTS5 because the
+// SQLite build shipped with `better-sqlite3` doesn't always include FTS5
+// and our corpora are small (hundreds of rows, not millions).
+
+const SNIPPET_PAD = 80;
+
+function makeSnippet(text, needle) {
+  if (!text) return '';
+  const idx = text.toLowerCase().indexOf(needle.toLowerCase());
+  if (idx < 0) return text.slice(0, 160);
+  const start = Math.max(0, idx - SNIPPET_PAD);
+  const end = Math.min(text.length, idx + needle.length + SNIPPET_PAD);
+  return (start > 0 ? '…' : '') + text.slice(start, end) + (end < text.length ? '…' : '');
+}
+
+app.get('/api/search', (req, res) => {
+  const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+  if (q.length < 2) { res.json({ results: [] }); return; }
+
+  const like = `%${q.replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
+  const nodeRows = db.prepare(
+    `SELECT slug AS id, label, description AS desc, cluster_slug AS cluster
+     FROM derived_nodes
+     WHERE lower(label) LIKE lower(?) ESCAPE '\\' OR lower(description) LIKE lower(?) ESCAPE '\\'
+     LIMIT 25`,
+  ).all(like, like);
+
+  const docRows = db.prepare(
+    `SELECT id, title, text
+     FROM docs
+     WHERE lower(title) LIKE lower(?) ESCAPE '\\' OR lower(text) LIKE lower(?) ESCAPE '\\'
+     LIMIT 25`,
+  ).all(like, like);
+
+  const results = [];
+  for (const row of nodeRows) {
+    const labelMatch = (row.label ?? '').toLowerCase().includes(q.toLowerCase());
+    results.push({
+      type: 'node',
+      id: row.id,
+      label: row.label,
+      snippet: makeSnippet(row.desc ?? '', q),
+      meta: `cluster: ${row.cluster}`,
+      score: labelMatch ? 2 : 1,
+    });
+  }
+  for (const row of docRows) {
+    const titleMatch = (row.title ?? '').toLowerCase().includes(q.toLowerCase());
+    results.push({
+      type: 'doc',
+      id: String(row.id),
+      label: row.title,
+      snippet: makeSnippet(row.text ?? '', q),
+      meta: `doc #${row.id}`,
+      score: titleMatch ? 2 : 1,
+    });
+  }
+  results.sort((a, b) => b.score - a.score);
+  res.json({ results: results.slice(0, 40) });
+});
+
+// ═══════════════════════════════════════════
+// Reports
 // ═══════════════════════════════════════════
 
-app.get('/api/workspaces/:id/docs', (req, res) => {
+app.get('/api/reports', (_req, res) => {
+  const totals = {
+    nodes: db.prepare('SELECT COUNT(*) AS n FROM derived_nodes').get().n,
+    clusters: db.prepare('SELECT COUNT(*) AS n FROM derived_clusters').get().n,
+    edges: db.prepare('SELECT COUNT(*) AS n FROM node_links').get().n,
+    sources: db.prepare('SELECT COUNT(*) AS n FROM data_sources').get().n,
+    docs: db.prepare('SELECT COUNT(*) AS n FROM docs').get().n,
+  };
+
+  const clusterDistribution = db.prepare(
+    `SELECT dc.slug AS id, dc.label, dc.color,
+            COALESCE((SELECT COUNT(*) FROM derived_nodes dn WHERE dn.cluster_slug = dc.slug), 0) AS count
+     FROM derived_clusters dc
+     ORDER BY count DESC, dc.label ASC`,
+  ).all();
+
+  res.json({ totals, clusterDistribution });
+});
+
+// ═══════════════════════════════════════════
+// Cluster CRUD
+// ═══════════════════════════════════════════
+
+app.post('/api/clusters', (req, res) => {
+  const label = typeof req.body.label === 'string' ? req.body.label.trim() : '';
+  if (!label) { res.status(400).json({ message: 'label is required' }); return; }
+
+  const slug = slugify(label);
+  const exists = db.prepare('SELECT slug FROM derived_clusters WHERE slug = ?').get(slug);
+  if (exists) { res.status(409).json({ message: 'a cluster with this name already exists' }); return; }
+
+  const color = typeof req.body.color === 'string' && req.body.color.trim()
+    ? req.body.color.trim()
+    : colorFromSlug(slug);
+
+  db.prepare('INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?)')
+    .run(slug, label, color);
+  res.status(201).json({ id: slug, label, color });
+});
+
+app.put('/api/clusters/:slug', (req, res) => {
+  const slug = req.params.slug;
+  const cluster = db.prepare('SELECT * FROM derived_clusters WHERE slug = ?').get(slug);
+  if (!cluster) { res.status(404).json({ message: 'cluster not found' }); return; }
+
+  const label = typeof req.body.label === 'string' ? req.body.label.trim() : cluster.label;
+  const color = typeof req.body.color === 'string' ? req.body.color.trim() : cluster.color;
+  if (!label) { res.status(400).json({ message: 'label cannot be empty' }); return; }
+
+  db.prepare('UPDATE derived_clusters SET label = ?, color = ? WHERE slug = ?')
+    .run(label, color, slug);
+  res.json({ id: slug, label, color });
+});
+
+app.delete('/api/clusters/:slug', (req, res) => {
+  const slug = req.params.slug;
+  const cluster = db.prepare('SELECT * FROM derived_clusters WHERE slug = ?').get(slug);
+  if (!cluster) { res.status(404).json({ message: 'cluster not found' }); return; }
+
+  // Cascade: drop the cluster's nodes (and their links), then the cluster.
+  const tx = db.transaction(() => {
+    const nodeSlugs = db.prepare('SELECT slug FROM derived_nodes WHERE cluster_slug = ?')
+      .all(slug).map((r) => r.slug);
+    if (nodeSlugs.length > 0) {
+      const placeholders = nodeSlugs.map(() => '?').join(',');
+      db.prepare(`DELETE FROM node_links WHERE source_slug IN (${placeholders}) OR target_slug IN (${placeholders})`)
+        .run(...nodeSlugs, ...nodeSlugs);
+      db.prepare(`DELETE FROM doc_node_links WHERE node_slug IN (${placeholders})`)
+        .run(...nodeSlugs);
+      db.prepare(`DELETE FROM derived_nodes WHERE slug IN (${placeholders})`)
+        .run(...nodeSlugs);
+    }
+    db.prepare('DELETE FROM derived_clusters WHERE slug = ?').run(slug);
+  });
+  tx();
+  res.json({ deleted: true });
+});
+
+// ═══════════════════════════════════════════
+// Node CRUD
+// ═══════════════════════════════════════════
+
+app.put('/api/nodes/:slug', (req, res) => {
+  const slug = req.params.slug;
+  const node = db.prepare('SELECT * FROM derived_nodes WHERE slug = ?').get(slug);
+  if (!node) { res.status(404).json({ message: 'node not found' }); return; }
+
+  const label = typeof req.body.label === 'string' ? req.body.label.trim() : node.label;
+  const description = typeof req.body.description === 'string' ? req.body.description.trim() : node.description;
+  let clusterSlug = node.cluster_slug;
+  if (typeof req.body.clusterSlug === 'string' && req.body.clusterSlug.trim()) {
+    const target = req.body.clusterSlug.trim();
+    if (!db.prepare('SELECT slug FROM derived_clusters WHERE slug = ?').get(target)) {
+      res.status(400).json({ message: 'target cluster does not exist' }); return;
+    }
+    clusterSlug = target;
+  }
+  if (!label) { res.status(400).json({ message: 'label cannot be empty' }); return; }
+
+  db.prepare('UPDATE derived_nodes SET label = ?, description = ?, cluster_slug = ? WHERE slug = ?')
+    .run(label, description, clusterSlug, slug);
+  res.json({ id: slug, label, desc: description, cluster: clusterSlug });
+});
+
+app.delete('/api/nodes/:slug', (req, res) => {
+  const slug = req.params.slug;
+  const node = db.prepare('SELECT * FROM derived_nodes WHERE slug = ?').get(slug);
+  if (!node) { res.status(404).json({ message: 'node not found' }); return; }
+
+  const tx = db.transaction(() => {
+    db.prepare('DELETE FROM node_links WHERE source_slug = ? OR target_slug = ?').run(slug, slug);
+    db.prepare('DELETE FROM doc_node_links WHERE node_slug = ?').run(slug);
+    db.prepare('DELETE FROM derived_nodes WHERE slug = ?').run(slug);
+  });
+  tx();
+  res.json({ deleted: true });
+});
+
+// ═══════════════════════════════════════════
+// Create Node (manual topic creation)
+// ═══════════════════════════════════════════
+
+app.post('/api/nodes', (req, res) => {
+  const label = typeof req.body.label === 'string' ? req.body.label.trim() : '';
+  const clusterSlug = typeof req.body.clusterSlug === 'string' ? req.body.clusterSlug.trim() : '';
+  const desc = typeof req.body.desc === 'string' ? req.body.desc.trim() : (label || 'Manually created topic');
+
+  if (!label) { res.status(400).json({ message: 'label is required' }); return; }
+  if (!clusterSlug) { res.status(400).json({ message: 'clusterSlug is required' }); return; }
+
+  const cluster = db.prepare('SELECT slug FROM derived_clusters WHERE slug = ?').get(clusterSlug);
+  if (!cluster) { res.status(400).json({ message: 'target cluster does not exist' }); return; }
+
+  const slug = slugify(label);
+  const existing = db.prepare('SELECT slug FROM derived_nodes WHERE slug = ?').get(slug);
+  if (existing) { res.status(409).json({ message: 'a node with this name already exists' }); return; }
+
+  db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (?, ?, ?, ?, ?, ?, 0)')
+    .run(slug, label, desc, clusterSlug, 14, 5);
+
+  res.status(201).json({ id: slug, label, desc, cluster: clusterSlug });
+});
+
+// ═══════════════════════════════════════════
+// Merge Nodes
+// ═══════════════════════════════════════════
+
+app.post('/api/nodes/merge', (req, res) => {
+  const targetSlug = typeof req.body.targetSlug === 'string' ? req.body.targetSlug.trim() : '';
+  const sourceSlugs = Array.isArray(req.body.sourceSlugs) ? req.body.sourceSlugs.map((s) => String(s).trim()).filter(Boolean) : [];
+
+  if (!targetSlug) { res.status(400).json({ message: 'targetSlug is required' }); return; }
+  if (sourceSlugs.length === 0) { res.status(400).json({ message: 'sourceSlugs must be a non-empty array' }); return; }
+
+  const target = db.prepare('SELECT * FROM derived_nodes WHERE slug = ?').get(targetSlug);
+  if (!target) { res.status(404).json({ message: 'target node not found' }); return; }
+
+  // Reject if any source node doesn't exist, or if target is in sources.
+  for (const src of sourceSlugs) {
+    if (src === targetSlug) { res.status(400).json({ message: 'target node cannot be in sourceSlugs' }); return; }
+    if (!db.prepare('SELECT slug FROM derived_nodes WHERE slug = ?').get(src)) {
+      res.status(404).json({ message: `source node not found: ${src}` }); return;
+    }
+  }
+
+  const tx = db.transaction(() => {
+    // Reassign all edges pointing to/from source nodes to the target.
+    const placeholders = sourceSlugs.map(() => '?').join(',');
+    db.prepare(`UPDATE node_links SET source_slug = ? WHERE source_slug IN (${placeholders})`)
+      .run(targetSlug, ...sourceSlugs);
+    db.prepare(`UPDATE node_links SET target_slug = ? WHERE target_slug IN (${placeholders})`)
+      .run(targetSlug, ...sourceSlugs);
+
+    // Reassign all doc-node links from sources to target.
+    db.prepare(`UPDATE OR IGNORE doc_node_links SET node_slug = ? WHERE node_slug IN (${placeholders})`)
+      .run(targetSlug, ...sourceSlugs);
+
+    // Delete the now-empty source nodes.
+    for (const src of sourceSlugs) {
+      db.prepare('DELETE FROM node_links WHERE source_slug = ? OR target_slug = ?').run(src, src);
+      db.prepare('DELETE FROM doc_node_links WHERE node_slug = ?').run(src);
+      db.prepare('DELETE FROM derived_nodes WHERE slug = ?').run(src);
+    }
+  });
+  tx();
+
+  // Return the updated target node.
+  const updated = db.prepare(
+    `SELECT slug AS id, label, description AS desc, cluster_slug AS cluster,
+            radius AS r, importance, depth, is_central AS isCentral,
+            COALESCE((SELECT COUNT(*) FROM node_links nl WHERE nl.source_slug = dn.slug OR nl.target_slug = dn.slug), 0) AS degree
+     FROM derived_nodes dn WHERE dn.slug = ?`
+  ).get(targetSlug);
+  res.json({ ...updated, isCentral: Boolean(updated.isCentral) });
+});
+
+// ═══════════════════════════════════════════
+// Bulk Reassign Nodes
+// ═══════════════════════════════════════════
+
+app.post('/api/nodes/bulk-reassign', (req, res) => {
+  const nodeSlugs = Array.isArray(req.body.nodeSlugs) ? req.body.nodeSlugs.map((s) => String(s).trim()).filter(Boolean) : [];
+  const clusterSlug = typeof req.body.clusterSlug === 'string' ? req.body.clusterSlug.trim() : '';
+
+  if (nodeSlugs.length === 0) { res.status(400).json({ message: 'nodeSlugs must be a non-empty array' }); return; }
+  if (!clusterSlug) { res.status(400).json({ message: 'clusterSlug is required' }); return; }
+
+  const cluster = db.prepare('SELECT slug FROM derived_clusters WHERE slug = ?').get(clusterSlug);
+  if (!cluster) { res.status(400).json({ message: 'target cluster does not exist' }); return; }
+
+  // Reject if any node doesn't exist.
+  for (const slug of nodeSlugs) {
+    if (!db.prepare('SELECT slug FROM derived_nodes WHERE slug = ?').get(slug)) {
+      res.status(404).json({ message: `node not found: ${slug}` }); return;
+    }
+  }
+
+  const placeholders = nodeSlugs.map(() => '?').join(',');
+  db.prepare(`UPDATE derived_nodes SET cluster_slug = ? WHERE slug IN (${placeholders})`)
+    .run(clusterSlug, ...nodeSlugs);
+
+  res.json({ reassigned: nodeSlugs.length, clusterSlug });
+});
+
+// ═══════════════════════════════════════════
+// Docs
+// ═══════════════════════════════════════════
+
+app.get('/api/docs', (_req, res) => {
   const docs = db.prepare(
     `SELECT d.id, d.title, d.text, d.status,
      COALESCE((SELECT json_group_array(node_slug) FROM doc_node_links dnl WHERE dnl.doc_id = d.id), '[]') AS derivedNodeSlugs
-     FROM docs d WHERE d.workspace_id = ? ORDER BY d.id ASC`
-  ).all(req.params.id).map((row) => ({ ...row, derivedNodeSlugs: JSON.parse(row.derivedNodeSlugs) }));
+     FROM docs d ORDER BY d.id ASC`
+  ).all().map((row) => ({ ...row, derivedNodeSlugs: JSON.parse(row.derivedNodeSlugs) }));
   res.json(docs);
 });
 
-app.post('/api/workspaces/:id/docs', (req, res) => {
-  const workspaceId = Number(req.params.id);
+app.post('/api/docs', (req, res) => {
   const title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
   const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
   const status = typeof req.body.status === 'string' && req.body.status.trim() ? req.body.status.trim() : 'done';
   if (!text) { res.status(400).json({ message: 'text is required' }); return; }
 
   const normalizedTitle = title || 'Untitled document';
-  const result = db.prepare('INSERT INTO docs (title, text, status, workspace_id) VALUES (?, ?, ?, ?)').run(normalizedTitle, text, status, workspaceId);
+  const result = db.prepare('INSERT INTO docs (title, text, status) VALUES (?, ?, ?)').run(normalizedTitle, text, status);
   const docId = Number(result.lastInsertRowid);
 
   const keywords = topKeywords(`${normalizedTitle} ${text}`, 4);
   const primaryKeyword = keywords[0] ?? 'general';
-  const clusterSlug = `ws${workspaceId}-derived-${slugify(primaryKeyword)}`;
-  db.prepare('INSERT INTO derived_clusters (slug, label, color, workspace_id) VALUES (?, ?, ?, ?) ON CONFLICT(slug) DO NOTHING')
-    .run(clusterSlug, `${titleCase(primaryKeyword)} Concepts`, colorFromSlug(clusterSlug), workspaceId);
+  const clusterSlug = `derived-${slugify(primaryKeyword)}`;
+  db.prepare('INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?) ON CONFLICT(slug) DO NOTHING')
+    .run(clusterSlug, `${titleCase(primaryKeyword)} Concepts`, colorFromSlug(clusterSlug));
 
   const createdNodeSlugs = [];
-  const insertNode = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, workspace_id) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(slug) DO NOTHING');
-  const linkDocNode = db.prepare('INSERT INTO doc_node_links (doc_id, node_slug, score, workspace_id) VALUES (?, ?, ?, ?) ON CONFLICT(doc_id, node_slug) DO NOTHING');
-  const createEdge = db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind, workspace_id) VALUES (?, ?, ?, ?) ON CONFLICT(source_slug, target_slug) DO NOTHING');
+  const insertNode = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(slug) DO NOTHING');
+  const linkDocNode = db.prepare('INSERT INTO doc_node_links (doc_id, node_slug, score) VALUES (?, ?, ?) ON CONFLICT(doc_id, node_slug) DO NOTHING');
+  const createEdge = db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?) ON CONFLICT(source_slug, target_slug) DO NOTHING');
 
   for (let i = 0; i < keywords.length; i += 1) {
     const kw = keywords[i];
-    const nodeSlug = `ws${workspaceId}-user-${docId}-${slugify(kw)}`;
-    insertNode.run(nodeSlug, titleCase(kw), `Derived from document ${docId}: ${titleCase(kw)}`, clusterSlug, Math.max(12, 18 - i * 2), Math.max(4, 8 - i), workspaceId);
-    linkDocNode.run(docId, nodeSlug, Math.max(0.2, 1 - i * 0.15), workspaceId);
+    const nodeSlug = `user-${docId}-${slugify(kw)}`;
+    insertNode.run(nodeSlug, titleCase(kw), `Derived from document ${docId}: ${titleCase(kw)}`, clusterSlug, Math.max(12, 18 - i * 2), Math.max(4, 8 - i));
+    linkDocNode.run(docId, nodeSlug, Math.max(0.2, 1 - i * 0.15));
     createdNodeSlugs.push(nodeSlug);
   }
 
   for (let i = 1; i < createdNodeSlugs.length; i += 1) {
-    createEdge.run(createdNodeSlugs[i - 1], createdNodeSlugs[i], 'same-doc', workspaceId);
+    createEdge.run(createdNodeSlugs[i - 1], createdNodeSlugs[i], 'same-doc');
   }
 
   const created = db.prepare('SELECT id, title, text, status FROM docs WHERE id = ?').get(docId);
@@ -468,133 +648,13 @@ app.post('/api/workspaces/:id/docs', (req, res) => {
   res.status(201).json(created);
 });
 
-// ═══════════════════════════════════════════
-// Legacy endpoints (backward compat)
-// ═══════════════════════════════════════════
-
-app.get('/api/docs', (_req, res) => {
-  const docs = db
-    .prepare(`
-      SELECT d.id, d.title, d.text, d.status,
-      COALESCE((
-        SELECT json_group_array(node_slug)
-        FROM doc_node_links dnl
-        WHERE dnl.doc_id = d.id
-      ), '[]') AS derivedNodeSlugs
-      FROM docs d
-      ORDER BY d.id ASC
-    `)
-    .all()
-    .map((row) => ({
-      id: row.id,
-      title: row.title,
-      text: row.text,
-      status: row.status,
-      derivedNodeSlugs: JSON.parse(row.derivedNodeSlugs),
-    }));
-  res.json(docs);
-});
-
-app.get('/api/network', (_req, res) => {
-  const derivedClusters = db
-    .prepare('SELECT slug AS id, label, color FROM derived_clusters ORDER BY id ASC')
-    .all();
-  const derivedNodes = db
-    .prepare(`
-      SELECT dn.slug AS id, dn.label, dn.description AS desc, dn.cluster_slug AS cluster,
-             dn.radius AS r, dn.importance,
-             COALESCE((
-               SELECT COUNT(*) FROM node_links nl
-               WHERE nl.source_slug = dn.slug OR nl.target_slug = dn.slug
-             ), 0) AS degree
-      FROM derived_nodes dn
-      ORDER BY dn.id ASC
-    `)
-    .all();
-  const derivedEdges = db
-    .prepare('SELECT source_slug AS source, target_slug AS target, link_kind AS kind FROM node_links ORDER BY id ASC')
-    .all();
-
-  res.json({ derivedClusters, derivedNodes, derivedEdges });
-});
-
-app.post('/api/docs', (req, res) => {
-  const title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
-  const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
-  const status = typeof req.body.status === 'string' && req.body.status.trim() ? req.body.status.trim() : 'done';
-
-  if (!text) {
-    res.status(400).json({ message: 'text is required' });
-    return;
-  }
-
-  const normalizedTitle = title || 'Untitled document';
-  const insert = db.prepare('INSERT INTO docs (title, text, status) VALUES (?, ?, ?)');
-  const result = insert.run(normalizedTitle, text, status);
-  const docId = Number(result.lastInsertRowid);
-
-  const keywords = topKeywords(`${normalizedTitle} ${text}`, 4);
-  const primaryKeyword = keywords[0] ?? 'general';
-  const clusterSlug = `derived-${slugify(primaryKeyword)}`;
-  const clusterLabel = `${titleCase(primaryKeyword)} Concepts`;
-  const clusterColor = colorFromSlug(clusterSlug);
-
-  db.prepare(
-    'INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?) ON CONFLICT(slug) DO NOTHING',
-  ).run(clusterSlug, clusterLabel, clusterColor);
-
-  const createNode = db.prepare(
-    `
-      INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(slug) DO NOTHING
-    `,
-  );
-  const linkDocNode = db.prepare(
-    'INSERT INTO doc_node_links (doc_id, node_slug, score) VALUES (?, ?, ?) ON CONFLICT(doc_id, node_slug) DO NOTHING',
-  );
-  const createEdge = db.prepare(
-    'INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?) ON CONFLICT(source_slug, target_slug) DO NOTHING',
-  );
-
-  const createdNodeSlugs = [];
-  const tokenSet = new Set(tokenize(`${normalizedTitle} ${text}`));
-
-  keywords.forEach((keyword, index) => {
-    const nodeSlug = `user-${docId}-${slugify(keyword)}`;
-    const nodeLabel = titleCase(keyword);
-    const nodeDesc = `Derived from document ${docId}: ${nodeLabel}`;
-    const radius = Math.max(12, 18 - index * 2);
-    const importance = Math.max(4, 8 - index);
-
-    createNode.run(nodeSlug, nodeLabel, nodeDesc, clusterSlug, radius, importance);
-    linkDocNode.run(docId, nodeSlug, Math.max(0.2, 1 - index * 0.15));
-    createdNodeSlugs.push(nodeSlug);
-
-    const relatedBaseNodes = BASE_TOPICS
-      .map((topic) => ({ topicId: topic.id, score: scoreTopicMatch(tokenSet, topic.label) }))
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 2);
-
-    for (const related of relatedBaseNodes) {
-      createEdge.run(nodeSlug, related.topicId, 'related-base');
-    }
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`SQLite API listening on http://localhost:${port}`);
   });
+}
 
-  for (let i = 1; i < createdNodeSlugs.length; i += 1) {
-    createEdge.run(createdNodeSlugs[i - 1], createdNodeSlugs[i], 'same-doc');
-  }
-
-  const created = db
-    .prepare('SELECT id, title, text, status FROM docs WHERE id = ?')
-    .get(docId);
-
-  created.derivedNodeSlugs = createdNodeSlugs;
-
-  res.status(201).json(created);
-});
-
-app.listen(port, () => {
-  console.log(`SQLite API listening on http://localhost:${port}`);
-});
+// Exported so the test suite can drive the app without binding the
+// listener twice. The listener above only runs when this file is the
+// process entry point.
+module.exports = { app, db };

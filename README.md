@@ -2,23 +2,49 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.11.
 
-## Development server
+## Active frontend: standalone prototype
 
-Start the API server first in one terminal:
+The served frontend is currently the standalone React prototype from `TopicNet Prototype (standalone).html`, not the Angular app under `src/app/`. The Angular code remains in the repo for reference but is no longer bootstrapped.
+
+How it's wired:
+
+- Prototype assets (React, ReactDOM, Babel standalone, JSX modules, fonts) live in [public/prototype/](public/prototype/) and are served at `/prototype/*`.
+- [src/index.html](src/index.html) is the unpacked prototype HTML with asset paths rewritten to `prototype/...`.
+- [src/main.ts](src/main.ts) is a no-op so Angular CLI produces an empty `main.js` and no Angular bootstrap runs.
+- Backups of the original Angular entry points live next to the originals as `src/index.html.angular.bak` and `src/main.ts.angular.bak`.
+
+To re-extract/refresh the prototype from the source HTML (`TopicNet Prototype (standalone).html`):
 
 ```bash
-npm run start:api
+node scripts/extract-prototype.mjs        # decompresses bundle into extracted_prototype/
+node scripts/install-prototype-index.mjs  # rewrites paths and installs src/index.html
+# then copy *.js and *.woff2 from extracted_prototype/ into public/prototype/
 ```
 
-Then start the Angular development server in a second terminal:
+To roll back to the Angular app:
+
+1. Restore `src/main.ts` from `src/main.ts.angular.bak`.
+2. Restore `src/index.html` from `src/index.html.angular.bak`.
+3. Remove `public/prototype/`.
+
+## Development server
+
+Run the API and Angular dev server together with one command:
 
 ```bash
 npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+This launches both processes via `concurrently` (prefixed `api` and `ui` in the output) and shuts them down together if either exits.
 
-The UI reads and writes documents through `/api/docs` and data is stored in a SQLite database at `data/topic-visualizer.db`.
+If you need to run them independently — for example, to attach a debugger to just one — use:
+
+```bash
+npm run start:api   # Express + SQLite on http://localhost:3000
+npm run start:ui    # Angular dev server on http://localhost:4200
+```
+
+Once both are running, open `http://localhost:4200/`. The Angular dev server proxies `/api/*` to `http://localhost:3000` via `proxy.conf.json`, and data is persisted to `data/topic-visualizer.db`.
 
 ## Code scaffolding
 

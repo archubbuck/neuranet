@@ -1,0 +1,56 @@
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Progress: resolved 18, reused 4, downloaded 0, added 0
+Progress: resolved 43, reused 14, downloaded 12, added 0
+Progress: resolved 59, reused 17, downloaded 27, added 0
+Progress: resolved 90, reused 20, downloaded 50, added 0
+Progress: resolved 109, reused 25, downloaded 57, added 0
+Progress: resolved 164, reused 60, downloaded 81, added 0
+Progress: resolved 233, reused 70, downloaded 94, added 0
+Progress: resolved 275, reused 79, downloaded 128, added 0
+Progress: resolved 307, reused 85, downloaded 150, added 0
+Progress: resolved 383, reused 118, downloaded 178, added 0
+Progress: resolved 468, reused 134, downloaded 204, added 0
+Progress: resolved 548, reused 165, downloaded 250, added 0
+[WARN] 1 deprecated subdependencies found: prebuild-install@7.1.3
+Progress: resolved 593, reused 188, downloaded 292, added 0
+Packages: +480
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 593, reused 188, downloaded 292, added 1
+Progress: resolved 593, reused 188, downloaded 292, added 52
+Progress: resolved 593, reused 188, downloaded 292, added 104
+Progress: resolved 593, reused 188, downloaded 292, added 171
+Progress: resolved 593, reused 188, downloaded 292, added 290
+Progress: resolved 593, reused 188, downloaded 292, added 314
+Progress: resolved 593, reused 188, downloaded 292, added 392
+Progress: resolved 593, reused 188, downloaded 292, added 442
+Progress: resolved 593, reused 188, downloaded 292, added 478
+Progress: resolved 593, reused 188, downloaded 292, added 479
+Progress: resolved 593, reused 188, downloaded 292, added 480
+Progress: resolved 593, reused 188, downloaded 292, added 480, done
+[WARN] Issues with peer dependencies found. Run "pnpm peers check" to list them.
+
+dependencies:
++ @angular/common 22.0.0
++ @angular/compiler 22.0.0
++ @angular/core 22.0.0
++ @angular/forms 22.0.0
++ @angular/platform-browser 22.0.0
++ @angular/router 22.0.0
++ better-sqlite3 12.10.0
++ express 5.2.1
++ rxjs 7.8.2
++ tslib 2.8.1
+
+devDependencies:
++ @angular/build 22.0.0
++ @angular/cli 22.0.0
++ @angular/compiler-cli 22.0.0
++ concurrently 10.0.3
++ jsdom 28.1.0 (29.1.1 is available)
++ prettier 3.8.3
++ typescript 5.9.3 (6.0.3 is available)
++ vitest 4.1.8
+
+[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: @parcel/watcher@2.5.6, better-sqlite3@12.10.0, esbuild@0.27.7, esbuild@0.28.0, lmdb@3.5.4, msgpackr-extract@3.0.4
+
+Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.
