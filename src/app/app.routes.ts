@@ -1,28 +1,74 @@
 import type { Routes } from '@angular/router';
-import { CategoriesScreenComponent } from './screens/categories-screen.component';
-import { IndexComponent } from './screens/index.component';
-import { LandingScreenComponent } from './screens/landing-screen.component';
-import { ReportsScreenComponent } from './screens/reports-screen.component';
-import { SearchScreenComponent } from './screens/search-screen.component';
-import { SettingsScreenComponent } from './screens/settings-screen.component';
-import { SourcesScreenComponent } from './screens/sources-screen.component';
-import { TopicsScreenComponent } from './screens/topics-screen.component';
 
 /**
- * App route map (flat, single-tenant). All routes render inside the
- * `<router-outlet>` provided by `AppShellComponent`.
+ * App route map (flat, single-tenant), structured as layout routes:
+ *
+ *   - `/` renders the standalone landing experience with no app chrome
+ *     and no data bootstrap.
+ *   - Everything else renders inside `AppShellComponent` (sidebar +
+ *     toast + responsive chrome), which kicks off `AppStore.loadAll()`
+ *     when first instantiated.
+ *
+ * All screens are lazily loaded so the initial bundle stays minimal.
  */
 export const routes: Routes = [
-	{ path: '', pathMatch: 'full', component: LandingScreenComponent },
-	{ path: 'network', component: IndexComponent },
-	{ path: 'categories', component: CategoriesScreenComponent },
-	{ path: 'topics', component: TopicsScreenComponent },
-	{ path: 'sources', component: SourcesScreenComponent },
-	{ path: 'search', component: SearchScreenComponent },
-	{ path: 'reports', component: ReportsScreenComponent },
-	{ path: 'settings', component: SettingsScreenComponent },
-	{ path: 'manage/clusters', redirectTo: 'categories' },
-	{ path: 'manage/nodes', redirectTo: 'topics' },
-	{ path: 'manage/sources', redirectTo: 'sources' },
+	{
+		path: '',
+		pathMatch: 'full',
+		title: 'TopicNet',
+		loadComponent: () =>
+			import('./screens/landing-screen.component').then((m) => m.LandingScreenComponent),
+	},
+	{
+		path: '',
+		loadComponent: () =>
+			import('./shell/app-shell.component').then((m) => m.AppShellComponent),
+		children: [
+			{
+				path: 'network',
+				title: 'Network · TopicNet',
+				loadComponent: () => import('./screens/index.component').then((m) => m.IndexComponent),
+			},
+			{
+				path: 'categories',
+				title: 'Categories · TopicNet',
+				loadComponent: () =>
+					import('./screens/categories-screen.component').then((m) => m.CategoriesScreenComponent),
+			},
+			{
+				path: 'topics',
+				title: 'Topics · TopicNet',
+				loadComponent: () =>
+					import('./screens/topics-screen.component').then((m) => m.TopicsScreenComponent),
+			},
+			{
+				path: 'sources',
+				title: 'Sources · TopicNet',
+				loadComponent: () =>
+					import('./screens/sources-screen.component').then((m) => m.SourcesScreenComponent),
+			},
+			{
+				path: 'search',
+				title: 'Search · TopicNet',
+				loadComponent: () =>
+					import('./screens/search-screen.component').then((m) => m.SearchScreenComponent),
+			},
+			{
+				path: 'reports',
+				title: 'Reports · TopicNet',
+				loadComponent: () =>
+					import('./screens/reports-screen.component').then((m) => m.ReportsScreenComponent),
+			},
+			{
+				path: 'settings',
+				title: 'Settings · TopicNet',
+				loadComponent: () =>
+					import('./screens/settings-screen.component').then((m) => m.SettingsScreenComponent),
+			},
+			{ path: 'manage/clusters', redirectTo: 'categories' },
+			{ path: 'manage/nodes', redirectTo: 'topics' },
+			{ path: 'manage/sources', redirectTo: 'sources' },
+		],
+	},
 	{ path: '**', redirectTo: '' },
 ];

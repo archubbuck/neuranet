@@ -242,7 +242,7 @@ export class AddSourceModalComponent {
 			}
 			await this.store.fetchSource(source.id);
 			this.visible.set(false);
-			await this.router.navigate(['/']);
+			await this.router.navigate(['/network']);
 		} catch (err) {
 			this.errorMessage.set(
 				err instanceof Error ? err.message : 'Failed to fetch source',

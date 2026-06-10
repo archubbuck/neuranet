@@ -7,6 +7,7 @@ import {
 	signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AppStore } from '../data/app.store';
 import { ApiService } from '../data/api.service';
 import type { SearchHit } from '../data/types';
@@ -142,6 +143,7 @@ import { IconComponent } from '../ui/icon.component';
 export class SearchScreenComponent {
 	private readonly store = inject(AppStore);
 	private readonly api = inject(ApiService);
+	private readonly router = inject(Router);
 
 	protected readonly query = signal<string>('');
 	protected readonly results = signal<readonly SearchHit[]>([]);
@@ -191,7 +193,7 @@ export class SearchScreenComponent {
 	onPick(hit: SearchHit): void {
 		if (hit.type === 'node') {
 			this.store.selectNode(hit.id);
-			this.store.setScreen('network');
+			void this.router.navigate(['/network']);
 		}
 	}
 
