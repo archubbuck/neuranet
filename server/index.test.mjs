@@ -3,10 +3,12 @@
 process.env.TOPIC_VIZ_DB_PATH = ':memory:';
 
 import { createRequire } from 'node:module';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
 const { app, db } = require('./index.js');
+const redditFetcher = require('./reddit-fetcher.js');
+const realFetchThread = redditFetcher.fetchThread;
 
 let server;
 let baseUrl;
@@ -450,5 +452,54 @@ describe('Source CRUD', () => {
 		const res = await request('DELETE', `/api/sources/${created.body.id}`);
 		expect(res.status).toBe(200);
 		expect(res.body.deleted).toBe(true);
+	});
+});
+
+describe('write atomicity', () => {
+	// Inject a mid-write failure with a RAISE(ABORT) trigger: if the route
+	// wraps its writes in a transaction, earlier inserts must roll back.
+	afterEach(() => {
+		db.exec('DROP TRIGGER IF EXISTS boom_doc_node_links; DROP TRIGGER IF EXISTS boom_node_links;');
+		redditFetcher.fetchThread = realFetchThread;
+	});
+
+	it('POST /api/docs rolls back the doc row when node derivation fails', async () => {
+		db.exec(`CREATE TRIGGER boom_doc_node_links BEFORE INSERT ON doc_node_links
+			BEGIN SELECT RAISE(ABORT, 'injected failure'); END;`);
+
+		const res = await request('POST', '/api/docs', {
+			title: 'Atomicity probe',
+			text: 'climate renewable solar wind energy policy carbon capture',
+		});
+		expect(res.status).toBe(500);
+
+		expect(db.prepare('SELECT COUNT(*) AS n FROM docs').get().n).toBe(0);
+		expect(db.prepare('SELECT COUNT(*) AS n FROM derived_clusters').get().n).toBe(0);
+		expect(db.prepare('SELECT COUNT(*) AS n FROM derived_nodes').get().n).toBe(0);
+	});
+
+	it('POST /api/sources/:id/fetch rolls back derived rows when edge insert fails', async () => {
+		redditFetcher.fetchThread = async () => ({
+			threadId: 'tx1',
+			title: 'Transaction probe thread about solar power and climate',
+			body: 'renewable energy storage grid batteries',
+			comments: [],
+		});
+		db.exec(`CREATE TRIGGER boom_node_links BEFORE INSERT ON node_links
+			BEGIN SELECT RAISE(ABORT, 'injected failure'); END;`);
+
+		const created = await request('POST', '/api/sources', {
+			sourceType: 'reddit',
+			config: { threadUrl: 'https://www.reddit.com/r/x/comments/tx1/' },
+		});
+		const res = await request('POST', `/api/sources/${created.body.id}/fetch`);
+		expect(res.status).toBe(500);
+
+		// Derivation must be all-or-nothing: no clusters/nodes from the failed run.
+		expect(db.prepare('SELECT COUNT(*) AS n FROM derived_clusters').get().n).toBe(0);
+		expect(db.prepare('SELECT COUNT(*) AS n FROM derived_nodes').get().n).toBe(0);
+		// Source status should still be marked as error.
+		const src = db.prepare('SELECT status FROM data_sources WHERE id = ?').get(created.body.id);
+		expect(src.status).toBe('error');
 	});
 });

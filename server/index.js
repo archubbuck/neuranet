@@ -211,71 +211,78 @@ app.post('/api/sources/:sourceId/fetch', async (req, res) => {
     const config = JSON.parse(source.config_json);
     const threadData = await redditFetcher.fetchThread(config.threadUrl);
 
-    // Central node
-    const centralSlug = `reddit-${threadData.threadId}`;
-    const centralLabel = threadData.title.substring(0, 120);
-    const centralDesc = `Reddit thread: ${threadData.title.substring(0, 200)}`;
-    const centralClusterSlug = `reddit-${threadData.threadId}`;
-    const centralClusterLabel = `${centralLabel.substring(0, 40)} Discussion`;
+    // All derivation writes are atomic: a mid-write failure must not leave
+    // partial clusters/nodes/edges behind.
+    const { nodeCount, edgeCount } = db.transaction(() => {
+      // Central node
+      const centralSlug = `reddit-${threadData.threadId}`;
+      const centralLabel = threadData.title.substring(0, 120);
+      const centralDesc = `Reddit thread: ${threadData.title.substring(0, 200)}`;
+      const centralClusterSlug = `reddit-${threadData.threadId}`;
+      const centralClusterLabel = `${centralLabel.substring(0, 40)} Discussion`;
 
-    db.prepare('INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?) ON CONFLICT(slug) DO NOTHING')
-      .run(centralClusterSlug, centralClusterLabel, colorFromSlug(centralClusterSlug));
-    db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth, is_central) VALUES (?, ?, ?, ?, ?, ?, 0, 1) ON CONFLICT(slug) DO UPDATE SET label=excluded.label')
-      .run(centralSlug, centralLabel, centralDesc, centralClusterSlug, 36, 10);
+      db.prepare('INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?) ON CONFLICT(slug) DO NOTHING')
+        .run(centralClusterSlug, centralClusterLabel, colorFromSlug(centralClusterSlug));
+      db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth, is_central) VALUES (?, ?, ?, ?, ?, ?, 0, 1) ON CONFLICT(slug) DO UPDATE SET label=excluded.label')
+        .run(centralSlug, centralLabel, centralDesc, centralClusterSlug, 36, 10);
 
-    // Depth-1 topics from title + body
-    const combinedText = `${threadData.title} ${threadData.body || ''}`;
-    const depth1Keywords = topKeywords(combinedText, 8);
+      // Depth-1 topics from title + body
+      const combinedText = `${threadData.title} ${threadData.body || ''}`;
+      const depth1Keywords = topKeywords(combinedText, 8);
 
-    let nodeCount = 1, edgeCount = 0;
-    const depth1Slugs = [];
+      let nodes = 1, edges = 0;
+      const depth1Slugs = [];
 
-    const insertNode = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (?, ?, ?, ?, ?, ?, 1) ON CONFLICT(slug) DO NOTHING');
-    const insertEdge = db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?) ON CONFLICT(source_slug, target_slug) DO NOTHING');
+      const insertNode = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (?, ?, ?, ?, ?, ?, 1) ON CONFLICT(slug) DO NOTHING');
+      const insertEdge = db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?) ON CONFLICT(source_slug, target_slug) DO NOTHING');
 
-    for (let i = 0; i < depth1Keywords.length; i += 1) {
-      const kw = depth1Keywords[i];
-      const nodeSlug = `reddit-${threadData.threadId}-d1-${slugify(kw)}`;
-      insertNode.run(nodeSlug, titleCase(kw), `Topic from Reddit thread: ${titleCase(kw)}`, centralClusterSlug, Math.max(14, 24 - i * 2), Math.max(5, 9 - i));
-      depth1Slugs.push(nodeSlug);
-      nodeCount += 1;
-      insertEdge.run(centralSlug, nodeSlug, 'central-topic');
-      edgeCount += 1;
-    }
-
-    // Depth-2 from comments
-    const topLevelComments = threadData.comments.filter((c) => c.depth === 0);
-    const insertD2Node = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (?, ?, ?, ?, ?, ?, 2) ON CONFLICT(slug) DO NOTHING');
-
-    for (const comment of topLevelComments.slice(0, 15)) {
-      const commentKeywords = topKeywords(comment.body, 3);
-      const commentTokenSet = new Set(tokenize(comment.body));
-      for (const kw of commentKeywords) {
-        let bestParent = depth1Slugs[0], bestScore = 0;
-        for (const d1Slug of depth1Slugs) {
-          const d1Node = db.prepare('SELECT label FROM derived_nodes WHERE slug = ?').get(d1Slug);
-          if (!d1Node) continue;
-          const s = scoreTopicMatch(commentTokenSet, d1Node.label);
-          if (s > bestScore) { bestScore = s; bestParent = d1Slug; }
-        }
-        if (bestScore === 0) continue;
-
-        const nodeSlug = `reddit-${threadData.threadId}-d2-${slugify(kw)}`;
-        insertD2Node.run(nodeSlug, titleCase(kw), `Sub-topic from discussion: ${titleCase(kw)}`, centralClusterSlug, 12, 4);
-        nodeCount += 1;
-        insertEdge.run(bestParent, nodeSlug, 'topic-subtopic');
-        edgeCount += 1;
+      for (let i = 0; i < depth1Keywords.length; i += 1) {
+        const kw = depth1Keywords[i];
+        const nodeSlug = `reddit-${threadData.threadId}-d1-${slugify(kw)}`;
+        insertNode.run(nodeSlug, titleCase(kw), `Topic from Reddit thread: ${titleCase(kw)}`, centralClusterSlug, Math.max(14, 24 - i * 2), Math.max(5, 9 - i));
+        depth1Slugs.push(nodeSlug);
+        nodes += 1;
+        insertEdge.run(centralSlug, nodeSlug, 'central-topic');
+        edges += 1;
       }
-    }
 
-    // Cross-link depth-1
-    for (let i = 1; i < depth1Slugs.length; i += 1) {
-      insertEdge.run(depth1Slugs[i - 1], depth1Slugs[i], 'related-topic');
-      edgeCount += 1;
-    }
+      // Depth-2 from comments
+      const topLevelComments = threadData.comments.filter((c) => c.depth === 0);
+      const insertD2Node = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (?, ?, ?, ?, ?, ?, 2) ON CONFLICT(slug) DO NOTHING');
+      const getD1Label = db.prepare('SELECT label FROM derived_nodes WHERE slug = ?');
 
-    db.prepare('UPDATE data_sources SET status = ?, status_message = ? WHERE id = ?')
-      .run('done', `Extracted ${nodeCount} nodes and ${edgeCount} edges`, source.id);
+      for (const comment of topLevelComments.slice(0, 15)) {
+        const commentKeywords = topKeywords(comment.body, 3);
+        const commentTokenSet = new Set(tokenize(comment.body));
+        for (const kw of commentKeywords) {
+          let bestParent = depth1Slugs[0], bestScore = 0;
+          for (const d1Slug of depth1Slugs) {
+            const d1Node = getD1Label.get(d1Slug);
+            if (!d1Node) continue;
+            const s = scoreTopicMatch(commentTokenSet, d1Node.label);
+            if (s > bestScore) { bestScore = s; bestParent = d1Slug; }
+          }
+          if (bestScore === 0) continue;
+
+          const nodeSlug = `reddit-${threadData.threadId}-d2-${slugify(kw)}`;
+          insertD2Node.run(nodeSlug, titleCase(kw), `Sub-topic from discussion: ${titleCase(kw)}`, centralClusterSlug, 12, 4);
+          nodes += 1;
+          insertEdge.run(bestParent, nodeSlug, 'topic-subtopic');
+          edges += 1;
+        }
+      }
+
+      // Cross-link depth-1
+      for (let i = 1; i < depth1Slugs.length; i += 1) {
+        insertEdge.run(depth1Slugs[i - 1], depth1Slugs[i], 'related-topic');
+        edges += 1;
+      }
+
+      db.prepare('UPDATE data_sources SET status = ?, status_message = ? WHERE id = ?')
+        .run('done', `Extracted ${nodes} nodes and ${edges} edges`, source.id);
+
+      return { nodeCount: nodes, edgeCount: edges };
+    })();
 
     const updated = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(source.id);
     updated.config = JSON.parse(updated.config_json);
@@ -629,34 +636,46 @@ app.post('/api/docs', (req, res) => {
   if (!text) { res.status(400).json({ message: 'text is required' }); return; }
 
   const normalizedTitle = title || 'Untitled document';
-  const result = db.prepare('INSERT INTO docs (title, text, status) VALUES (?, ?, ?)').run(normalizedTitle, text, status);
-  const docId = Number(result.lastInsertRowid);
 
-  const keywords = topKeywords(`${normalizedTitle} ${text}`, 4);
-  const primaryKeyword = keywords[0] ?? 'general';
-  const clusterSlug = `derived-${slugify(primaryKeyword)}`;
-  db.prepare('INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?) ON CONFLICT(slug) DO NOTHING')
-    .run(clusterSlug, `${titleCase(primaryKeyword)} Concepts`, colorFromSlug(clusterSlug));
+  // Doc insert + derivation are atomic: a failure mid-derivation must not
+  // leave an orphaned doc row or partial nodes behind.
+  let created;
+  try {
+    created = db.transaction(() => {
+      const result = db.prepare('INSERT INTO docs (title, text, status) VALUES (?, ?, ?)').run(normalizedTitle, text, status);
+      const docId = Number(result.lastInsertRowid);
 
-  const createdNodeSlugs = [];
-  const insertNode = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(slug) DO NOTHING');
-  const linkDocNode = db.prepare('INSERT INTO doc_node_links (doc_id, node_slug, score) VALUES (?, ?, ?) ON CONFLICT(doc_id, node_slug) DO NOTHING');
-  const createEdge = db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?) ON CONFLICT(source_slug, target_slug) DO NOTHING');
+      const keywords = topKeywords(`${normalizedTitle} ${text}`, 4);
+      const primaryKeyword = keywords[0] ?? 'general';
+      const clusterSlug = `derived-${slugify(primaryKeyword)}`;
+      db.prepare('INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?) ON CONFLICT(slug) DO NOTHING')
+        .run(clusterSlug, `${titleCase(primaryKeyword)} Concepts`, colorFromSlug(clusterSlug));
 
-  for (let i = 0; i < keywords.length; i += 1) {
-    const kw = keywords[i];
-    const nodeSlug = `user-${docId}-${slugify(kw)}`;
-    insertNode.run(nodeSlug, titleCase(kw), `Derived from document ${docId}: ${titleCase(kw)}`, clusterSlug, Math.max(12, 18 - i * 2), Math.max(4, 8 - i));
-    linkDocNode.run(docId, nodeSlug, Math.max(0.2, 1 - i * 0.15));
-    createdNodeSlugs.push(nodeSlug);
+      const createdNodeSlugs = [];
+      const insertNode = db.prepare('INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(slug) DO NOTHING');
+      const linkDocNode = db.prepare('INSERT INTO doc_node_links (doc_id, node_slug, score) VALUES (?, ?, ?) ON CONFLICT(doc_id, node_slug) DO NOTHING');
+      const createEdge = db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?) ON CONFLICT(source_slug, target_slug) DO NOTHING');
+
+      for (let i = 0; i < keywords.length; i += 1) {
+        const kw = keywords[i];
+        const nodeSlug = `user-${docId}-${slugify(kw)}`;
+        insertNode.run(nodeSlug, titleCase(kw), `Derived from document ${docId}: ${titleCase(kw)}`, clusterSlug, Math.max(12, 18 - i * 2), Math.max(4, 8 - i));
+        linkDocNode.run(docId, nodeSlug, Math.max(0.2, 1 - i * 0.15));
+        createdNodeSlugs.push(nodeSlug);
+      }
+
+      for (let i = 1; i < createdNodeSlugs.length; i += 1) {
+        createEdge.run(createdNodeSlugs[i - 1], createdNodeSlugs[i], 'same-doc');
+      }
+
+      const doc = db.prepare('SELECT id, title, text, status FROM docs WHERE id = ?').get(docId);
+      doc.derivedNodeSlugs = createdNodeSlugs;
+      return doc;
+    })();
+  } catch (err) {
+    res.status(500).json({ message: 'failed to create document' });
+    return;
   }
-
-  for (let i = 1; i < createdNodeSlugs.length; i += 1) {
-    createEdge.run(createdNodeSlugs[i - 1], createdNodeSlugs[i], 'same-doc');
-  }
-
-  const created = db.prepare('SELECT id, title, text, status FROM docs WHERE id = ?').get(docId);
-  created.derivedNodeSlugs = createdNodeSlugs;
   res.status(201).json(created);
 });
 
