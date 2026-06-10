@@ -16,7 +16,7 @@ import {
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `
 		@if (open()) {
-			<div class="backdrop" (click)="close.emit()"></div>
+			<div class="backdrop" aria-hidden="true" (click)="closed.emit()"></div>
 			<div class="panel" [style]="style()">
 				<ng-content />
 			</div>
@@ -49,5 +49,6 @@ import {
 export class PopoverComponent {
 	readonly open = input(false);
 	readonly style = input<string>('');
-	readonly close = output<void>();
+	/** Emitted when the user clicks outside the panel. */
+	readonly closed = output<void>();
 }

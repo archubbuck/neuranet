@@ -18,8 +18,10 @@ import { IconComponent } from './icon.component';
 		<button
 			class="box"
 			type="button"
+			aria-label="Toggle selection"
+			[attr.aria-checked]="checked()"
 			[class.on]="checked() || indeterminate()"
-			(click)="toggle.emit()"
+			(click)="toggled.emit()"
 		>
 			@if (checked()) {
 				<app-icon name="check" [size]="11" color="#FBBF24" [strokeWidth]="3" />
@@ -61,5 +63,5 @@ import { IconComponent } from './icon.component';
 export class CheckboxComponent {
 	readonly checked = input(false);
 	readonly indeterminate = input(false);
-	readonly toggle = output<void>();
+	readonly toggled = output<void>();
 }

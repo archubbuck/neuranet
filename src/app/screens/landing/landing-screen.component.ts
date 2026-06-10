@@ -57,7 +57,7 @@ const NODE_COLOR = '#FBBF24';
 	imports: [],
 	template: `
 		<div class="landing-wrap">
-			<svg #svgEl viewBox="0 0 800 600" class="canvas" (click)="onSvgClick()">
+			<svg #svgEl viewBox="0 0 800 600" class="canvas" aria-hidden="true" (click)="onSvgClick()">
 
 				<!-- frozen connections -->
 				@for (conn of frozenConns(); track conn.sourceIdx + '-' + conn.targetIdx) {

@@ -3,7 +3,6 @@
  * SyntaxError) keep their status; everything else becomes a generic 500.
  * Internal details are logged server-side, never sent to the client.
  */
-// eslint-disable-next-line no-unused-vars
 function errorHandler(err, req, res, next) {
   if (res.headersSent) {
     next(err);

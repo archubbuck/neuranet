@@ -15,18 +15,18 @@ import { ModalComponent } from '../../ui/overlays/modal.component';
 			[open]="open()"
 			title="New category"
 			subtitle="Categories drive node color. You can assign nodes after creating it."
-			(close)="closed.emit()"
+			(closed)="closed.emit()"
 		>
 			<div class="field">
 				<div class="field-label">Name</div>
 				<input class="field-input" type="text" [ngModel]="label()" (ngModelChange)="label.set($event)"
-					placeholder="e.g. Hardware &amp; chips" (keydown.enter)="submit()" autofocus />
+					placeholder="e.g. Hardware &amp; chips" (keydown.enter)="submit()" />
 			</div>
 			<div class="field">
 				<div class="field-label">Color</div>
 				<div class="color-grid">
 					@for (col of palette(); track col) {
-						<button class="color-swatch" type="button" [style.background]="col" [class.picked]="color() === col" (click)="color.set(col)"></button>
+						<button class="color-swatch" type="button" [attr.aria-label]="'Pick color ' + col" [style.background]="col" [class.picked]="color() === col" (click)="color.set(col)"></button>
 					}
 				</div>
 			</div>

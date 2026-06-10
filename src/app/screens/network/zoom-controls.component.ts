@@ -24,7 +24,7 @@ import { IconComponent } from '../../ui/primitives/icon.component';
 				<app-icon name="minus" [size]="15" />
 			</button>
 			<div class="sep"></div>
-			<button type="button" title="Reset view" (click)="reset.emit()">
+			<button type="button" title="Reset view" (click)="resetView.emit()">
 				<app-icon name="maximize" [size]="14" />
 			</button>
 		</div>
@@ -72,5 +72,5 @@ import { IconComponent } from '../../ui/primitives/icon.component';
 export class ZoomControlsComponent {
 	readonly zoomIn = output<void>();
 	readonly zoomOut = output<void>();
-	readonly reset = output<void>();
+	readonly resetView = output<void>();
 }

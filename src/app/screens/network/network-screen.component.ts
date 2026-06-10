@@ -1,11 +1,4 @@
-import {
-	ChangeDetectionStrategy,
-	Component,
-	computed,
-	inject,
-	signal,
-	viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AppStore } from '../../data/app.store';
 import { ViewportService } from '../../core/viewport.service';
 import { IconComponent } from '../../ui/primitives/icon.component';
@@ -54,7 +47,7 @@ import { ZoomControlsComponent } from './zoom-controls.component';
 					<app-zoom-controls
 						(zoomIn)="graph.zoom(1.2)"
 						(zoomOut)="graph.zoom(0.83)"
-						(reset)="graph.resetView()"
+						(resetView)="graph.resetView()"
 					/>
 				} @placeholder {
 					<div class="graph-skeleton" aria-hidden="true"></div>

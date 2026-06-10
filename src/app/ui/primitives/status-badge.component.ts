@@ -1,6 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import type { SourceStatus } from '../../data/types';
+
+/** Status values the badge knows how to color. Kept local so the ui/
+ * layer stays decoupled from domain types (`SourceStatus` is
+ * structurally compatible). */
+export type BadgeStatus = 'idle' | 'fetching' | 'done' | 'error';
 
 /**
  * Reusable status badge — colored dot + label.
@@ -60,6 +64,6 @@ import type { SourceStatus } from '../../data/types';
 	],
 })
 export class StatusBadgeComponent {
-	readonly status = input.required<SourceStatus>();
+	readonly status = input.required<BadgeStatus>();
 	readonly label = input.required<string>();
 }

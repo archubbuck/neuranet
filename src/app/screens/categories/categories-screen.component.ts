@@ -31,7 +31,6 @@ import {
 	applyColumnFilters,
 	toggleSort,
 	type SortColumn,
-	type SortDir,
 	type ColumnFilters,
 } from '../../ui/table-sort';
 
@@ -185,7 +184,7 @@ interface CatRow {
 							<app-checkbox
 								[checked]="allSelected()"
 								[indeterminate]="selectedIds().size > 0 && !allSelected()"
-								(toggle)="toggleAll()"
+								(toggled)="toggleAll()"
 							/>
 							<span class="th th-swatch">Color</span>
 							<div class="th-cell th-label">
@@ -222,15 +221,15 @@ interface CatRow {
 						@for (r of visibleRows(); track r.id) {
 							@let on = selectedIds().has(r.id);
 							<div class="tr" [class.sel]="on">
-								<app-checkbox [checked]="on" (toggle)="toggleSelect(r.id)" />
+								<app-checkbox [checked]="on" (toggled)="toggleSelect(r.id)" />
 								<div class="td td-swatch">
 									<div class="color-name-wrap">
 										<button class="color-name-btn" type="button" [style.color]="r.color" (click)="openColorPicker.set(r.id)">{{ colorName(r.color) }}</button>
-										<app-popover [open]="openColorPicker() === r.id" style="top: 30px; left: 0; padding: 12px; width: max-content;" (close)="openColorPicker.set(null)">
+										<app-popover [open]="openColorPicker() === r.id" style="top: 30px; left: 0; padding: 12px; width: max-content;" (closed)="openColorPicker.set(null)">
 											<div class="pop-label">Category color</div>
 											<div class="color-grid">
 												@for (col of PALETTE; track col) {
-													<button class="color-swatch" type="button" [style.background]="col" [class.picked]="col === r.color" (click)="recolor(r.id, col)"></button>
+													<button class="color-swatch" type="button" [attr.aria-label]="'Set color ' + col" [style.background]="col" [class.picked]="col === r.color" (click)="recolor(r.id, col)"></button>
 												}
 											</div>
 										</app-popover>
@@ -240,9 +239,9 @@ interface CatRow {
 									<!-- Editable label -->
 									@if (editingId() === r.id) {
 										<input class="editor" type="text" [ngModel]="editingLabel()" (ngModelChange)="editingLabel.set($event)"
-											(keydown.enter)="commitRename(r)" (keydown.escape)="cancelRename()" autofocus />
+											(keydown.enter)="commitRename(r)" (keydown.escape)="cancelRename()" />
 									} @else {
-										<span class="cat-label" (click)="startRename(r)" title="Click to rename">{{ r.label }}</span>
+										<span class="cat-label" role="button" tabindex="0" (click)="startRename(r)" (keyup.enter)="startRename(r)" title="Click to rename">{{ r.label }}</span>
 									}
 								</div>
 								<div class="td td-num">{{ r.nodeCount }}</div>
@@ -254,7 +253,7 @@ interface CatRow {
 										<button class="menu-trigger" type="button" (click)="toggleRowMenu(r.id)">
 											<app-icon name="more-horizontal" [size]="15" />
 										</button>
-										<app-popover [open]="rowMenuId() === r.id" style="top: 32px; right: 0; width: 176px; padding: 6px;" (close)="rowMenuId.set(null)">
+										<app-popover [open]="rowMenuId() === r.id" style="top: 32px; right: 0; width: 176px; padding: 6px;" (closed)="rowMenuId.set(null)">
 											<button class="menu-item" type="button" (click)="startSplit(r); rowMenuId.set(null)">
 												<app-icon name="hash" [size]="14" color="#94a3b8" />
 												<span>Split category</span>
@@ -371,7 +370,7 @@ interface CatRow {
 
 		<!-- ═══ Dissolve popover ═══ -->
 		@if (dissolvingId(); as sourceId) {
-			<app-popover [open]="true" style="top: 38px; right: 0; width: 248px; padding: 14px;" (close)="cancelDissolve()">
+			<app-popover [open]="true" style="top: 38px; right: 0; width: 248px; padding: 14px;" (closed)="cancelDissolve()">
 				<div class="dissolve-title">Dissolve "{{ dissolveCatLabel() }}"?</div>
 				@if (dissolveNodeCount() > 0) {
 					<p class="dissolve-desc">{{ dissolveNodeCount() }} node{{ dissolveNodeCount() > 1 ? 's' : '' }} need a category. Move them to:</p>
@@ -995,7 +994,8 @@ export class CategoriesScreenComponent {
 	protected toggleSelect(id: string): void {
 		this.selectedIds.update((prev) => {
 			const n = new Set(prev);
-			n.has(id) ? n.delete(id) : n.add(id);
+			if (n.has(id)) n.delete(id);
+			else n.add(id);
 			return n;
 		});
 	}

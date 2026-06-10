@@ -20,23 +20,23 @@ import type { Cluster, Node } from '../../data/types';
 			[title]="'Split “' + (cat()?.label ?? '') + '”'"
 			[width]="520"
 			subtitle="Pick nodes to move into a new category. The rest stay where they are."
-			(close)="closed.emit()"
+			(closed)="closed.emit()"
 		>
 			<div class="split-grid">
 				<div class="field" style="flex: 1">
 					<div class="field-label">New category name</div>
 					<input class="field-input" type="text" [ngModel]="name()" (ngModelChange)="name.set($event)"
-						placeholder="e.g. Transformers" autofocus />
+						placeholder="e.g. Transformers" />
 				</div>
 				<div class="field">
 					<div class="field-label">Color</div>
 					<div class="swatch-wrap">
-						<button class="swatch-btn" type="button" [style.background]="color()" [style.boxShadow]="'0 0 8px ' + color() + '66'" (click)="colorOpen.set(!colorOpen())"></button>
-						<app-popover [open]="colorOpen()" style="top: 44px; left: 0; padding: 12px; width: max-content;" (close)="colorOpen.set(false)">
+						<button class="swatch-btn" type="button" aria-label="Pick category color" [style.background]="color()" [style.boxShadow]="'0 0 8px ' + color() + '66'" (click)="colorOpen.set(!colorOpen())"></button>
+						<app-popover [open]="colorOpen()" style="top: 44px; left: 0; padding: 12px; width: max-content;" (closed)="colorOpen.set(false)">
 							<div class="pop-label">Category color</div>
 							<div class="color-grid">
 								@for (col of palette(); track col) {
-									<button class="color-swatch" type="button" [style.background]="col" [class.picked]="col === color()" (click)="color.set(col); colorOpen.set(false)"></button>
+									<button class="color-swatch" type="button" [attr.aria-label]="'Pick color ' + col" [style.background]="col" [class.picked]="col === color()" (click)="color.set(col); colorOpen.set(false)"></button>
 								}
 							</div>
 						</app-popover>
@@ -48,7 +48,7 @@ import type { Cluster, Node } from '../../data/types';
 				@for (n of members(); track n.id) {
 					@let on = picked().has(n.id);
 					<button class="split-node" type="button" [class.picked]="on" (click)="togglePick(n.id)">
-						<app-checkbox [checked]="on" (toggle)="togglePick(n.id)" />
+						<app-checkbox [checked]="on" (toggled)="togglePick(n.id)" />
 						<span class="split-node-dot" [style.background]="on ? color() : (cat()?.color ?? '')" [style.boxShadow]="'0 0 6px ' + (on ? color() : (cat()?.color ?? '')) + '80'"></span>
 						<span class="split-node-label">{{ n.label }}</span>
 						<span class="split-node-meta">{{ n.desc ?? '' }}</span>

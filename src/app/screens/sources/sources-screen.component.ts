@@ -49,8 +49,6 @@ interface SourceRow {
 	readonly lastIngestAt: string | null;
 }
 
-type TabId = 'records' | 'analytics';
-
 const TYPE_LABEL: Record<SourceType, string> = {
 	reddit: 'Reddit',
 	web: 'Web',
@@ -116,7 +114,7 @@ const TYPE_ICON: Record<SourceType, string> = {
 							<span>{{ typeFilterLabel() }}</span>
 							<app-icon name="chevron-down" [size]="13" color="#475569" />
 						</button>
-						<app-popover [open]="typeMenuOpen()" (close)="typeMenuOpen.set(false)"
+						<app-popover [open]="typeMenuOpen()" (closed)="typeMenuOpen.set(false)"
 							style="top: 40px; left: 0; width: 160px; padding: 6px;">
 							<button class="cf-option" type="button" (click)="typeFilter.set(null); typeMenuOpen.set(false)">
 								<app-icon name="layers" [size]="13" [color]="typeFilter() == null ? '#FBBF24' : '#475569'" />
@@ -136,7 +134,7 @@ const TYPE_ICON: Record<SourceType, string> = {
 							<span>{{ statusFilterLabel() }}</span>
 							<app-icon name="chevron-down" [size]="13" color="#475569" />
 						</button>
-						<app-popover [open]="statusMenuOpen()" (close)="statusMenuOpen.set(false)"
+						<app-popover [open]="statusMenuOpen()" (closed)="statusMenuOpen.set(false)"
 							style="top: 40px; left: 0; width: 160px; padding: 6px;">
 							<button class="cf-option" type="button" (click)="statusFilter.set(null); statusMenuOpen.set(false)">
 								<app-icon name="circle" [size]="13" [color]="statusFilter() == null ? '#FBBF24' : '#475569'" />
@@ -193,7 +191,7 @@ const TYPE_ICON: Record<SourceType, string> = {
 							<app-checkbox
 								[checked]="allSelected()"
 								[indeterminate]="selectedIds().size > 0 && !allSelected()"
-								(toggle)="toggleAll()" />
+								(toggled)="toggleAll()" />
 							<div class="th-cell th-source">
 								<button class="th th-sort" type="button" (click)="toggleColumnSort('name', $event)">
 									@let si = sortIndicator('name');
@@ -235,7 +233,7 @@ const TYPE_ICON: Record<SourceType, string> = {
 						@for (row of visibleRows(); track row.key) {
 							@let on = selectedIds().has(row.key);
 							<div class="tr" [class.sel]="on">
-								<app-checkbox [checked]="on" (toggle)="toggleSelect(row.key)" />
+								<app-checkbox [checked]="on" (toggled)="toggleSelect(row.key)" />
 
 								<!-- Source cell -->
 								<div class="td td-main">
@@ -280,7 +278,7 @@ const TYPE_ICON: Record<SourceType, string> = {
 											<app-icon name="more-horizontal" [size]="15" />
 										</button>
 										<app-popover [open]="rowMenuFor() === row.key"
-											(close)="rowMenuFor.set(null)"
+											(closed)="rowMenuFor.set(null)"
 											style="top: 32px; right: 0; width: 166px; padding: 6px;">
 											@if (row.persistent) {
 												<button class="menu-item danger" type="button"
@@ -713,7 +711,8 @@ export class SourcesScreenComponent {
 	protected toggleSelect(key: string): void {
 		this.selectedIds.update((prev) => {
 			const n = new Set(prev);
-			n.has(key) ? n.delete(key) : n.add(key);
+			if (n.has(key)) n.delete(key);
+			else n.add(key);
 			return n;
 		});
 	}

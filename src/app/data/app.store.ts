@@ -399,7 +399,7 @@ export class AppStore {
 	}
 
 	async createNode(label: string, clusterSlug: string, desc?: string): Promise<void> {
-		const created = await this.api.createNode({ label, clusterSlug, desc });
+		await this.api.createNode({ label, clusterSlug, desc });
 		// Refresh so degree, doc-links etc. are consistent.
 		await this.loadAll();
 	}

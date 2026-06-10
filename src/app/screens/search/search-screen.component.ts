@@ -34,7 +34,6 @@ import { IconComponent } from '../../ui/primitives/icon.component';
 					type="search"
 					[(ngModel)]="query"
 					placeholder="Search topics, descriptions, document text…"
-					autofocus
 				/>
 				@if (query()) {
 					<button type="button" class="clear" (click)="query.set('')" aria-label="Clear">

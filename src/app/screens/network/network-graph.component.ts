@@ -16,7 +16,6 @@ import {
 	buildAdjacency,
 	layoutEdges,
 	layoutNodes,
-	type PositionedNode,
 } from './network-layout';
 
 interface ViewTransform {

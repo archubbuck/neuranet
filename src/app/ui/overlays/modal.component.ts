@@ -1,6 +1,7 @@
 import {
 	ChangeDetectionStrategy,
 	Component,
+	HostListener,
 	input,
 	output,
 } from '@angular/core';
@@ -17,7 +18,7 @@ import { IconComponent } from '../primitives/icon.component';
 	imports: [IconComponent],
 	template: `
 		@if (open()) {
-			<div class="backdrop" (click)="close.emit()">
+			<div class="backdrop" aria-hidden="true" (click)="closed.emit()">
 				<div class="container" [style.width.px]="width()" (click)="$event.stopPropagation()">
 					<div class="header">
 						<div>
@@ -26,7 +27,7 @@ import { IconComponent } from '../primitives/icon.component';
 								<p>{{ subtitle() }}</p>
 							}
 						</div>
-						<button class="close-btn" type="button" (click)="close.emit()">
+						<button class="close-btn" type="button" aria-label="Close" (click)="closed.emit()">
 							<app-icon name="x" [size]="15" />
 						</button>
 					</div>
@@ -127,5 +128,11 @@ export class ModalComponent {
 	readonly subtitle = input<string | undefined>(undefined);
 	readonly width = input(460);
 	readonly showFooter = input(true);
-	readonly close = output<void>();
+	/** Emitted on backdrop click, close button, or Escape. */
+	readonly closed = output<void>();
+
+	@HostListener('document:keydown.escape')
+	onEscape(): void {
+		if (this.open()) this.closed.emit();
+	}
 }

@@ -3,7 +3,6 @@ import {
 	ChangeDetectionStrategy,
 	Component,
 	computed,
-	effect,
 	HostListener,
 	inject,
 	signal,
@@ -21,7 +20,7 @@ import { PageHeaderComponent } from '../../ui/primitives/page-header.component';
 import { SearchInputComponent } from '../../ui/primitives/search-input.component';
 import { TabsComponent } from '../../ui/primitives/tabs.component';
 import { ButtonComponent } from '../../ui/primitives/button.component';
-import type { Cluster, Node } from '../../data/types';
+import type { Node } from '../../data/types';
 import {
 	applySorts,
 	applyColumnFilters,
@@ -85,7 +84,7 @@ interface TopicRow {
 							<span>{{ catFilterLabel() }}</span>
 							<app-icon name="chevron-down" [size]="13" color="#475569" />
 						</button>
-						<app-popover [open]="catFilterOpen()" (close)="catFilterOpen.set(false)"
+						<app-popover [open]="catFilterOpen()" (closed)="catFilterOpen.set(false)"
 							style="top: 40px; left: 0; width: 200px; padding: 6px;">
 							<button class="cf-option" [class.cf-all]="categoryFilter() === ''" type="button"
 								(click)="setCategoryFilter(''); catFilterOpen.set(false)">
@@ -146,7 +145,7 @@ interface TopicRow {
 						<div class="thead">
 							<app-checkbox [checked]="allSelected()"
 								[indeterminate]="selectedIds().size > 0 && !allSelected()"
-								(toggle)="toggleSelectAll()" />
+								(toggled)="toggleSelectAll()" />
 							<div class="th-cell th-label">
 								<button class="th th-sort" type="button" (click)="toggleColumnSort('title', $event)">
 									@let si = sortIndicator('title');
@@ -188,7 +187,7 @@ interface TopicRow {
 						@for (r of visibleRows(); track r.id) {
 							@let on = selectedIds().has(r.id);
 							<div class="tr" [class.sel]="on">
-								<app-checkbox [checked]="on" (toggle)="toggleSelect(r.id)" />
+								<app-checkbox [checked]="on" (toggled)="toggleSelect(r.id)" />
 
 								<!-- Topic label -->
 								<div class="td td-main">
@@ -197,9 +196,9 @@ interface TopicRow {
 										<input class="editor" type="text" [ngModel]="editingLabel()"
 											(ngModelChange)="editingLabel.set($event)"
 											(keydown.enter)="commitRename(r)" (keydown.escape)="cancelRename()"
-											(blur)="commitRename(r)" autofocus />
+											(blur)="commitRename(r)" />
 									} @else {
-										<span class="cat-label" (click)="startRename(r)" title="Click to rename">{{ r.title }}</span>
+										<span class="cat-label" role="button" tabindex="0" (click)="startRename(r)" (keyup.enter)="startRename(r)" title="Click to rename">{{ r.title }}</span>
 									}
 								</div>
 
@@ -234,7 +233,7 @@ interface TopicRow {
 										<button class="menu-trigger" type="button" (click)="toggleRowMenu(r.id)">
 											<app-icon name="more-horizontal" [size]="15" />
 										</button>
-										<app-popover [open]="rowMenuId() === r.id" (close)="rowMenuId.set(null)"
+										<app-popover [open]="rowMenuId() === r.id" (closed)="rowMenuId.set(null)"
 											style="top: 32px; right: 0;"
 											[style.width.px]="rowMenuReassign() === r.id ? 200 : 168"
 											[style.padding.px]="rowMenuReassign() === r.id ? 0 : 6">
@@ -353,7 +352,7 @@ interface TopicRow {
 
 		<!-- ═══ Bulk-reassign modal ═══ -->
 		<app-modal [open]="bulkReassignOpen()" [title]="'Reassign ' + selectedIds().size + ' topic(s)'"
-			(close)="bulkReassignOpen.set(false)">
+			(closed)="bulkReassignOpen.set(false)">
 			<div class="dissolve-list">
 				@for (c of store.clusters(); track c.id) {
 					<button class="dissolve-option" type="button" (click)="commitBulkReassign(c.id)">
@@ -369,11 +368,11 @@ interface TopicRow {
 
 		<!-- ═══ New Topic modal ═══ -->
 		<app-modal [open]="creating()" title="New Topic" subtitle="Add a new node to the graph."
-			(close)="cancelCreate()">
+			(closed)="cancelCreate()">
 			<div class="field">
 				<div class="field-label">Name</div>
 				<input class="field-input" type="text" [ngModel]="newLabel()" (ngModelChange)="newLabel.set($event)"
-					placeholder="e.g. Neural Networks" (keydown.enter)="commitCreate()" autofocus />
+					placeholder="e.g. Neural Networks" (keydown.enter)="commitCreate()" />
 			</div>
 			<div class="field">
 				<div class="field-label">Category</div>
@@ -400,11 +399,11 @@ interface TopicRow {
 		<!-- ═══ New Category from Selection modal ═══ -->
 		<app-modal [open]="newCatOpen()" title="New Category from Selection"
 			subtitle="Create a new category and move {{ selectedIds().size }} selected topic(s) into it."
-			(close)="newCatOpen.set(false)">
+			(closed)="newCatOpen.set(false)">
 			<div class="field">
 				<div class="field-label">Name</div>
 				<input class="field-input" type="text" [ngModel]="newCatLabel()" (ngModelChange)="newCatLabel.set($event)"
-					placeholder="e.g. Machine Learning" (keydown.enter)="commitNewCatFromSelection()" autofocus />
+					placeholder="e.g. Machine Learning" (keydown.enter)="commitNewCatFromSelection()" />
 			</div>
 			<div footer>
 				<button class="btn-ghost" type="button" (click)="newCatOpen.set(false)">Cancel</button>

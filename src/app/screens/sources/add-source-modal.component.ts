@@ -26,7 +26,7 @@ import { IconComponent } from '../../ui/primitives/icon.component';
 	imports: [CommonModule, FormsModule, IconComponent],
 	template: `
 		@if (visible()) {
-			<div class="overlay" (click)="onBackdropClick($event)">
+			<div class="overlay" aria-hidden="true" (click)="onBackdropClick($event)">
 				<div class="modal" role="dialog" aria-label="Add source">
 					<header>
 						<h2>Add a source</h2>
