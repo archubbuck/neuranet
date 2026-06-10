@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AppStore } from '../data/app.store';
-import { IconComponent } from '../ui/icon.component';
+import { IconComponent } from '../ui/primitives/icon.component';
 import type { IconName } from '../ui/icons';
 
 interface NavItem {

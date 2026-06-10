@@ -10,7 +10,7 @@ import { ViewportService } from '../core/viewport.service';
 import { ToastService } from '../core/toast.service';
 import { SidebarComponent } from './sidebar.component';
 import { MobileNavComponent } from './mobile-nav.component';
-import { ToastComponent } from '../ui/toast.component';
+import { ToastComponent } from '../ui/overlays/toast.component';
 
 /**
  * Top-level shell. On wide viewports, renders the sidebar to the left of the

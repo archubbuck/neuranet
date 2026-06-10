@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { IconComponent } from '../ui/icon.component';
+import { IconComponent } from '../ui/primitives/icon.component';
 import type { IconName } from '../ui/icons';
 
 interface NavItem {
