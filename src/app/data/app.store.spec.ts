@@ -68,14 +68,12 @@ describe('AppStore', () => {
 		expect(store.filterClusters().has('c1')).toBe(false);
 	});
 
-	it('persists screen and collapsed to localStorage', () => {
-		store.setScreen('sources');
+	it('persists collapsed to localStorage', () => {
 		store.toggleCollapsed();
 		TestBed.tick();
 		const raw = localStorage.getItem('topicnet_v2');
 		expect(raw).not.toBeNull();
 		const parsed = JSON.parse(raw!);
-		expect(parsed.screen).toBe('sources');
 		expect(parsed.collapsed).toBe(true);
 	});
 

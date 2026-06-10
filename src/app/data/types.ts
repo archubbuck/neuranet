@@ -138,8 +138,6 @@ export interface ReportsResponse {
 
 // ───────────────────────────── UI state ─────────────────────────────
 
-export type Screen = 'network' | 'sources' | 'search' | 'reports' | 'settings';
-
 export type DetailView = 'closed' | 'slide' | 'full';
 
 export type ToastKind = 'info' | 'success' | 'error';

@@ -16,7 +16,6 @@ import type {
 	Job,
 	NetworkPayload,
 	Node,
-	Screen,
 	SourceType,
 } from './types';
 
@@ -34,7 +33,7 @@ import type {
  *     after the API call succeeds, so the UI never lies if the server
  *     rejects a write
  *
- * Persistence: a tiny slice of state (`screen`, `collapsed`) is mirrored
+ * Persistence: a tiny slice of UI state (`collapsed`) is mirrored
  * to `localStorage['topicnet_v2']` via an `effect` so the shell remembers
  * its layout across reloads. Data signals are intentionally **not**
  * persisted — they are re-fetched on every app load via `loadAll()`.
@@ -167,10 +166,8 @@ export class AppStore {
 
 	// ── shell UI state (persisted) ─────────────────────────────────────
 
-	private readonly _screen = signal<Screen>('network');
 	private readonly _collapsed = signal(false);
 
-	readonly screen = this._screen.asReadonly();
 	readonly collapsed = this._collapsed.asReadonly();
 
 	// Keep a small UI slice in localStorage so reloads feel sticky.
@@ -182,7 +179,6 @@ export class AppStore {
 		// re-runs whenever any tracked signal changes.
 		effect(() => {
 			const payload = {
-				screen: this._screen(),
 				collapsed: this._collapsed(),
 			};
 			try {
@@ -197,8 +193,7 @@ export class AppStore {
 		try {
 			const raw = localStorage.getItem(AppStore.STORAGE_KEY);
 			if (!raw) return;
-			const parsed = JSON.parse(raw) as { screen?: Screen; collapsed?: boolean };
-			if (parsed.screen) this._screen.set(parsed.screen);
+			const parsed = JSON.parse(raw) as { collapsed?: boolean };
 			if (typeof parsed.collapsed === 'boolean') this._collapsed.set(parsed.collapsed);
 		} catch {
 			// corrupted payload — start fresh
@@ -440,10 +435,6 @@ export class AppStore {
 
 	setDetailView(view: DetailView): void {
 		this._detailView.set(view);
-	}
-
-	setScreen(screen: Screen): void {
-		this._screen.set(screen);
 	}
 
 	toggleCollapsed(): void {
