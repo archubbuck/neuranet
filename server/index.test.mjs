@@ -541,6 +541,80 @@ describe('POST /api/nodes/bulk-delete', () => {
 	});
 });
 
+describe('GET /api/network', () => {
+	it('returns clusters, nodes (with degree), and edges', async () => {
+		seedFixture();
+		const res = await request('GET', '/api/network');
+		expect(res.status).toBe(200);
+
+		expect(res.body.derivedClusters).toHaveLength(2);
+		expect(res.body.derivedClusters[0]).toMatchObject({ id: 'c-alpha', label: 'Alpha', color: '#22D3EE' });
+
+		expect(res.body.derivedNodes).toHaveLength(3);
+		const n1 = res.body.derivedNodes.find((n) => n.id === 'n-alpha-1');
+		expect(n1).toMatchObject({ label: 'Climate', cluster: 'c-alpha', degree: 1 });
+		expect(typeof n1.isCentral).toBe('boolean');
+
+		expect(res.body.derivedEdges).toEqual([
+			{ source: 'n-alpha-1', target: 'n-alpha-2', kind: 'same-doc' },
+		]);
+	});
+
+	it('returns empty arrays when the database is empty', async () => {
+		const res = await request('GET', '/api/network');
+		expect(res.status).toBe(200);
+		expect(res.body).toEqual({ derivedClusters: [], derivedNodes: [], derivedEdges: [] });
+	});
+});
+
+describe('POST /api/docs (derivation)', () => {
+	it('creates the doc and derives a cluster, nodes, links, and chain edges', async () => {
+		const res = await request('POST', '/api/docs', {
+			title: 'Solar Energy Brief',
+			text: 'Solar power adoption is accelerating. Solar panels and battery storage costs are falling while grid demand for renewable energy keeps growing.',
+		});
+		expect(res.status).toBe(201);
+		expect(res.body.title).toBe('Solar Energy Brief');
+		expect(res.body.derivedNodeSlugs.length).toBeGreaterThan(0);
+		expect(res.body.derivedNodeSlugs.length).toBeLessThanOrEqual(4);
+
+		// One derived cluster from the primary keyword.
+		expect(db.prepare('SELECT COUNT(*) AS n FROM derived_clusters').get().n).toBe(1);
+		// Every derived node is linked back to the doc.
+		const links = db.prepare('SELECT COUNT(*) AS n FROM doc_node_links WHERE doc_id = ?').get(res.body.id).n;
+		expect(links).toBe(res.body.derivedNodeSlugs.length);
+		// Chain edges connect consecutive nodes (n nodes → n-1 edges).
+		expect(db.prepare('SELECT COUNT(*) AS n FROM node_links').get().n)
+			.toBe(res.body.derivedNodeSlugs.length - 1);
+	});
+
+	it('defaults the title when omitted', async () => {
+		const res = await request('POST', '/api/docs', {
+			text: 'renewable energy policy and carbon pricing mechanisms',
+		});
+		expect(res.status).toBe(201);
+		expect(res.body.title).toBe('Untitled document');
+	});
+
+	it('rejects when text is empty', async () => {
+		const res = await request('POST', '/api/docs', { title: 'x', text: '   ' });
+		expect(res.status).toBe(400);
+	});
+
+	it('lists created docs with derived node slugs via GET /api/docs', async () => {
+		await request('POST', '/api/docs', {
+			title: 'Doc A',
+			text: 'machine learning models require quality training data pipelines',
+		});
+		const res = await request('GET', '/api/docs');
+		expect(res.status).toBe(200);
+		expect(res.body).toHaveLength(1);
+		expect(res.body[0].title).toBe('Doc A');
+		expect(Array.isArray(res.body[0].derivedNodeSlugs)).toBe(true);
+		expect(res.body[0].derivedNodeSlugs.length).toBeGreaterThan(0);
+	});
+});
+
 describe('write atomicity', () => {
 	// Inject a mid-write failure with a RAISE(ABORT) trigger: if the route
 	// wraps its writes in a transaction, earlier inserts must roll back.
