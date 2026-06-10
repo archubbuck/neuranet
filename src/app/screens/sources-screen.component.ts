@@ -10,12 +10,17 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AppStore } from '../data/app.store';
+import { formatCount } from '../core/format';
 import { CheckboxComponent } from '../ui/checkbox.component';
 import { IconComponent } from '../ui/icon.component';
 import { PopoverComponent } from '../ui/popover.component';
 import { StatCardComponent } from '../ui/stat-card.component';
 import { HBarListComponent, type HBarRow } from '../ui/bar-list.component';
 import { StatusBadgeComponent } from '../ui/status-badge.component';
+import { PageHeaderComponent } from '../ui/page-header.component';
+import { SearchInputComponent } from '../ui/search-input.component';
+import { TabsComponent } from '../ui/tabs.component';
+import { ButtonComponent } from '../ui/button.component';
 import { AddSourceModalComponent } from './add-source-modal.component';
 import type { DataSource, Job, SourceStatus, SourceType } from '../data/types';
 import {
@@ -82,38 +87,25 @@ const TYPE_ICON: Record<SourceType, string> = {
 	selector: 'app-sources-screen',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, FormsModule, IconComponent, CheckboxComponent, PopoverComponent,
-		StatCardComponent, HBarListComponent, StatusBadgeComponent, AddSourceModalComponent],
+		StatCardComponent, HBarListComponent, StatusBadgeComponent, AddSourceModalComponent,
+		PageHeaderComponent, SearchInputComponent, TabsComponent, ButtonComponent],
 	template: `
 		<div class="root">
 			<!-- Header -->
 			<div class="header">
-				<div class="header-row">
-					<div class="header-text">
-						<h1>Manage sources</h1>
-						<p>A source is a connector — a subreddit, site or upload batch — that streams documents into the network. Rename, repoint its default cluster, pause, re-ingest or disconnect it. Each source feeds many nodes.</p>
-					</div>
-					<div class="header-actions">
-						<div class="search-wrap">
-							<span class="search-icon"><app-icon name="search" [size]="14" color="#475569" /></span>
-							<input class="search-input" type="search"
-								[(ngModel)]="searchQuery" placeholder="Filter sources…" />
-						</div>
-						<button class="btn-primary" type="button" (click)="modal.open()">
-							<app-icon name="plus" [size]="14" />
-						</button>
-					</div>
-				</div>
+				<app-page-header
+					heading="Manage sources"
+					subtitle="A source is a connector — a subreddit, site or upload batch — that streams documents into the network. Rename, repoint its default cluster, pause, re-ingest or disconnect it. Each source feeds many nodes."
+				>
+					<app-search-input [(value)]="searchQuery" placeholder="Filter sources…" />
+					<app-button variant="primary" (pressed)="modal.open()">
+						<app-icon name="plus" [size]="14" />
+					</app-button>
+				</app-page-header>
 			</div>
 
 			<!-- Tab strip -->
-			<div class="tabs">
-				@for (t of sourcesTabs; track t.id) {
-					<button class="tab" [class.on]="tab() === t.id" (click)="tab.set(t.id)">
-						<app-icon [name]="t.icon" [size]="15" [color]="tab() === t.id ? '#FBBF24' : 'currentColor'" />
-						{{ t.label }}
-					</button>
-				}
-			</div>
+			<app-tabs [tabs]="sourcesTabs" [(active)]="tab" />
 
 			<!-- ═══ Records tab ═══ -->
 			@if (tab() === 'records') {
@@ -625,10 +617,10 @@ export class SourcesScreenComponent {
 	protected readonly modal = viewChild.required<AddSourceModalComponent>('modal');
 
 	// ── tabs ──
-	protected readonly tab = signal<TabId>('records');
+	protected readonly tab = signal<string>('records');
 	protected readonly sourcesTabs = [
-		{ id: 'records' as const, label: 'Records', icon: 'list' as const },
-		{ id: 'analytics' as const, label: 'Analytics', icon: 'bar-chart-2' as const },
+		{ id: 'records', label: 'Records', icon: 'list' },
+		{ id: 'analytics', label: 'Analytics', icon: 'bar-chart-2' },
 	];
 
 	// ── Filters ────────────────────────────────────────────────────────
@@ -834,9 +826,7 @@ export class SourcesScreenComponent {
 		return TYPE_LABEL[type];
 	}
 
-	protected fmtK(n: number): string {
-		return n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n);
-	}
+	protected readonly fmtK = formatCount;
 
 	protected statusLabel(status: SourceStatus): string {
 		switch (status) {

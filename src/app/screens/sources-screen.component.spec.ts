@@ -71,7 +71,7 @@ describe('SourcesScreenComponent', () => {
 	it('shows the New source button', () => {
 		const fixture = TestBed.createComponent(SourcesScreenComponent);
 		fixture.detectChanges();
-		const btn = (fixture.nativeElement as HTMLElement).querySelector('.btn-primary');
+		const btn = (fixture.nativeElement as HTMLElement).querySelector('app-page-header app-button button');
 		expect(btn).toBeTruthy();
 		expect(btn?.querySelector('app-icon[name="plus"]')).toBeTruthy();
 	});

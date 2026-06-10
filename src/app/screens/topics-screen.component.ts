@@ -10,12 +10,17 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AppStore } from '../data/app.store';
+import { formatCount } from '../core/format';
 import { CheckboxComponent } from '../ui/checkbox.component';
 import { IconComponent } from '../ui/icon.component';
 import { PopoverComponent } from '../ui/popover.component';
 import { ModalComponent } from '../ui/modal.component';
 import { StatCardComponent } from '../ui/stat-card.component';
 import { HBarListComponent, type HBarRow } from '../ui/bar-list.component';
+import { PageHeaderComponent } from '../ui/page-header.component';
+import { SearchInputComponent } from '../ui/search-input.component';
+import { TabsComponent } from '../ui/tabs.component';
+import { ButtonComponent } from '../ui/button.component';
 import type { Cluster, Node } from '../data/types';
 import {
 	applySorts,
@@ -47,42 +52,25 @@ interface TopicRow {
 	selector: 'app-topics-screen',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, FormsModule, CheckboxComponent, IconComponent, PopoverComponent,
-		ModalComponent, StatCardComponent, HBarListComponent],
+		ModalComponent, StatCardComponent, HBarListComponent,
+		PageHeaderComponent, SearchInputComponent, TabsComponent, ButtonComponent],
 	template: `
 		<div class="root">
 			<!-- Header -->
 			<div class="header">
-				<div class="header-row">
-					<div class="header-text">
-						<h1>Manage topics</h1>
-						<p>Rename, reassign to a category, merge duplicates, remove topics, or add one by hand. Edits restructure the network graph immediately.</p>
-					</div>
-					<div class="header-actions">
-						<div class="search-wrap">
-							<span class="search-icon"><app-icon name="search" [size]="14" color="#475569" /></span>
-							<input class="search-input" type="search"
-								[ngModel]="searchFilter()" (ngModelChange)="searchFilter.set($event)"
-								placeholder="Filter topics…" />
-						</div>
-						<button class="btn-primary" type="button" (click)="openCreateModal()">
-							<app-icon name="plus" [size]="14" />
-						</button>
-					</div>
-				</div>
+				<app-page-header
+					heading="Manage topics"
+					subtitle="Rename, reassign to a category, merge duplicates, remove topics, or add one by hand. Edits restructure the network graph immediately."
+				>
+					<app-search-input [(value)]="searchFilter" placeholder="Filter topics…" />
+					<app-button variant="primary" (pressed)="openCreateModal()">
+						<app-icon name="plus" [size]="14" />
+					</app-button>
+				</app-page-header>
 			</div>
 
 			<!-- Tab strip -->
-			<div class="tabs">
-				@for (t of topicsTabs; track t.id) {
-					<button class="tab" [class.on]="tab() === t.id" (click)="tab.set(t.id)">
-						<app-icon [name]="t.icon" [size]="15" [color]="tab() === t.id ? '#FBBF24' : 'currentColor'" />
-						{{ t.label }}
-						@if (t.id === 'records' && rows().length > 0) {
-							<span class="tab-badge">{{ rows().length }}</span>
-						}
-					</button>
-				}
-			</div>
+			<app-tabs [tabs]="topicsTabs()" [(active)]="tab" />
 
 			@if (tab() === 'records') {
 				<!-- Toolbar -->
@@ -800,11 +788,11 @@ export class TopicsScreenComponent {
 	protected readonly store = inject(AppStore);
 
 	// ── tabs ──
-	protected readonly tab = signal<'records' | 'analytics'>('records');
-	protected readonly topicsTabs = [
-		{ id: 'records' as const, label: 'Topics', icon: 'list' as const },
-		{ id: 'analytics' as const, label: 'Analytics', icon: 'bar-chart-3' as const },
-	];
+	protected readonly tab = signal<string>('records');
+	protected readonly topicsTabs = computed(() => [
+		{ id: 'records', label: 'Topics', icon: 'list', badge: this.rows().length },
+		{ id: 'analytics', label: 'Analytics', icon: 'bar-chart-3' },
+	]);
 
 	// ── filters ──
 	protected readonly searchFilter = signal('');
@@ -997,9 +985,7 @@ export class TopicsScreenComponent {
 		}
 	}
 
-	protected fmtK(n: number): string {
-		return n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n);
-	}
+	protected readonly fmtK = formatCount;
 
 	protected async reassignOne(r: TopicRow, newCluster: string): Promise<void> {
 		if (newCluster === r.cluster) { this.categoryPickerId.set(null); return; }

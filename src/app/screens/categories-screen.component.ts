@@ -11,6 +11,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AppStore } from '../data/app.store';
+import { formatCount } from '../core/format';
 import { IconComponent } from '../ui/icon.component';
 import { ModalComponent } from '../ui/modal.component';
 import { PopoverComponent } from '../ui/popover.component';
@@ -19,6 +20,10 @@ import { HBarListComponent, type HBarRow } from '../ui/bar-list.component';
 import { DonutChartComponent, type DonutSegment } from '../ui/donut-chart.component';
 import { SentBarsComponent, type SentBarRow } from '../ui/sent-bars.component';
 import { StatCardComponent } from '../ui/stat-card.component';
+import { PageHeaderComponent } from '../ui/page-header.component';
+import { SearchInputComponent } from '../ui/search-input.component';
+import { TabsComponent } from '../ui/tabs.component';
+import { ButtonComponent } from '../ui/button.component';
 import type { Cluster } from '../data/types';
 import {
 	applySorts,
@@ -94,10 +99,6 @@ interface CatRow {
 	readonly cluster: Cluster;
 }
 
-function fmtK(n: number): string {
-	return n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n);
-}
-
 @Component({
 	selector: 'app-categories-screen',
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -112,43 +113,28 @@ function fmtK(n: number): string {
 		DonutChartComponent,
 		SentBarsComponent,
 		StatCardComponent,
+		PageHeaderComponent,
+		SearchInputComponent,
+		TabsComponent,
+		ButtonComponent,
 	],
 	template: `
 		<div class="root">
 			<!-- Header -->
 			<div class="header">
-				<div class="header-row">
-					<div class="header-text">
-						<h1>Manage categories</h1>
-						<p>Rename, recolor, merge, split or dissolve categories; changes restyle the network instantly.</p>
-					</div>
-					<div class="header-actions">
-						<div class="search-wrap">
-							<span class="search-icon"><app-icon name="search" [size]="14" color="#475569" /></span>
-							<input
-								class="search-input"
-								type="search"
-								[ngModel]="filter()"
-								(ngModelChange)="filter.set($event)"
-								placeholder="Filter categories…"
-							/>
-						</div>
-						<button class="btn-primary" type="button" (click)="openCreateModal()">
-							<app-icon name="plus" [size]="14" />
-						</button>
-					</div>
-				</div>
+				<app-page-header
+					heading="Manage categories"
+					subtitle="Rename, recolor, merge, split or dissolve categories; changes restyle the network instantly."
+				>
+					<app-search-input [(value)]="filter" placeholder="Filter categories…" />
+					<app-button variant="primary" (pressed)="openCreateModal()">
+						<app-icon name="plus" [size]="14" />
+					</app-button>
+				</app-page-header>
 			</div>
 
 			<!-- Tab strip -->
-			<div class="tabs">
-				@for (t of tabs; track t.id) {
-					<button class="tab" [class.on]="activeTab() === t.id" (click)="activeTab.set(t.id)">
-						<app-icon [name]="t.icon" [size]="15" [color]="activeTab() === t.id ? '#FBBF24' : 'currentColor'" />
-						{{ t.label }}
-					</button>
-				}
-			</div>
+			<app-tabs [tabs]="tabs" [(active)]="activeTab" />
 
 			<!-- ═══ Categories (records) tab ═══ -->
 			@if (activeTab() === 'records') {
@@ -863,10 +849,10 @@ export class CategoriesScreenComponent {
 	private readonly router = inject(Router);
 
 	// ── tabs ──
-	protected readonly activeTab = signal<'records' | 'analytics'>('records');
+	protected readonly activeTab = signal<string>('records');
 	protected readonly tabs = [
-		{ id: 'records' as const, label: 'Categories', icon: 'list' as const },
-		{ id: 'analytics' as const, label: 'Analytics', icon: 'bar-chart-2' as const },
+		{ id: 'records', label: 'Categories', icon: 'list' },
+		{ id: 'analytics', label: 'Analytics', icon: 'bar-chart-2' },
 	];
 
 	// ── filter + selection ──
@@ -1164,7 +1150,7 @@ export class CategoriesScreenComponent {
 	// ── utilities ──
 
 	protected readonly PALETTE = PALETTE;
-	protected readonly fmtK = fmtK;
+	protected readonly fmtK = formatCount;
 	protected readonly colorName = colorName;
 
 	protected fmtSent(v: number): string {

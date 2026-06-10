@@ -48,7 +48,7 @@ describe('CategoriesScreenComponent', () => {
 		const fixture = TestBed.createComponent(CategoriesScreenComponent);
 		fixture.detectChanges();
 		const btn = (fixture.nativeElement as HTMLElement).querySelector(
-			'.btn-primary',
+			'app-page-header app-button button',
 		) as HTMLButtonElement;
 		btn.click();
 		fixture.detectChanges();
