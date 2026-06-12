@@ -1,6 +1,6 @@
 // Force the app to use an in-memory SQLite DB BEFORE requiring the module.
-// `index.js` reads `TOPIC_VIZ_DB_PATH` at module load time.
-process.env.TOPIC_VIZ_DB_PATH = ':memory:';
+// `index.js` reads `NEURANET_DB_PATH` at module load time.
+process.env.NEURANET_DB_PATH = ':memory:';
 
 import { createRequire } from 'node:module';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';

@@ -15,7 +15,7 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    title: 'TopicNet',
+    title: 'Neuranet',
     loadComponent: () =>
       import('./screens/landing/landing-screen.component').then((m) => m.LandingScreenComponent),
   },
@@ -25,13 +25,13 @@ export const routes: Routes = [
     children: [
       {
         path: 'network',
-        title: 'Network · TopicNet',
+        title: 'Network · Neuranet',
         loadComponent: () =>
           import('./screens/network/index.component').then((m) => m.IndexComponent),
       },
       {
         path: 'categories',
-        title: 'Categories · TopicNet',
+        title: 'Categories · Neuranet',
         loadComponent: () =>
           import('./screens/categories/categories-screen.component').then(
             (m) => m.CategoriesScreenComponent,
@@ -39,13 +39,13 @@ export const routes: Routes = [
       },
       {
         path: 'topics',
-        title: 'Topics · TopicNet',
+        title: 'Topics · Neuranet',
         loadComponent: () =>
           import('./screens/topics/topics-screen.component').then((m) => m.TopicsScreenComponent),
       },
       {
         path: 'sources',
-        title: 'Sources · TopicNet',
+        title: 'Sources · Neuranet',
         loadComponent: () =>
           import('./screens/sources/sources-screen.component').then(
             (m) => m.SourcesScreenComponent,
@@ -53,13 +53,13 @@ export const routes: Routes = [
       },
       {
         path: 'search',
-        title: 'Search · TopicNet',
+        title: 'Search · Neuranet',
         loadComponent: () =>
           import('./screens/search/search-screen.component').then((m) => m.SearchScreenComponent),
       },
       {
         path: 'reports',
-        title: 'Reports · TopicNet',
+        title: 'Reports · Neuranet',
         loadComponent: () =>
           import('./screens/reports/reports-screen.component').then(
             (m) => m.ReportsScreenComponent,
@@ -67,7 +67,7 @@ export const routes: Routes = [
       },
       {
         path: 'settings',
-        title: 'Settings · TopicNet',
+        title: 'Settings · Neuranet',
         loadComponent: () =>
           import('./screens/settings/settings-screen.component').then(
             (m) => m.SettingsScreenComponent,

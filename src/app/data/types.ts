@@ -1,5 +1,5 @@
 /**
- * Canonical client-side types for TopicNet. These shape the JSON returned by
+ * Canonical client-side types for Neuranet. These shape the JSON returned by
  * the Express API plus the in-memory state managed by `AppStore`.
  *
  * Notes:

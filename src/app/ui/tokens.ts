@@ -1,5 +1,5 @@
 /**
- * TopicNet design tokens.
+ * Neuranet design tokens.
  *
  * Use these constants from TypeScript; the matching CSS custom properties
  * are exported by `src/styles.css` for stylesheet usage (e.g.

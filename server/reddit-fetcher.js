@@ -96,7 +96,7 @@ async function fetchThread(rawUrl) {
 
   const response = await fetch(apiUrl, {
     headers: {
-      'User-Agent': 'topic-visualizer/1.0 (educational project)',
+      'User-Agent': 'neuranet/1.0 (educational project)',
     },
   });
 

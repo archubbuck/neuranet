@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "topic-visualizer": {
+    "neuranet": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -55,10 +55,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "topic-visualizer:build:production"
+              "buildTarget": "neuranet:build:production"
             },
             "development": {
-              "buildTarget": "topic-visualizer:build:development"
+              "buildTarget": "neuranet:build:development"
             }
           },
           "defaultConfiguration": "development"

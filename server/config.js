@@ -9,12 +9,12 @@ const dataDir = path.join(__dirname, '..', 'data');
 module.exports = {
   port: Number(process.env.API_PORT || 3000),
   dataDir,
-  // `TOPIC_VIZ_DB_PATH` lets tests point at an in-memory or temp database
+  // `NEURANET_DB_PATH` lets tests point at an in-memory or temp database
   // (`:memory:` or `/tmp/foo.db`) instead of clobbering the dev DB.
-  dbPath: process.env.TOPIC_VIZ_DB_PATH || path.join(dataDir, 'topic-visualizer.db'),
+  dbPath: process.env.NEURANET_DB_PATH || path.join(dataDir, 'neuranet.db'),
   rateLimits: {
-    globalPerMinute: Number(process.env.TOPIC_VIZ_GLOBAL_RATE_MAX ?? 1_000),
-    fetchPerSourcePerMinute: Number(process.env.TOPIC_VIZ_FETCH_RATE_MAX ?? 5),
+    globalPerMinute: Number(process.env.NEURANET_GLOBAL_RATE_MAX ?? 1_000),
+    fetchPerSourcePerMinute: Number(process.env.NEURANET_FETCH_RATE_MAX ?? 5),
   },
   derivation: {
     /** Keywords extracted per uploaded document. */

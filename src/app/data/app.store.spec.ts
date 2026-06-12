@@ -9,7 +9,7 @@ describe('AppStore', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    localStorage.removeItem('topicnet_v2');
+    localStorage.removeItem('neuranet_v2');
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
@@ -75,7 +75,7 @@ describe('AppStore', () => {
   it('persists collapsed to localStorage', () => {
     store.toggleCollapsed();
     TestBed.tick();
-    const raw = localStorage.getItem('topicnet_v2');
+    const raw = localStorage.getItem('neuranet_v2');
     expect(raw).not.toBeNull();
     const parsed = JSON.parse(raw!);
     expect(parsed.collapsed).toBe(true);

@@ -28,7 +28,7 @@ import { AddSourceModalComponent } from '../sources/add-source-modal.component';
         <div>
           <h1>Your network is empty</h1>
           <p>
-            Add a source to start populating your knowledge graph. TopicNet ingests Reddit threads
+            Add a source to start populating your knowledge graph. Neuranet ingests Reddit threads
             today and grows from there.
           </p>
         </div>
@@ -178,7 +178,7 @@ export class OnboardingScreenComponent {
   readonly errorMessage = signal<string | null>(null);
 
   /**
-   * Seeds TopicNet with a curated public Reddit thread so the
+   * Seeds Neuranet with a curated public Reddit thread so the
    * graph has interesting structure. Uses a stable r/datascience question on
    * the field's future — no API key required.
    */

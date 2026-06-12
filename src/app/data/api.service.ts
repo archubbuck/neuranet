@@ -14,7 +14,7 @@ import type {
 const API = '/api';
 
 /**
- * Typed HTTP client for the TopicNet Express + SQLite backend. One method per
+ * Typed HTTP client for the Neuranet Express + SQLite backend. One method per
  * endpoint, returning the canonical client types from `data/types.ts`.
  *
  * Returns Promises (via `firstValueFrom`) so callers can `await` in `effect`s

@@ -32,7 +32,7 @@ const NAV: readonly NavItem[] = [
           <app-icon name="arrow-left" [size]="14" color="#FBBF24" />
         </button>
         <button class="header-btn header-title-btn" aria-label="Home" title="Home">
-          <span>TopicNet</span>
+          <span>Neuranet</span>
         </button>
         <button
           class="header-btn"

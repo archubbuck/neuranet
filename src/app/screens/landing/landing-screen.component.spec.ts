@@ -1,66 +1,64 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { LandingScreenComponent } from './landing-screen.component';
 
 describe('LandingScreenComponent', () => {
   beforeEach(async () => {
-    vi.useFakeTimers();
     await TestBed.configureTestingModule({
       imports: [LandingScreenComponent],
       providers: [provideRouter([])],
     }).compileComponents();
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-  });
-
-  it('renders the Enter button while idle', () => {
+  it('renders the hero headline and waitlist form by default', () => {
     const fixture = TestBed.createComponent(LandingScreenComponent);
     fixture.detectChanges();
-    const btn = (fixture.nativeElement as HTMLElement).querySelector('.enter-btn');
-    expect(btn?.textContent).toContain('Enter');
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('h1')?.textContent).toContain('Map the network');
+    expect(root.querySelector('.hero-copy form.cta-row')).toBeTruthy();
+    expect(root.querySelector('.cta-confirm')).toBeNull();
   });
 
-  it('cancels the animation frame loop on destroy', () => {
-    // Capture scheduled frame callbacks; ids are 1-based indices.
-    const frames: FrameRequestCallback[] = [];
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
-      frames.push(cb);
-      return frames.length;
-    });
-    const cancelSpy = vi.spyOn(window, 'cancelAnimationFrame');
-
+  it('shows the confirmation message after a valid email is submitted', () => {
     const fixture = TestBed.createComponent(LandingScreenComponent);
     fixture.detectChanges();
-
-    (fixture.componentInstance as unknown as { startAnimation(): void }).startAnimation();
-    vi.runOnlyPendingTimers(); // flush the startup setTimeout → runLoop schedules a frame
-    const componentFrameId = frames.length;
-    expect(componentFrameId).toBeGreaterThan(0);
-
-    fixture.destroy();
-    expect(cancelSpy).toHaveBeenCalledWith(componentFrameId);
-
-    // Even if the frame fires after destroy, the loop must not reschedule.
-    const before = frames.length;
-    frames[componentFrameId - 1](0);
-    expect(frames.length).toBe(before);
+    const component = fixture.componentInstance as unknown as {
+      email: { set(value: string): void };
+      onSubmit(): void;
+    };
+    component.email.set('hello@example.com');
+    component.onSubmit();
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.hero-copy form.cta-row')).toBeNull();
+    expect(root.querySelector('.cta-confirm')?.textContent).toContain("You're on the list");
   });
 
-  it('does not start the loop if destroyed before the startup timer fires', () => {
-    const rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(42);
-
+  it('ignores submissions that are missing or malformed', () => {
     const fixture = TestBed.createComponent(LandingScreenComponent);
     fixture.detectChanges();
+    const component = fixture.componentInstance as unknown as {
+      email: { set(value: string): void };
+      onSubmit(): void;
+      submitted: () => boolean;
+    };
+    component.email.set('not-an-email');
+    component.onSubmit();
+    expect(component.submitted()).toBe(false);
 
-    (fixture.componentInstance as unknown as { startAnimation(): void }).startAnimation();
-    fixture.destroy();
-    const callsBefore = rafSpy.mock.calls.length;
-    vi.runOnlyPendingTimers();
+    component.email.set('');
+    component.onSubmit();
+    expect(component.submitted()).toBe(false);
+  });
 
-    expect(rafSpy.mock.calls.length).toBe(callsBefore);
+  it('renders the three "how it works" markers', () => {
+    const fixture = TestBed.createComponent(LandingScreenComponent);
+    fixture.detectChanges();
+    const markers = (fixture.nativeElement as HTMLElement).querySelectorAll('.how-marker');
+    expect(markers.length).toBe(3);
+    expect(markers[0]?.textContent).toContain('Connect sources');
+    expect(markers[1]?.textContent).toContain('Structure emerges');
+    expect(markers[2]?.textContent).toContain('Answers, quantified');
   });
 });

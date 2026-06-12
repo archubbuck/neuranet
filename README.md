@@ -1,4 +1,4 @@
-# Topic Visualizer
+# Neuranet
 
 Interactive topic-network visualizer. An Express + SQLite backend ingests documents (manual upload or Reddit fetch), derives topic clusters/nodes/edges from keywords, and an Angular frontend renders the network with management, search, and reporting screens.
 
@@ -26,7 +26,7 @@ Open `http://localhost:4200/`. The dev server proxies `/api/*` to the backend vi
 
 ## Data
 
-- SQLite database at `data/topic-visualizer.db` (git-ignored). Override the path with the `TOPIC_VIZ_DB_PATH` env var (`:memory:` for ephemeral runs).
+- SQLite database at `data/neuranet.db` (git-ignored). Override the path with the `NEURANET_DB_PATH` env var (`:memory:` for ephemeral runs).
 - Seed sample data: `node scripts/seed.mjs` (API must be running).
 - Documents can be added via the UI (paste text) or by configuring a Reddit source and fetching.
 

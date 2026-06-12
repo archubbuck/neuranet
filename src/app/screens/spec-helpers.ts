@@ -89,7 +89,7 @@ export async function seedAppStore(opts: SeedOptions = {}): Promise<{
   store: AppStore;
   http: HttpTestingController;
 }> {
-  localStorage.removeItem('topicnet_v2');
+  localStorage.removeItem('neuranet_v2');
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
