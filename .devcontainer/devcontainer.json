@@ -1,0 +1,29 @@
+{
+  "name": "Neuranet",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "forwardPorts": [4200, 3000],
+  "portsAttributes": {
+    "4200": { "label": "Angular UI", "onAutoForward": "openPreview" },
+    "3000": { "label": "Express API", "onAutoForward": "silent" }
+  },
+  "postCreateCommand": "corepack enable && corepack prepare pnpm@11.5.1 --activate && pnpm install --frozen-lockfile",
+  "remoteUser": "node",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "angular.ng-template",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "vitest.explorer"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "eslint.useFlatConfig": true
+      }
+    }
+  }
+}
