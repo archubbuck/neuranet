@@ -1,6 +1,9 @@
 /**
  * Standalone migration runner: applies all pending migrations to the
  * configured database. Detects dialect from POSTGRES_URL env var.
+ * - POSTGRES_URL with neon.tech → Neon HTTP driver
+ * - POSTGRES_URL without neon.tech → pg (node-postgres) for CI
+ * - No POSTGRES_URL → better-sqlite3
  * Called via `pnpm db:migrate`.
  */
 import { dirname, join } from 'node:path';
@@ -8,22 +11,38 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+function isNeonUrl(url: string): boolean {
+  return url.includes('neon.tech');
+}
+
 async function main() {
   const postgresUrl = process.env['POSTGRES_URL'];
 
   if (postgresUrl) {
-    // Postgres path
-    const { neon } = await import('@neondatabase/serverless');
-    const { drizzle } = await import('drizzle-orm/neon-http');
-    const { migrate } = await import('drizzle-orm/neon-http/migrator');
-    const schema = await import('./schema.pg');
+    const pgMigrationsDir = join(__dirname, '..', 'migrations', 'postgres');
 
-    const sql = neon(postgresUrl);
-    const db = drizzle({ client: sql, schema });
+    if (isNeonUrl(postgresUrl)) {
+      // Neon HTTP driver
+      const { neon } = await import('@neondatabase/serverless');
+      const { drizzle } = await import('drizzle-orm/neon-http');
+      const { migrate } = await import('drizzle-orm/neon-http/migrator');
+      const schema = await import('./schema.pg');
 
-    await migrate(db, {
-      migrationsFolder: join(__dirname, '..', 'migrations', 'postgres'),
-    });
+      const sql = neon(postgresUrl);
+      const db = drizzle({ client: sql, schema });
+      await migrate(db, { migrationsFolder: pgMigrationsDir });
+    } else {
+      // Standard pg driver (CI/local Postgres)
+      const { Pool } = await import('pg');
+      const { drizzle } = await import('drizzle-orm/node-postgres');
+      const { migrate } = await import('drizzle-orm/node-postgres/migrator');
+      const schema = await import('./schema.pg');
+
+      const pool = new Pool({ connectionString: postgresUrl });
+      const db = drizzle({ client: pool, schema });
+      await migrate(db, { migrationsFolder: pgMigrationsDir });
+      await pool.end();
+    }
 
     console.log('Postgres migrations applied successfully.');
   } else {
@@ -41,10 +60,7 @@ async function main() {
     sqlite.pragma('foreign_keys = ON');
 
     const db = drizzle(sqlite, { schema });
-
-    migrate(db, {
-      migrationsFolder: join(__dirname, '..', 'migrations', 'sqlite'),
-    });
+    migrate(db, { migrationsFolder: join(__dirname, '..', 'migrations', 'sqlite') });
 
     console.log('SQLite migrations applied successfully.');
   }

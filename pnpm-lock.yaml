@@ -93,6 +93,9 @@ importers:
       '@types/node':
         specifier: ^25.9.3
         version: 25.9.3
+      '@types/pg':
+        specifier: ^8.20.0
+        version: 8.20.0
       '@types/uuid':
         specifier: ^11.0.0
         version: 11.0.0
@@ -107,7 +110,7 @@ importers:
         version: 0.31.10
       drizzle-orm:
         specifier: ^0.45.2
-        version: 0.45.2(@neondatabase/serverless@1.1.0)(@types/better-sqlite3@7.6.13)(@upstash/redis@1.38.0)(better-sqlite3@12.10.0)(pg@8.21.0)
+        version: 0.45.2(@neondatabase/serverless@1.1.0)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(@upstash/redis@1.38.0)(better-sqlite3@12.10.0)(pg@8.21.0)
       eslint:
         specifier: ^10.3.0
         version: 10.4.1
@@ -1918,6 +1921,9 @@ packages:
 
   '@types/node@25.9.3':
     resolution: {integrity: sha512-603BddQMv3pUcr4U2dhujk83N2tTDVr/34wII2B6bJy6g+8WD6yUb11jszNs0gdi4PesVWl7ABt8nYMVpnLUcg==}
+
+  '@types/pg@8.20.0':
+    resolution: {integrity: sha512-bEPFOaMAHTEP1EzpvHTbmwR8UsFyHSKsRisLIHVMXnpNefSbGA1bD6CVy+qKjGSqmZqNqBDV2azOBo8TgkcVow==}
 
   '@types/qs@6.15.1':
     resolution: {integrity: sha512-GZHUBZR9hckSUhrxmp1nG6NwdpM9fCunJwyThLW1X3AyHgd9IlHb6VANpQQqDr2o/qQp6McZ3y/IA2rVzKzSbw==}
@@ -5406,6 +5412,12 @@ snapshots:
     dependencies:
       undici-types: 7.24.6
 
+  '@types/pg@8.20.0':
+    dependencies:
+      '@types/node': 25.9.3
+      pg-protocol: 1.14.0
+      pg-types: 2.2.0
+
   '@types/qs@6.15.1': {}
 
   '@types/range-parser@1.2.7': {}
@@ -5958,10 +5970,11 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.22.4
 
-  drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/better-sqlite3@7.6.13)(@upstash/redis@1.38.0)(better-sqlite3@12.10.0)(pg@8.21.0):
+  drizzle-orm@0.45.2(@neondatabase/serverless@1.1.0)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(@upstash/redis@1.38.0)(better-sqlite3@12.10.0)(pg@8.21.0):
     optionalDependencies:
       '@neondatabase/serverless': 1.1.0
       '@types/better-sqlite3': 7.6.13
+      '@types/pg': 8.20.0
       '@upstash/redis': 1.38.0
       better-sqlite3: 12.10.0
       pg: 8.21.0
