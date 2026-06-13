@@ -2,15 +2,7 @@ import { sql, eq } from 'drizzle-orm';
 import * as s from '../db/schema';
 import type { Dialect } from '../lib/sql-helpers';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
-
-function sqlIn(values: string[]) {
-  return sql.join(
-    values.map((v) => sql`${v}`),
-    sql`, `,
-  );
-}
 
 export interface DeriveResult {
   nodeCount: number;

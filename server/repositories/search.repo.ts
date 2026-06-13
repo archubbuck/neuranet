@@ -1,8 +1,7 @@
-import { sql, like, or } from 'drizzle-orm';
+import { like, or } from 'drizzle-orm';
 import * as s from '../db/schema';
 import type { Dialect } from '../lib/sql-helpers';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
 
 const SNIPPET_PAD = 80;

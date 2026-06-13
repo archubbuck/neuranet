@@ -5,9 +5,9 @@
  * This file lives at `api/index.ts` so Vercel discovers it as the
  * handler for `/api/*` requests (see vercel.json rewrites).
  */
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { app } from '../server/index';
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default function handler(req: IncomingMessage, res: ServerResponse) {
   return app(req, res);
 }

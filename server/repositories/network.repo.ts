@@ -2,7 +2,6 @@ import { sql } from 'drizzle-orm';
 import * as s from '../db/schema';
 import type { Dialect } from '../lib/sql-helpers';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
 
 export class NetworkRepo {

@@ -1,7 +1,7 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import config from '../config';
 import { createSqliteDriver } from './drivers/sqlite';
+import { createPostgresDriver, applyPostgresMigrations } from './drivers/postgres';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const sqliteMigrationsDir = join(__dirname, '..', 'migrations', 'sqlite');
@@ -18,15 +18,9 @@ function createDb() {
   const postgresUrl = process.env['POSTGRES_URL'];
 
   if (postgresUrl) {
-    // Lazy-load Postgres driver — avoids importing neon in SQLite-only contexts.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { createPostgresDriver, applyPostgresMigrations } =
-      require('./drivers/postgres') as typeof import('./drivers/postgres');
     const pgMigrationsDir = join(__dirname, '..', 'migrations', 'postgres');
-
     const { db } = createPostgresDriver(pgMigrationsDir);
 
-    // Return a promise-like: the caller must await init before using.
     return {
       db: db as unknown as ReturnType<typeof createSqliteDriver>['db'],
       sqlite: undefined as never,

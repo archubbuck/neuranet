@@ -2,7 +2,7 @@
  * Cluster CRUD + atomic dissolve/merge.
  */
 import { Router } from 'express';
-import { clustersRepo, nodesRepo } from '../db';
+import { clustersRepo } from '../db';
 import * as schemas from '../schemas';
 import { validateBody } from '../middleware/validate';
 import { asyncHandler } from '../lib/async-handler';
