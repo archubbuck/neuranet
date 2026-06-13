@@ -1,0 +1,15 @@
+name: Preview Teardown
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preview environment cleaned up by Vercel
+        run: |
+          echo "Vercel automatically removes preview deployments when a PR is closed."
+          echo "Neon database branches are automatically cleaned up based on their TTL."
+          echo "No manual cleanup required."

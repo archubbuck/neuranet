@@ -109,18 +109,15 @@ module.exports = defineConfig([
     },
   },
 
-  // ── Backend (CommonJS, Node) ─────────────────────────────────
+  // ── Backend (TypeScript, Node) ───────────────────────────────
   {
-    files: ['server/**/*.js', 'scripts/**/*.mjs'],
-    extends: [eslint.configs.recommended],
+    files: ['server/**/*.ts', 'scripts/**/*.ts'],
+    extends: [eslint.configs.recommended, tseslint.configs.recommended],
     languageOptions: {
-      sourceType: 'commonjs',
+      sourceType: 'module',
       globals: {
-        require: 'readonly',
-        module: 'writable',
         process: 'readonly',
         console: 'readonly',
-        __dirname: 'readonly',
         fetch: 'readonly',
         URL: 'readonly',
         URLSearchParams: 'readonly',
@@ -128,7 +125,8 @@ module.exports = defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_', caughtErrors: 'none' }],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', caughtErrors: 'none' }],
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
   {
