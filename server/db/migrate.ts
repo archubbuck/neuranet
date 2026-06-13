@@ -6,6 +6,10 @@
  * - No POSTGRES_URL → better-sqlite3
  * Called via `pnpm db:migrate`.
  */
+
+// Load .env.local if present (local dev). Silently skip on Vercel.
+try { process.loadEnvFile('.env.local'); } catch { /* optional */ }
+
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 

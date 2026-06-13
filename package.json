@@ -10,7 +10,7 @@
   "scripts": {
     "ng": "ng",
     "start": "concurrently --kill-others-on-fail --names \"api,ui\" --prefix-colors \"yellow,cyan\" \"npm:start:api\" \"npm:start:ui\"",
-    "start:api": "tsx --env-file=.env.local server/index.ts",
+    "start:api": "tsx server/index.ts",
     "start:ui": "ng serve --proxy-config proxy.conf.json",
     "build": "ng build",
     "build:server": "tsc -p server/tsconfig.json",
@@ -25,7 +25,7 @@
     "typecheck:server": "tsc -p server/tsconfig.json --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:generate:pg": "drizzle-kit generate --config=drizzle.config.pg.ts",
-    "db:migrate": "tsx --env-file=.env.local server/db/migrate.ts"
+    "db:migrate": "tsx server/db/migrate.ts"
   },
   "dependencies": {
     "@angular/common": "^22.0.0",
