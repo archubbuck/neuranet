@@ -84,7 +84,14 @@ export function getNetworkSnapshot() {
   return { derivedClusters, derivedNodes, derivedEdges };
 }
 
-function getCount(table: typeof schema.derivedNodes | typeof schema.derivedClusters | typeof schema.nodeLinks | typeof schema.dataSources | typeof schema.docs) {
+function getCount(
+  table:
+    | typeof schema.derivedNodes
+    | typeof schema.derivedClusters
+    | typeof schema.nodeLinks
+    | typeof schema.dataSources
+    | typeof schema.docs,
+) {
   return orm
     .select({ n: sql<number>`count(*)` })
     .from(table)
