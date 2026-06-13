@@ -4,12 +4,33 @@
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "32gb"
+  },
   "forwardPorts": [4200, 3000],
   "portsAttributes": {
     "4200": { "label": "Angular UI", "onAutoForward": "openPreview" },
     "3000": { "label": "Express API", "onAutoForward": "silent" }
   },
-  "postCreateCommand": "corepack enable && corepack prepare pnpm@11.5.1 --activate && pnpm install --frozen-lockfile",
+  "containerEnv": {
+    "NODE_ENV": "development",
+    "PNPM_HOME": "/home/node/.local/share/pnpm"
+  },
+  "remoteEnv": {
+    "PATH": "/home/node/.local/share/pnpm:${containerEnv:PATH}"
+  },
+  "mounts": [
+    "source=neuranet-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume"
+  ],
+  "onCreateCommand": "corepack enable && corepack prepare pnpm@11.5.1 --activate",
+  "updateContentCommand": "pnpm install --frozen-lockfile",
+  "postCreateCommand": "mkdir -p data",
+  "postAttachCommand": {
+    "welcome": "echo '\\n👋 Neuranet dev container ready.\\n  • pnpm start        — run API (3000) + Angular UI (4200)\\n  • pnpm test         — frontend unit tests\\n  • pnpm test:server  — backend tests (vitest)\\n  • pnpm lint         — lint frontend + server\\n'"
+  },
+  "waitFor": "updateContentCommand",
   "remoteUser": "node",
   "customizations": {
     "vscode": {
@@ -17,13 +38,21 @@
         "angular.ng-template",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
-        "vitest.explorer"
+        "vitest.explorer",
+        "editorconfig.editorconfig"
       ],
       "settings": {
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "eslint.useFlatConfig": true
+        "eslint.useFlatConfig": true,
+        "eslint.validate": ["javascript", "typescript", "html"],
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "typescript.enablePromptUseWorkspaceTsdk": true,
+        "files.eol": "\n"
       }
+    },
+    "codespaces": {
+      "openFiles": [".devcontainer/README.md"]
     }
   }
 }
