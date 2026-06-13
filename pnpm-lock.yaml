@@ -74,7 +74,7 @@ importers:
         version: 22.0.0(@angular/cli@22.0.0(@types/node@25.9.3)(chokidar@5.0.0))(chokidar@5.0.0)(eslint@10.4.1)(typescript@6.0.3)
       '@angular/build':
         specifier: ^22.0.0
-        version: 22.0.0(@angular/compiler-cli@22.0.0(@angular/compiler@22.0.0)(typescript@6.0.3))(@angular/compiler@22.0.0)(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2))(@angular/platform-browser@22.0.0(@angular/common@22.0.0(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2)))(@types/node@25.9.3)(chokidar@5.0.0)(postcss@8.5.15)(tslib@2.8.1)(tsx@4.22.4)(typescript@6.0.3)(vitest@4.1.8(@edge-runtime/vm@3.2.0)(@types/node@25.9.3)(jsdom@28.1.0)(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)))
+        version: 22.0.0(@angular/compiler-cli@22.0.0(@angular/compiler@22.0.0)(typescript@6.0.3))(@angular/compiler@22.0.0)(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2))(@angular/platform-browser@22.0.0(@angular/common@22.0.0(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2)))(@types/node@25.9.3)(chokidar@5.0.0)(postcss@8.5.15)(tslib@2.8.1)(tsx@4.22.4)(typescript@6.0.3)(vitest@4.1.8(@edge-runtime/vm@3.2.0)(@types/node@25.9.3)(jsdom@28.1.0)(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0)))(yaml@2.9.0)
       '@angular/cli':
         specifier: ^22.0.0
         version: 22.0.0(@types/node@25.9.3)(chokidar@5.0.0)
@@ -117,9 +117,15 @@ importers:
       eslint:
         specifier: ^10.3.0
         version: 10.4.1
+      husky:
+        specifier: ^9.1.7
+        version: 9.1.7
       jsdom:
         specifier: ^28.0.0
         version: 28.1.0
+      lint-staged:
+        specifier: ^17.0.7
+        version: 17.0.7
       pg:
         specifier: ^8.21.0
         version: 8.21.0
@@ -140,7 +146,7 @@ importers:
         version: 8.60.1(eslint@10.4.1)(typescript@6.0.3)
       vitest:
         specifier: ^4.0.8
-        version: 4.1.8(@edge-runtime/vm@3.2.0)(@types/node@25.9.3)(jsdom@28.1.0)(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4))
+        version: 4.1.8(@edge-runtime/vm@3.2.0)(@types/node@25.9.3)(jsdom@28.1.0)(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0))
 
 packages:
 
@@ -2837,6 +2843,11 @@ packages:
     resolution: {integrity: sha512-/MVmHp58WkOypgFhCLk4fzpPcFQvTJ/e6LBI7irpIO2HfxUbpmYoHF+KzipzJpxxzJu7aJNWQ0xojJ/dzV2G5g==}
     engines: {node: '>= 20'}
 
+  husky@9.1.7:
+    resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   iconv-lite@0.7.2:
     resolution: {integrity: sha512-im9DjEDQ55s9fL4EYzOAv0yMqmMBSZp6G0VvFyTMPKWxiSBHUj9NW/qqLmXUwXrrM7AvqSlTCfvqRb0cM8yYqw==}
     engines: {node: '>=0.10.0'}
@@ -2975,6 +2986,11 @@ packages:
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
+
+  lint-staged@17.0.7:
+    resolution: {integrity: sha512-JrSobt+tW3rH8IOMi8tDZd3foorM5yPEkLD/V2NxobgHrFfHWGee4MOLVuZeScgxftEwbHrPHIFA/ZL+nUJeuA==}
+    engines: {node: '>=22.22.1'}
+    hasBin: true
 
   listr2@10.2.1:
     resolution: {integrity: sha512-7I5knELsJKTUjXG+A6BkKAiGkW1i25fNa/xlUl9hFtk15WbE9jndA89xu5FzQKrY5llajE1hfZZFMILXkDHk/Q==}
@@ -3633,6 +3649,10 @@ packages:
     resolution: {integrity: sha512-eCPu1qRxPVkl5605OTWF8Wz40b4Mf45NY5LQmVPQ599knfs5QhASUm9GbJ5BDMDOXgrnh0wyEdvzmL//YMlw0A==}
     engines: {node: '>=18'}
 
+  string-argv@0.3.2:
+    resolution: {integrity: sha512-aqD2Q0144Z+/RqG52NeHEkZauTAUWJO8c6yTftGJKO3Tja5tUgIfmIl6kExvhtxSDP7fXB6DvzkfMpCd/F3G+Q==}
+    engines: {node: '>=0.6.19'}
+
   string-width@7.2.0:
     resolution: {integrity: sha512-tsaTIkKW9b4N+AEj+SVA+WhJzV7/zMhcSu78mLKWSk7cXMOSHsBKFWUs0fWwq8QyK3MgJBQRX6Gbi4kYbdvGkQ==}
     engines: {node: '>=18'}
@@ -3966,6 +3986,11 @@ packages:
     resolution: {integrity: sha512-YgvUTfwqyc7UXVMrB+SImsVYSmTS8X/tSrtdNZMImM+n7+QTriRXyXim0mBrTXNeqzVF0KWGgHPeiyViFFrNDw==}
     engines: {node: '>=18'}
 
+  yaml@2.9.0:
+    resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   yargs-parser@22.0.0:
     resolution: {integrity: sha512-rwu/ClNdSMpkSrUb+d6BRsSkLUq1fmfsY6TOpYzTwvwkg1/NRG85KBy3kq++A8LKQwX6lsu+aWad+2khvuXrqw==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=23}
@@ -4179,7 +4204,7 @@ snapshots:
       eslint: 10.4.1
       typescript: 6.0.3
 
-  '@angular/build@22.0.0(@angular/compiler-cli@22.0.0(@angular/compiler@22.0.0)(typescript@6.0.3))(@angular/compiler@22.0.0)(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2))(@angular/platform-browser@22.0.0(@angular/common@22.0.0(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2)))(@types/node@25.9.3)(chokidar@5.0.0)(postcss@8.5.15)(tslib@2.8.1)(tsx@4.22.4)(typescript@6.0.3)(vitest@4.1.8(@edge-runtime/vm@3.2.0)(@types/node@25.9.3)(jsdom@28.1.0)(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)))':
+  '@angular/build@22.0.0(@angular/compiler-cli@22.0.0(@angular/compiler@22.0.0)(typescript@6.0.3))(@angular/compiler@22.0.0)(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2))(@angular/platform-browser@22.0.0(@angular/common@22.0.0(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2)))(@types/node@25.9.3)(chokidar@5.0.0)(postcss@8.5.15)(tslib@2.8.1)(tsx@4.22.4)(typescript@6.0.3)(vitest@4.1.8(@edge-runtime/vm@3.2.0)(@types/node@25.9.3)(jsdom@28.1.0)(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0)))(yaml@2.9.0)':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@angular-devkit/architect': 0.2200.0(chokidar@5.0.0)
@@ -4189,7 +4214,7 @@ snapshots:
       '@babel/helper-annotate-as-pure': 7.27.3
       '@babel/helper-split-export-declaration': 7.24.7
       '@inquirer/confirm': 6.0.12(@types/node@25.9.3)
-      '@vitejs/plugin-basic-ssl': 2.3.0(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4))
+      '@vitejs/plugin-basic-ssl': 2.3.0(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0))
       beasties: 0.4.2
       browserslist: 4.28.2
       esbuild: 0.28.0
@@ -4208,14 +4233,14 @@ snapshots:
       tinyglobby: 0.2.16
       tslib: 2.8.1
       typescript: 6.0.3
-      vite: 7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)
+      vite: 7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0)
       watchpack: 2.5.1
     optionalDependencies:
       '@angular/core': 22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2)
       '@angular/platform-browser': 22.0.0(@angular/common@22.0.0(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.0(@angular/compiler@22.0.0)(rxjs@7.8.2))
       lmdb: 3.5.4
       postcss: 8.5.15
-      vitest: 4.1.8(@edge-runtime/vm@3.2.0)(@types/node@25.9.3)(jsdom@28.1.0)(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4))
+      vitest: 4.1.8(@edge-runtime/vm@3.2.0)(@types/node@25.9.3)(jsdom@28.1.0)(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0))
     transitivePeerDependencies:
       - '@types/node'
       - chokidar
@@ -5616,9 +5641,9 @@ snapshots:
     dependencies:
       uncrypto: 0.1.3
 
-  '@vitejs/plugin-basic-ssl@2.3.0(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4))':
+  '@vitejs/plugin-basic-ssl@2.3.0(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0))':
     dependencies:
-      vite: 7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)
+      vite: 7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0)
 
   '@vitest/expect@4.1.8':
     dependencies:
@@ -5629,13 +5654,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.0
 
-  '@vitest/mocker@4.1.8(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4))':
+  '@vitest/mocker@4.1.8(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0))':
     dependencies:
       '@vitest/spy': 4.1.8
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)
+      vite: 7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0)
 
   '@vitest/pretty-format@4.1.8':
     dependencies:
@@ -6461,6 +6486,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  husky@9.1.7: {}
+
   iconv-lite@0.7.2:
     dependencies:
       safer-buffer: 2.1.2
@@ -6572,6 +6599,15 @@ snapshots:
     dependencies:
       prelude-ls: 1.2.1
       type-check: 0.4.0
+
+  lint-staged@17.0.7:
+    dependencies:
+      listr2: 10.2.1
+      picomatch: 4.0.4
+      string-argv: 0.3.2
+      tinyexec: 1.2.4
+    optionalDependencies:
+      yaml: 2.9.0
 
   listr2@10.2.1:
     dependencies:
@@ -7339,6 +7375,8 @@ snapshots:
 
   stdin-discarder@0.3.2: {}
 
+  string-argv@0.3.2: {}
+
   string-width@7.2.0:
     dependencies:
       emoji-regex: 10.6.0
@@ -7504,7 +7542,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4):
+  vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0):
     dependencies:
       esbuild: 0.27.7
       fdir: 6.5.0(picomatch@4.0.4)
@@ -7517,11 +7555,12 @@ snapshots:
       fsevents: 2.3.3
       sass: 1.99.0
       tsx: 4.22.4
+      yaml: 2.9.0
 
-  vitest@4.1.8(@edge-runtime/vm@3.2.0)(@types/node@25.9.3)(jsdom@28.1.0)(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)):
+  vitest@4.1.8(@edge-runtime/vm@3.2.0)(@types/node@25.9.3)(jsdom@28.1.0)(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.8
-      '@vitest/mocker': 4.1.8(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4))
+      '@vitest/mocker': 4.1.8(vite@7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0))
       '@vitest/pretty-format': 4.1.8
       '@vitest/runner': 4.1.8
       '@vitest/snapshot': 4.1.8
@@ -7538,7 +7577,7 @@ snapshots:
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vite: 7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)
+      vite: 7.3.2(@types/node@25.9.3)(sass@1.99.0)(tsx@4.22.4)(yaml@2.9.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@edge-runtime/vm': 3.2.0
@@ -7613,6 +7652,9 @@ snapshots:
   yallist@4.0.0: {}
 
   yallist@5.0.0: {}
+
+  yaml@2.9.0:
+    optional: true
 
   yargs-parser@22.0.0: {}
 
