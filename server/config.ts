@@ -4,7 +4,11 @@
  */
 
 // Load .env.local if present (local dev). Silently skip on Vercel.
-try { process.loadEnvFile('.env.local'); } catch { /* optional */ }
+try {
+  process.loadEnvFile('.env.local');
+} catch {
+  /* optional */
+}
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

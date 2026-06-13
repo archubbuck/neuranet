@@ -91,9 +91,7 @@ export const dataSources = sqliteTable('data_sources', {
 export const waitlistEntries = sqliteTable('waitlist_entries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   email: text('email').notNull().unique(),
-  confirmationSent: integer('confirmation_sent', { mode: 'boolean' })
-    .notNull()
-    .default(false),
+  confirmationSent: integer('confirmation_sent', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),

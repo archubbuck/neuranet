@@ -171,8 +171,6 @@ export class ApiService {
   // ── waitlist ──────────────────────────────────────────────────────
 
   async joinWaitlist(email: string): Promise<JoinWaitlistResult> {
-    return firstValueFrom(
-      this.http.post<JoinWaitlistResult>(`${API}/waitlist`, { email }),
-    );
+    return firstValueFrom(this.http.post<JoinWaitlistResult>(`${API}/waitlist`, { email }));
   }
 }

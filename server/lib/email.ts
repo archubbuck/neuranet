@@ -50,9 +50,7 @@ export interface SendEmailError {
  *
  * The "from" address must be a domain you've verified in Resend.
  */
-export async function sendEmail(
-  opts: SendEmailOptions,
-): Promise<SendEmailResult | SendEmailError> {
+export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult | SendEmailError> {
   const resend = getResend();
   if (!resend) {
     logger.warn('sendEmail skipped: RESEND_API_KEY not configured');
@@ -71,9 +69,7 @@ export async function sendEmail(
       ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
     };
 
-    const { data, error } = await resend.emails.send(
-      payload as unknown as CreateEmailOptions,
-    );
+    const { data, error } = await resend.emails.send(payload as unknown as CreateEmailOptions);
 
     if (error) {
       logger.error({ err: error }, 'Resend send failed');
