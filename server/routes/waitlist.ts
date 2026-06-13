@@ -4,7 +4,7 @@
  */
 import { Router } from 'express';
 import { eq } from 'drizzle-orm';
-import { drizzle } from '../db';
+import { dialect, drizzle } from '../db';
 import * as s from '../db/schema';
 import config from '../config';
 import * as schemas from '../schemas';
@@ -15,6 +15,23 @@ import { logger } from '../lib/logger';
 
 const router = Router();
 
+/** Execute a select query returning rows, bridging sync (SQLite) and async (Postgres). */
+async function selectRows<T>(q: any): Promise<T[]> {
+  if (dialect === 'postgres') {
+    return q as Promise<T[]>;
+  }
+  return q.all() as T[];
+}
+
+/** Execute a write query (insert / update / delete), bridging sync and async. */
+async function execute(q: any): Promise<void> {
+  if (dialect === 'postgres') {
+    await q;
+  } else {
+    q.run();
+  }
+}
+
 router.post(
   '/waitlist',
   validateBody(schemas.joinWaitlist),
@@ -22,11 +39,13 @@ router.post(
     const { email } = req.body as { email: string };
 
     // Check for duplicate.
-    const existing = drizzle
-      .select()
-      .from(s.waitlistEntries)
-      .where(eq(s.waitlistEntries.email, email))
-      .get();
+    const rows = await selectRows<{ email: string }>(
+      drizzle
+        .select()
+        .from(s.waitlistEntries)
+        .where(eq(s.waitlistEntries.email, email)),
+    );
+    const existing = rows[0];
 
     if (existing) {
       // Don't reveal whether the email is already registered.
@@ -35,7 +54,7 @@ router.post(
     }
 
     // Insert the entry.
-    drizzle.insert(s.waitlistEntries).values({ email }).run();
+    await execute(drizzle.insert(s.waitlistEntries).values({ email }));
 
     // Send confirmation email (fire-and-forget — don't block the
     // response on email delivery).
@@ -46,13 +65,14 @@ router.post(
       text: `Hi there,\n\nThanks for joining the Neuranet waitlist! We'll let you know as soon as early access opens up.\n\n— The Neuranet Team`,
       html: `<p>Hi there,</p><p>Thanks for joining the <strong>Neuranet</strong> waitlist! We'll let you know as soon as early access opens up.</p><p>— The Neuranet Team</p>`,
     })
-      .then((result) => {
+      .then(async (result) => {
         if (result.ok) {
-          drizzle
-            .update(s.waitlistEntries)
-            .set({ confirmationSent: true })
-            .where(eq(s.waitlistEntries.email, email))
-            .run();
+          await execute(
+            drizzle
+              .update(s.waitlistEntries)
+              .set({ confirmationSent: true })
+              .where(eq(s.waitlistEntries.email, email)),
+          );
         } else {
           logger.warn({ email }, 'Waitlist confirmation email failed to send');
         }
