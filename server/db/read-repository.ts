@@ -92,10 +92,12 @@ function getCount(
     | typeof schema.dataSources
     | typeof schema.docs,
 ) {
-  return orm
-    .select({ n: sql<number>`count(*)` })
-    .from(table)
-    .get().n;
+  return (
+    orm
+      .select({ n: sql<number>`count(*)` })
+      .from(table)
+      .get()?.n ?? 0
+  );
 }
 
 export function getReportsSnapshot() {
@@ -117,11 +119,12 @@ export function getReportsSnapshot() {
     .all()
     .map((cluster) => ({
       ...cluster,
-      count: orm
-        .select({ n: sql<number>`count(*)` })
-        .from(schema.derivedNodes)
-        .where(sql`${schema.derivedNodes.clusterSlug} = ${cluster.id}`)
-        .get().n,
+      count:
+        orm
+          .select({ n: sql<number>`count(*)` })
+          .from(schema.derivedNodes)
+          .where(sql`${schema.derivedNodes.clusterSlug} = ${cluster.id}`)
+          .get()?.n ?? 0,
     }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 

@@ -62,7 +62,9 @@ export const nodeLinks = sqliteTable(
       .notNull()
       .default(sql`(datetime('now'))`),
   },
-  (table) => [uniqueIndex('node_links_source_target_unique').on(table.sourceSlug, table.targetSlug)],
+  (table) => [
+    uniqueIndex('node_links_source_target_unique').on(table.sourceSlug, table.targetSlug),
+  ],
 );
 
 export const docNodeLinks = sqliteTable(

@@ -73,11 +73,7 @@ export function extractThreadId(url: string): string {
  * Flatten a Reddit comment tree into a flat array of comment bodies.
  * Each entry: { body: string, depth: number }
  */
-export function flattenComments(
-  commentData: unknown,
-  depth = 0,
-  maxDepth = 3,
-): RedditComment[] {
+export function flattenComments(commentData: unknown, depth = 0, maxDepth = 3): RedditComment[] {
   if (!commentData) return [];
   const results: RedditComment[] = [];
 
@@ -135,8 +131,9 @@ export async function fetchThread(rawUrl: string): Promise<RedditThread> {
     throw new Error('Unexpected Reddit API response structure');
   }
 
-  const postData = (data[0] as { data?: { children?: Array<{ data?: { title?: string; selftext?: string } }> } })
-    ?.data?.children?.[0]?.data;
+  const postData = (
+    data[0] as { data?: { children?: Array<{ data?: { title?: string; selftext?: string } }> } }
+  )?.data?.children?.[0]?.data;
   if (!postData) {
     throw new Error('Could not parse thread post data');
   }

@@ -58,9 +58,9 @@ router.post('/sources', validateBody(schemas.createSource), (req: Request, res: 
 });
 
 router.get('/sources', (_req: Request, res: Response) => {
-  const sources = (db.prepare('SELECT * FROM data_sources ORDER BY created_at DESC').all() as SourceRow[]).map(
-    (row) => ({ ...row, config: JSON.parse(row.config_json) }),
-  );
+  const sources = (
+    db.prepare('SELECT * FROM data_sources ORDER BY created_at DESC').all() as SourceRow[]
+  ).map((row) => ({ ...row, config: JSON.parse(row.config_json) }));
   res.json(sources);
 });
 
@@ -201,7 +201,9 @@ router.post('/sources/:sourceId/fetch', fetchLimiter, async (req: Request, res: 
       return { nodeCount: nodes, edgeCount: edges };
     })();
 
-    const updated = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(source.id) as SourceRow;
+    const updated = db
+      .prepare('SELECT * FROM data_sources WHERE id = ?')
+      .get(source.id) as SourceRow;
     updated.config = JSON.parse(updated.config_json);
     res.json({ source: updated, nodeCount, edgeCount });
   } catch (err) {

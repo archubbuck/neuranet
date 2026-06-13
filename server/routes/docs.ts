@@ -86,7 +86,9 @@ router.post('/docs', validateBody(schemas.createDoc), (req: Request, res: Respon
         createEdge.run(createdNodeSlugs[i - 1], createdNodeSlugs[i], 'same-doc');
       }
 
-      const doc = db.prepare('SELECT id, title, text, status FROM docs WHERE id = ?').get(docId) as DocRow;
+      const doc = db
+        .prepare('SELECT id, title, text, status FROM docs WHERE id = ?')
+        .get(docId) as DocRow;
       doc.derivedNodeSlugs = createdNodeSlugs;
       return doc;
     })();
