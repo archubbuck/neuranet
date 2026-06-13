@@ -1,9 +1,7 @@
 // SSRF guard tests for the Reddit URL normalizer.
-import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 
-const require = createRequire(import.meta.url);
-const { normalizeUrl } = require('./reddit-fetcher.js');
+const { normalizeUrl } = await import('./reddit-fetcher.ts');
 
 describe('normalizeUrl SSRF guard', () => {
   it.each([

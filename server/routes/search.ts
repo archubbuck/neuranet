@@ -4,14 +4,14 @@
  * with `better-sqlite3` doesn't always include FTS5 and our corpora are
  * small (hundreds of rows, not millions).
  */
-const express = require('express');
-const db = require('../db');
+import express, { type Request, type Response } from 'express';
+import db from '../db';
 
 const router = express.Router();
 
 const SNIPPET_PAD = 80;
 
-function makeSnippet(text, needle) {
+function makeSnippet(text: string, needle: string): string {
   if (!text) return '';
   const idx = text.toLowerCase().indexOf(needle.toLowerCase());
   if (idx < 0) return text.slice(0, 160);
@@ -20,8 +20,30 @@ function makeSnippet(text, needle) {
   return (start > 0 ? '…' : '') + text.slice(start, end) + (end < text.length ? '…' : '');
 }
 
-router.get('/search', (req, res) => {
-  const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+interface NodeSearchRow {
+  id: string;
+  label: string | null;
+  desc: string | null;
+  cluster: string;
+}
+
+interface DocSearchRow {
+  id: number;
+  title: string | null;
+  text: string | null;
+}
+
+interface SearchResult {
+  type: 'node' | 'doc';
+  id: string;
+  label: string | null;
+  snippet: string;
+  meta: string;
+  score: number;
+}
+
+router.get('/search', (req: Request, res: Response) => {
+  const q = typeof req.query['q'] === 'string' ? (req.query['q'] as string).trim() : '';
   if (q.length < 2) {
     res.json({ results: [] });
     return;
@@ -35,7 +57,7 @@ router.get('/search', (req, res) => {
      WHERE lower(label) LIKE lower(?) ESCAPE '\\' OR lower(description) LIKE lower(?) ESCAPE '\\'
      LIMIT 25`,
     )
-    .all(like, like);
+    .all(like, like) as NodeSearchRow[];
 
   const docRows = db
     .prepare(
@@ -44,9 +66,9 @@ router.get('/search', (req, res) => {
      WHERE lower(title) LIKE lower(?) ESCAPE '\\' OR lower(text) LIKE lower(?) ESCAPE '\\'
      LIMIT 25`,
     )
-    .all(like, like);
+    .all(like, like) as DocSearchRow[];
 
-  const results = [];
+  const results: SearchResult[] = [];
   for (const row of nodeRows) {
     const labelMatch = (row.label ?? '').toLowerCase().includes(q.toLowerCase());
     results.push({
@@ -73,4 +95,4 @@ router.get('/search', (req, res) => {
   res.json({ results: results.slice(0, 40) });
 });
 
-module.exports = router;
+export default router;

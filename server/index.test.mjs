@@ -1,13 +1,14 @@
 // Force the app to use an in-memory SQLite DB BEFORE requiring the module.
-// `index.js` reads `NEURANET_DB_PATH` at module load time.
+// `index.ts` reads `NEURANET_DB_PATH` at module load time.
 process.env.NEURANET_DB_PATH = ':memory:';
 
-import { createRequire } from 'node:module';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-const require = createRequire(import.meta.url);
-const { app, db } = require('./index.js');
-const redditFetcher = require('./reddit-fetcher.js');
+// Dynamic import so the env var above is set before the app's module
+// graph (which reads `NEURANET_DB_PATH` at load time) is evaluated.
+const { app, db } = await import('./index.ts');
+const redditFetcherModule = await import('./reddit-fetcher.ts');
+const redditFetcher = redditFetcherModule.fetcher;
 const realFetchThread = redditFetcher.fetchThread;
 
 let server;

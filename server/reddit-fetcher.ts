@@ -3,17 +3,29 @@
  * No authentication required for public threads.
  *
  * Usage:
- *   const fetcher = require('./reddit-fetcher');
- *   const data = await fetcher.fetchThread('https://www.reddit.com/r/.../comments/.../...');
- *   // => { threadId, title, body, comments: string[] }
+ *   import { fetchThread } from './reddit-fetcher';
+ *   const data = await fetchThread('https://www.reddit.com/r/.../comments/.../...');
+ *   // => { threadId, title, body, comments: Array<{body, depth}> }
  */
+
+export interface RedditComment {
+  body: string;
+  depth: number;
+}
+
+export interface RedditThread {
+  threadId: string;
+  title: string;
+  body: string;
+  comments: RedditComment[];
+}
 
 /**
  * Normalize a Reddit URL to the JSON API endpoint.
  * Accepts: reddit.com, www.reddit.com, old.reddit.com
  * Returns: https://www.reddit.com/r/<sub>/comments/<id>/<slug>.json
  */
-function normalizeUrl(rawUrl) {
+export function normalizeUrl(rawUrl: string): string {
   let url = rawUrl.trim();
 
   // Strip trailing slashes and .json if present
@@ -49,26 +61,35 @@ function normalizeUrl(rawUrl) {
 /**
  * Extract the Reddit thread ID from a URL.
  */
-function extractThreadId(url) {
+export function extractThreadId(url: string): string {
   const match = url.match(/\/comments\/([a-z0-9]+)/i);
   if (!match) {
     throw new Error('Could not extract thread ID from URL');
   }
-  return match[1];
+  return match[1]!;
 }
 
 /**
  * Flatten a Reddit comment tree into a flat array of comment bodies.
  * Each entry: { body: string, depth: number }
  */
-function flattenComments(commentData, depth = 0, maxDepth = 3) {
+export function flattenComments(
+  commentData: unknown,
+  depth = 0,
+  maxDepth = 3,
+): RedditComment[] {
   if (!commentData) return [];
-  const results = [];
+  const results: RedditComment[] = [];
 
   // commentData can be an object or an array from the "children" of a "Listing"
-  const children = Array.isArray(commentData) ? commentData : (commentData.data?.children ?? []);
+  const children: unknown[] = Array.isArray(commentData)
+    ? commentData
+    : ((commentData as { data?: { children?: unknown[] } }).data?.children ?? []);
 
-  for (const child of children) {
+  for (const child of children as Array<{
+    kind?: string;
+    data?: { body?: string; replies?: { data?: { children?: unknown[] } } };
+  }>) {
     if (child.kind !== 't1') continue; // skip "more" links etc.
 
     const data = child.data;
@@ -86,11 +107,8 @@ function flattenComments(commentData, depth = 0, maxDepth = 3) {
 
 /**
  * Fetch and parse a Reddit thread.
- *
- * @param {string} rawUrl - Any Reddit thread URL
- * @returns {Promise<{ threadId: string, title: string, body: string, comments: Array<{body: string, depth: number}> }>}
  */
-async function fetchThread(rawUrl) {
+export async function fetchThread(rawUrl: string): Promise<RedditThread> {
   const apiUrl = normalizeUrl(rawUrl);
   const threadId = extractThreadId(rawUrl);
 
@@ -110,14 +128,15 @@ async function fetchThread(rawUrl) {
     throw new Error(`Reddit API returned status ${response.status}`);
   }
 
-  const data = await response.json();
+  const data = (await response.json()) as unknown;
 
   // Reddit returns an array: [postListing, commentsListing]
   if (!Array.isArray(data) || data.length < 2) {
     throw new Error('Unexpected Reddit API response structure');
   }
 
-  const postData = data[0]?.data?.children?.[0]?.data;
+  const postData = (data[0] as { data?: { children?: Array<{ data?: { title?: string; selftext?: string } }> } })
+    ?.data?.children?.[0]?.data;
   if (!postData) {
     throw new Error('Could not parse thread post data');
   }
@@ -126,9 +145,24 @@ async function fetchThread(rawUrl) {
   const body = postData.selftext || '';
 
   // Parse comments
-  const comments = flattenComments(data[1]?.data?.children, 0);
+  const comments = flattenComments(
+    (data[1] as { data?: { children?: unknown[] } })?.data?.children,
+    0,
+  );
 
   return { threadId, title, body, comments };
 }
 
-module.exports = { fetchThread, normalizeUrl, extractThreadId, flattenComments };
+/**
+ * Mutable shared module facade. Routes call `fetcher.fetchThread(...)`
+ * rather than the bare import so tests can swap in mock implementations
+ * without resorting to a full ESM mocking system.
+ */
+export const fetcher = {
+  fetchThread,
+  normalizeUrl,
+  extractThreadId,
+  flattenComments,
+};
+
+export default fetcher;

@@ -1,69 +1,85 @@
 /**
  * Data source CRUD + Reddit fetch/derivation.
  */
-const express = require('express');
-const { rateLimit } = require('express-rate-limit');
-const db = require('../db');
-const config = require('../config');
-const redditFetcher = require('../reddit-fetcher');
-const schemas = require('../schemas');
-const { validateBody } = require('../middleware/validate');
-const {
+import express, { type Request, type Response } from 'express';
+import { rateLimit } from 'express-rate-limit';
+import db from '../db';
+import config from '../config';
+import { fetcher as redditFetcher } from '../reddit-fetcher';
+import * as schemas from '../schemas';
+import { validateBody } from '../middleware/validate';
+import {
   slugify,
   titleCase,
   colorFromSlug,
   tokenize,
   topKeywords,
   scoreTopicMatch,
-} = require('../lib/derivation');
+} from '../lib/derivation';
 
 const router = express.Router();
+
+interface SourceRow {
+  id: number;
+  source_type: string;
+  config_json: string;
+  status: string;
+  status_message: string | null;
+  created_at: string;
+  config?: unknown;
+}
 
 // Strict per-source limiter: the fetch route hits an external API and
 // performs heavy derivation writes.
 const fetchLimiter = rateLimit({
   windowMs: 60_000,
   limit: config.rateLimits.fetchPerSourcePerMinute,
-  keyGenerator: (req) => `source-${req.params.sourceId}`,
+  keyGenerator: (req: Request) => `source-${req.params['sourceId']}`,
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
   message: { message: 'too many fetch requests for this source' },
 });
 
-router.post('/sources', validateBody(schemas.createSource), (req, res) => {
-  const { sourceType, config: sourceConfig } = req.body;
+router.post('/sources', validateBody(schemas.createSource), (req: Request, res: Response) => {
+  const { sourceType, config: sourceConfig } = req.body as {
+    sourceType: string;
+    config: Record<string, unknown>;
+  };
 
   const result = db
     .prepare('INSERT INTO data_sources (source_type, config_json) VALUES (?, ?)')
     .run(sourceType, JSON.stringify(sourceConfig));
   const source = db
     .prepare('SELECT * FROM data_sources WHERE id = ?')
-    .get(Number(result.lastInsertRowid));
+    .get(Number(result.lastInsertRowid)) as SourceRow;
   source.config = JSON.parse(source.config_json);
   res.status(201).json(source);
 });
 
-router.get('/sources', (_req, res) => {
-  const sources = db
-    .prepare('SELECT * FROM data_sources ORDER BY created_at DESC')
-    .all()
-    .map((row) => ({ ...row, config: JSON.parse(row.config_json) }));
+router.get('/sources', (_req: Request, res: Response) => {
+  const sources = (db.prepare('SELECT * FROM data_sources ORDER BY created_at DESC').all() as SourceRow[]).map(
+    (row) => ({ ...row, config: JSON.parse(row.config_json) }),
+  );
   res.json(sources);
 });
 
-router.delete('/sources/:sourceId', (req, res) => {
-  const source = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(req.params.sourceId);
+router.delete('/sources/:sourceId', (req: Request, res: Response) => {
+  const source = db
+    .prepare('SELECT * FROM data_sources WHERE id = ?')
+    .get(req.params['sourceId']) as SourceRow | undefined;
   if (!source) {
     res.status(404).json({ message: 'data source not found' });
     return;
   }
-  db.prepare('DELETE FROM data_sources WHERE id = ?').run(req.params.sourceId);
+  db.prepare('DELETE FROM data_sources WHERE id = ?').run(req.params['sourceId']);
   res.json({ deleted: true });
 });
 
-router.post('/sources/:sourceId/fetch', fetchLimiter, async (req, res) => {
-  const source = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(req.params.sourceId);
+router.post('/sources/:sourceId/fetch', fetchLimiter, async (req: Request, res: Response) => {
+  const source = db
+    .prepare('SELECT * FROM data_sources WHERE id = ?')
+    .get(req.params['sourceId']) as SourceRow | undefined;
   if (!source) {
     res.status(404).json({ message: 'data source not found' });
     return;
@@ -79,7 +95,7 @@ router.post('/sources/:sourceId/fetch', fetchLimiter, async (req, res) => {
   );
 
   try {
-    const sourceConfig = JSON.parse(source.config_json);
+    const sourceConfig = JSON.parse(source.config_json) as { threadUrl: string };
     const threadData = await redditFetcher.fetchThread(sourceConfig.threadUrl);
 
     // All derivation writes are atomic: a mid-write failure must not leave
@@ -103,9 +119,9 @@ router.post('/sources/:sourceId/fetch', fetchLimiter, async (req, res) => {
       const combinedText = `${threadData.title} ${threadData.body || ''}`;
       const depth1Keywords = topKeywords(combinedText, config.derivation.threadKeywordCount);
 
-      let nodes = 1,
-        edges = 0;
-      const depth1Slugs = [];
+      let nodes = 1;
+      let edges = 0;
+      const depth1Slugs: string[] = [];
 
       const insertNode = db.prepare(
         'INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (?, ?, ?, ?, ?, ?, 1) ON CONFLICT(slug) DO NOTHING',
@@ -115,7 +131,7 @@ router.post('/sources/:sourceId/fetch', fetchLimiter, async (req, res) => {
       );
 
       for (let i = 0; i < depth1Keywords.length; i += 1) {
-        const kw = depth1Keywords[i];
+        const kw = depth1Keywords[i]!;
         const nodeSlug = `reddit-${threadData.threadId}-d1-${slugify(kw)}`;
         insertNode.run(
           nodeSlug,
@@ -142,10 +158,10 @@ router.post('/sources/:sourceId/fetch', fetchLimiter, async (req, res) => {
         const commentKeywords = topKeywords(comment.body, config.derivation.commentKeywordCount);
         const commentTokenSet = new Set(tokenize(comment.body));
         for (const kw of commentKeywords) {
-          let bestParent = depth1Slugs[0],
-            bestScore = 0;
+          let bestParent = depth1Slugs[0];
+          let bestScore = 0;
           for (const d1Slug of depth1Slugs) {
-            const d1Node = getD1Label.get(d1Slug);
+            const d1Node = getD1Label.get(d1Slug) as { label: string } | undefined;
             if (!d1Node) continue;
             const s = scoreTopicMatch(commentTokenSet, d1Node.label);
             if (s > bestScore) {
@@ -185,13 +201,13 @@ router.post('/sources/:sourceId/fetch', fetchLimiter, async (req, res) => {
       return { nodeCount: nodes, edgeCount: edges };
     })();
 
-    const updated = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(source.id);
+    const updated = db.prepare('SELECT * FROM data_sources WHERE id = ?').get(source.id) as SourceRow;
     updated.config = JSON.parse(updated.config_json);
     res.json({ source: updated, nodeCount, edgeCount });
   } catch (err) {
     db.prepare('UPDATE data_sources SET status = ?, status_message = ? WHERE id = ?').run(
       'error',
-      err.message,
+      (err as Error).message,
       source.id,
     );
     // Log internally; never leak raw error details to the client.
@@ -200,4 +216,4 @@ router.post('/sources/:sourceId/fetch', fetchLimiter, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

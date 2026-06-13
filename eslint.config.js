@@ -6,7 +6,7 @@ const angular = require('angular-eslint');
 
 module.exports = defineConfig([
   {
-    files: ['**/*.ts'],
+    files: ['src/**/*.ts'],
     extends: [
       eslint.configs.recommended,
       tseslint.configs.recommended,
@@ -109,18 +109,41 @@ module.exports = defineConfig([
     },
   },
 
-  // ── Backend (CommonJS, Node) ─────────────────────────────────
+  // ── Backend (Node) ───────────────────────────────────────────
   {
-    files: ['server/**/*.js', 'scripts/**/*.mjs'],
-    extends: [eslint.configs.recommended],
+    files: ['server/**/*.ts', 'drizzle.config.ts'],
+    extends: [eslint.configs.recommended, tseslint.configs.recommended],
     languageOptions: {
-      sourceType: 'commonjs',
+      sourceType: 'module',
       globals: {
-        require: 'readonly',
-        module: 'writable',
         process: 'readonly',
         console: 'readonly',
         __dirname: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        setTimeout: 'readonly',
+        Buffer: 'readonly',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', caughtErrors: 'none' },
+      ],
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
+    files: ['scripts/**/*.mjs'],
+    extends: [eslint.configs.recommended],
+    languageOptions: {
+      sourceType: 'module',
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
         fetch: 'readonly',
         URL: 'readonly',
         URLSearchParams: 'readonly',
@@ -132,7 +155,21 @@ module.exports = defineConfig([
     },
   },
   {
-    files: ['scripts/**/*.mjs', 'server/**/*.mjs'],
-    languageOptions: { sourceType: 'module' },
+    files: ['server/**/*.test.mjs'],
+    extends: [eslint.configs.recommended],
+    languageOptions: {
+      sourceType: 'module',
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        setTimeout: 'readonly',
+      },
+    },
+    rules: {
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', caughtErrors: 'none' }],
+    },
   },
 ]);

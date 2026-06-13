@@ -2,19 +2,19 @@
  * Centralised runtime configuration. All env vars are read here so the
  * rest of the codebase never touches `process.env` directly.
  */
-const path = require('node:path');
+import path from 'node:path';
 
 const dataDir = path.join(__dirname, '..', 'data');
 
-module.exports = {
-  port: Number(process.env.API_PORT || 3000),
+const config = {
+  port: Number(process.env['API_PORT'] || 3000),
   dataDir,
   // `NEURANET_DB_PATH` lets tests point at an in-memory or temp database
   // (`:memory:` or `/tmp/foo.db`) instead of clobbering the dev DB.
-  dbPath: process.env.NEURANET_DB_PATH || path.join(dataDir, 'neuranet.db'),
+  dbPath: process.env['NEURANET_DB_PATH'] || path.join(dataDir, 'neuranet.db'),
   rateLimits: {
-    globalPerMinute: Number(process.env.NEURANET_GLOBAL_RATE_MAX ?? 1_000),
-    fetchPerSourcePerMinute: Number(process.env.NEURANET_FETCH_RATE_MAX ?? 5),
+    globalPerMinute: Number(process.env['NEURANET_GLOBAL_RATE_MAX'] ?? 1_000),
+    fetchPerSourcePerMinute: Number(process.env['NEURANET_FETCH_RATE_MAX'] ?? 5),
   },
   derivation: {
     /** Keywords extracted per uploaded document. */
@@ -27,3 +27,6 @@ module.exports = {
     maxTopLevelComments: 15,
   },
 };
+
+export default config;
+export type AppConfig = typeof config;

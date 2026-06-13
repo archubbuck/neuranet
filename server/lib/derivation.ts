@@ -79,7 +79,7 @@ const STOPWORDS = new Set([
   'your',
 ]);
 
-function slugify(value) {
+export function slugify(value: string): string {
   return value
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, ' ')
@@ -88,7 +88,7 @@ function slugify(value) {
     .replace(/-+/g, '-');
 }
 
-function tokenize(value) {
+export function tokenize(value: string): string[] {
   return value
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
@@ -96,7 +96,7 @@ function tokenize(value) {
     .filter((token) => token.length > 2 && !STOPWORDS.has(token));
 }
 
-function titleCase(value) {
+export function titleCase(value: string): string {
   return value
     .split(/[\s-]+/)
     .filter(Boolean)
@@ -104,7 +104,7 @@ function titleCase(value) {
     .join(' ');
 }
 
-function colorFromSlug(slug) {
+export function colorFromSlug(slug: string): string {
   let hash = 0;
   for (let i = 0; i < slug.length; i += 1) {
     hash = slug.charCodeAt(i) + ((hash << 5) - hash);
@@ -113,8 +113,8 @@ function colorFromSlug(slug) {
   return `hsl(${hue} 72% 62%)`;
 }
 
-function topKeywords(text, maxCount) {
-  const counts = new Map();
+export function topKeywords(text: string, maxCount: number): string[] {
+  const counts = new Map<string, number>();
   for (const token of tokenize(text)) {
     counts.set(token, (counts.get(token) ?? 0) + 1);
   }
@@ -124,7 +124,7 @@ function topKeywords(text, maxCount) {
     .map(([token]) => token);
 }
 
-function scoreTopicMatch(tokens, topicLabel) {
+export function scoreTopicMatch(tokens: Set<string>, topicLabel: string): number {
   const topicTokens = tokenize(topicLabel);
   let score = 0;
   for (const token of topicTokens) {
@@ -139,5 +139,3 @@ function scoreTopicMatch(tokens, topicLabel) {
   }
   return score;
 }
-
-module.exports = { slugify, tokenize, titleCase, colorFromSlug, topKeywords, scoreTopicMatch };

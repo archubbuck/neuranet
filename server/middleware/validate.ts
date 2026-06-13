@@ -3,7 +3,10 @@
  * defaulted) value replaces `req.body`; on failure the client receives a
  * 400 with field-level errors and the handler never runs.
  */
-function validateBody(schema) {
+import type { RequestHandler } from 'express';
+import type { ZodType } from 'zod';
+
+export function validateBody(schema: ZodType): RequestHandler {
   return (req, res, next) => {
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) {
@@ -20,5 +23,3 @@ function validateBody(schema) {
     next();
   };
 }
-
-module.exports = { validateBody };
