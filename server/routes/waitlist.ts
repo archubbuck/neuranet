@@ -40,10 +40,7 @@ router.post(
 
     // Check for duplicate.
     const rows = await selectRows<{ email: string }>(
-      drizzle
-        .select()
-        .from(s.waitlistEntries)
-        .where(eq(s.waitlistEntries.email, email)),
+      drizzle.select().from(s.waitlistEntries).where(eq(s.waitlistEntries.email, email)),
     );
     const existing = rows[0];
 
