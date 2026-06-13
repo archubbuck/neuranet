@@ -23,8 +23,7 @@ function createDb() {
 
     if (isNeonUrl(postgresUrl)) {
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { createPostgresDriver, applyPostgresMigrations } =
-        require('./drivers/postgres');
+      const { createPostgresDriver, applyPostgresMigrations } = require('./drivers/postgres');
       /* eslint-enable @typescript-eslint/no-require-imports */
       const { db } = createPostgresDriver(pgMigrationsDir);
 
