@@ -19,7 +19,7 @@
     "PNPM_HOME": "/home/node/.local/share/pnpm"
   },
   "remoteEnv": {
-    "PATH": "/home/node/.local/share/pnpm:${containerEnv:PATH}"
+    "PATH": "${containerEnv:PNPM_HOME}:${containerEnv:PATH}"
   },
   "mounts": [
     "source=neuranet-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume"
@@ -28,7 +28,7 @@
   "updateContentCommand": "pnpm install --frozen-lockfile",
   "postCreateCommand": "mkdir -p data",
   "postAttachCommand": {
-    "welcome": "echo '\\n👋 Neuranet dev container ready.\\n  • pnpm start        — run API (3000) + Angular UI (4200)\\n  • pnpm test         — frontend unit tests\\n  • pnpm test:server  — backend tests (vitest)\\n  • pnpm lint         — lint frontend + server\\n'"
+    "welcome": "printf '\\n👋 Neuranet dev container ready.\\n  • pnpm start        — run API (3000) + Angular UI (4200)\\n  • pnpm test         — frontend unit tests\\n  • pnpm test:server  — backend tests (vitest)\\n  • pnpm lint         — lint frontend + server\\n'"
   },
   "waitFor": "updateContentCommand",
   "remoteUser": "node",
