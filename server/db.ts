@@ -21,13 +21,14 @@ if (!fs.existsSync(config.dataDir)) {
 }
 
 const db = new Database(config.dbPath);
+const orm = drizzle(db, { schema });
 
 // Run all generated SQL migrations. The migrations folder ships with the
 // repo (`server/migrations/sqlite/`) and Drizzle tracks applied versions
 // in its own `__drizzle_migrations` table inside the database.
 const migrationsFolder = path.join(__dirname, 'migrations', 'sqlite');
-migrate(drizzle(db, { schema }), { migrationsFolder });
+migrate(orm, { migrationsFolder });
 
 export default db;
-export { schema };
+export { orm, schema };
 export type Db = typeof db;
