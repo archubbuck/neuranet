@@ -155,3 +155,9 @@ export interface Job {
   readonly message?: string;
   readonly createdAt: number;
 }
+
+// ───────────────────────────── Waitlist ─────────────────────────────
+
+export interface JoinWaitlistResult {
+  readonly ok: boolean;
+}

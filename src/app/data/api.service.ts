@@ -6,6 +6,7 @@ import type {
   DataSourceCreateInput,
   Doc,
   FetchSourceResult,
+  JoinWaitlistResult,
   NetworkPayload,
   ReportsResponse,
   SearchResponse,
@@ -165,5 +166,13 @@ export class ApiService {
   /** Atomically delete several nodes and their incident edges. */
   async bulkDeleteNodes(input: { nodeSlugs: string[] }): Promise<{ deleted: number }> {
     return firstValueFrom(this.http.post<{ deleted: number }>(`${API}/nodes/bulk-delete`, input));
+  }
+
+  // ── waitlist ──────────────────────────────────────────────────────
+
+  async joinWaitlist(email: string): Promise<JoinWaitlistResult> {
+    return firstValueFrom(
+      this.http.post<JoinWaitlistResult>(`${API}/waitlist`, { email }),
+    );
   }
 }

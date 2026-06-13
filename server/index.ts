@@ -28,6 +28,7 @@ import reportsRouter from './routes/reports';
 import clustersRouter from './routes/clusters';
 import nodesRouter from './routes/nodes';
 import docsRouter from './routes/docs';
+import waitlistRouter from './routes/waitlist';
 
 export const app = express();
 
@@ -109,6 +110,7 @@ app.use('/api', reportsRouter);
 app.use('/api', clustersRouter);
 app.use('/api', nodesRouter);
 app.use('/api', docsRouter);
+app.use('/api', waitlistRouter);
 
 // Central error handler — must be registered after all routes.
 app.use(errorHandler);

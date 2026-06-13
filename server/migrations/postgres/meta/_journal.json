@@ -8,6 +8,13 @@
       "when": 1781377324129,
       "tag": "0000_legal_triton",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781389421655,
+      "tag": "0001_aspiring_owl",
+      "breakpoints": true
     }
   ]
 }

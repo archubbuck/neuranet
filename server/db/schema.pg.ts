@@ -82,3 +82,11 @@ export const dataSources = pgTable('data_sources', {
   statusMessage: text('status_message'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+// ── waitlist_entries ──────────────────────────────────────────────────
+export const waitlistEntries = pgTable('waitlist_entries', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  email: text('email').notNull().unique(),
+  confirmationSent: boolean('confirmation_sent').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});

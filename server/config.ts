@@ -28,6 +28,10 @@ export default {
       process.env['UPSTASH_REDIS_REST_URL'] && process.env['UPSTASH_REDIS_REST_TOKEN'],
     ),
   },
+  /** Resend API key for transactional email. */
+  resendApiKey: process.env['RESEND_API_KEY'] || '',
+  /** "From" address for waitlist confirmation emails (must be verified in Resend). */
+  resendFromAddress: process.env['RESEND_FROM_ADDRESS'] || 'noreply@neuranetai.app',
   /** CORS origin for cross-origin requests. */
   corsOrigin: process.env['CORS_ORIGIN'] || 'http://localhost:4200',
   /** Node environment. */

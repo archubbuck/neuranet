@@ -70,3 +70,7 @@ export const dissolveClusters = z.object({
   sourceSlugs: slugArray,
   targetSlug: requiredSlug,
 });
+
+export const joinWaitlist = z.object({
+  email: trimmedString.email('invalid email address'),
+});
