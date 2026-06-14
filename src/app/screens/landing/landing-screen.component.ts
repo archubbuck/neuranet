@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IconComponent } from '../../ui/primitives/icon.component';
+import { ApiService } from '../../data/api.service';
 
 /**
  * Marketing landing page for Neuranet, ported from the
@@ -25,6 +26,8 @@ import { IconComponent } from '../../ui/primitives/icon.component';
   styleUrl: './landing-screen.component.css',
 })
 export class LandingScreenComponent {
+  private readonly api = inject(ApiService);
+
   protected readonly email = signal('');
   protected readonly submitted = signal(false);
   protected readonly email2 = signal('');
@@ -63,12 +66,12 @@ export class LandingScreenComponent {
   protected onSubmit(): void {
     const value = this.email().trim();
     if (!value || !/^\S+@\S+\.\S+$/.test(value)) return;
-    this.submitted.set(true);
+    this.api.joinWaitlist(value).then(() => this.submitted.set(true));
   }
 
   protected onFinalSubmit(): void {
     const value = this.email2().trim();
     if (!value || !/^\S+@\S+\.\S+$/.test(value)) return;
-    this.finalSubmitted.set(true);
+    this.api.joinWaitlist(value).then(() => this.finalSubmitted.set(true));
   }
 }

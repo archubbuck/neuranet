@@ -6,7 +6,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['server/**/*.test.mjs'],
+    include: ['server/**/*.test.{ts,mjs}'],
     // Each test file runs in its own worker with its own in-memory DB.
     isolate: true,
     pool: 'forks',

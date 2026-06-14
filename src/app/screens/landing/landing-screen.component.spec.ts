@@ -1,13 +1,20 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiService } from '../../data/api.service';
+import type { JoinWaitlistResult } from '../../data/types';
 import { LandingScreenComponent } from './landing-screen.component';
 
 describe('LandingScreenComponent', () => {
+  const joinWaitlist = vi.fn<(email: string) => Promise<JoinWaitlistResult>>();
+
   beforeEach(async () => {
+    joinWaitlist.mockReset();
+    joinWaitlist.mockResolvedValue({ ok: true });
+
     await TestBed.configureTestingModule({
       imports: [LandingScreenComponent],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), { provide: ApiService, useValue: { joinWaitlist } }],
     }).compileComponents();
   });
 
@@ -20,7 +27,7 @@ describe('LandingScreenComponent', () => {
     expect(root.querySelector('.cta-confirm')).toBeNull();
   });
 
-  it('shows the confirmation message after a valid email is submitted', () => {
+  it('shows the confirmation message after a valid email is submitted', async () => {
     const fixture = TestBed.createComponent(LandingScreenComponent);
     fixture.detectChanges();
     const component = fixture.componentInstance as unknown as {
@@ -29,6 +36,7 @@ describe('LandingScreenComponent', () => {
     };
     component.email.set('hello@example.com');
     component.onSubmit();
+    await vi.waitFor(() => expect(joinWaitlist).toHaveBeenCalledWith('hello@example.com'));
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.hero-copy form.cta-row')).toBeNull();

@@ -6,33 +6,147 @@ on:
   pull_request:
 
 jobs:
-  verify:
+  # ── Lint + Format ────────────────────────────────────────────────
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
-        # Version is resolved from the pinned `packageManager` field.
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Lint
         run: pnpm lint
-
       - name: Format check
         run: pnpm format:check
 
+  # ── Type safety ──────────────────────────────────────────────────
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Type check (server)
+        run: pnpm typecheck:server
+      - name: Build (Angular - includes type checking)
+        run: pnpm build
+
+  # ── Backend tests — Postgres ─────────────────────────────────────
+  test-server:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: neuranet_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Backend tests (Postgres)
+        run: pnpm test:server
+        env:
+          POSTGRES_URL: postgres://postgres:postgres@localhost:5432/neuranet_test
+
+  # ── Backend smoke test — Postgres ─────────────────────────────────
+  test-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: neuranet_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Apply Postgres migrations
+        run: pnpm db:migrate
+        env:
+          POSTGRES_URL: postgres://postgres:postgres@localhost:5432/neuranet_test
+      - name: Smoke test (health + ready)
+        run: pnpm exec vitest run --config server/vitest.config.mjs server/index.test.ts -t "health"
+        env:
+          POSTGRES_URL: postgres://postgres:postgres@localhost:5432/neuranet_test
+
+  # ── Migration sanity check ───────────────────────────────────────
+  migration-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check Postgres migrations are up-to-date
+        run: |
+          pnpm db:generate
+          git diff --exit-code server/migrations/postgres/ || (echo "Postgres migrations are out of sync with schema. Run 'pnpm db:generate' and commit the changes." && exit 1)
+
+  # ── Security audit ───────────────────────────────────────────────
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Security audit
+        run: pnpm audit --audit-level critical
+
+  # ── Frontend tests ───────────────────────────────────────────────
+  test-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: Frontend tests
         run: pnpm test
-
-      - name: Backend tests
-        run: pnpm test:server
-
-      - name: Build
-        run: pnpm build
