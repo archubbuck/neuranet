@@ -4,7 +4,7 @@
  */
 import { Router } from 'express';
 import { eq } from 'drizzle-orm';
-import { dialect, drizzle } from '../db';
+import { drizzle } from '../db';
 import * as s from '../db/schema';
 import config from '../config';
 import * as schemas from '../schemas';
@@ -15,23 +15,6 @@ import { logger } from '../lib/logger';
 
 const router = Router();
 
-/** Execute a select query returning rows, bridging sync (SQLite) and async (Postgres). */
-async function selectRows<T>(q: any): Promise<T[]> {
-  if (dialect === 'postgres') {
-    return q as Promise<T[]>;
-  }
-  return q.all() as T[];
-}
-
-/** Execute a write query (insert / update / delete), bridging sync and async. */
-async function execute(q: any): Promise<void> {
-  if (dialect === 'postgres') {
-    await q;
-  } else {
-    q.run();
-  }
-}
-
 router.post(
   '/waitlist',
   validateBody(schemas.joinWaitlist),
@@ -39,9 +22,10 @@ router.post(
     const { email } = req.body as { email: string };
 
     // Check for duplicate.
-    const rows = await selectRows<{ email: string }>(
-      drizzle.select().from(s.waitlistEntries).where(eq(s.waitlistEntries.email, email)),
-    );
+    const rows = await drizzle
+      .select()
+      .from(s.waitlistEntries)
+      .where(eq(s.waitlistEntries.email, email));
     const existing = rows[0];
 
     if (existing) {
@@ -51,7 +35,7 @@ router.post(
     }
 
     // Insert the entry.
-    await execute(drizzle.insert(s.waitlistEntries).values({ email }));
+    await drizzle.insert(s.waitlistEntries).values({ email });
 
     // Send confirmation email (fire-and-forget — don't block the
     // response on email delivery).
@@ -64,12 +48,10 @@ router.post(
     })
       .then(async (result) => {
         if (result.ok) {
-          await execute(
-            drizzle
-              .update(s.waitlistEntries)
-              .set({ confirmationSent: true })
-              .where(eq(s.waitlistEntries.email, email)),
-          );
+          await drizzle
+            .update(s.waitlistEntries)
+            .set({ confirmationSent: true })
+            .where(eq(s.waitlistEntries.email, email));
         } else {
           logger.warn({ email }, 'Waitlist confirmation email failed to send');
         }

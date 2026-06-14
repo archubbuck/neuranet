@@ -1,31 +1,35 @@
-import { sqliteTable, text, integer, real, unique, primaryKey } from 'drizzle-orm/sqlite-core';
-import { sql } from 'drizzle-orm';
+import {
+  pgTable,
+  text,
+  integer,
+  real,
+  boolean,
+  timestamp,
+  unique,
+  primaryKey,
+} from 'drizzle-orm/pg-core';
 
 // ── docs ────────────────────────────────────────────────────────────────
-export const docs = sqliteTable('docs', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
+export const docs = pgTable('docs', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   title: text('title').notNull(),
   text: text('text').notNull(),
   status: text('status').notNull().default('done'),
-  createdAt: text('created_at')
-    .notNull()
-    .default(sql`(datetime('now'))`),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 // ── derived_clusters ────────────────────────────────────────────────────
-export const derivedClusters = sqliteTable('derived_clusters', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
+export const derivedClusters = pgTable('derived_clusters', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   slug: text('slug').notNull().unique(),
   label: text('label').notNull(),
   color: text('color').notNull(),
-  createdAt: text('created_at')
-    .notNull()
-    .default(sql`(datetime('now'))`),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 // ── derived_nodes ───────────────────────────────────────────────────────
-export const derivedNodes = sqliteTable('derived_nodes', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
+export const derivedNodes = pgTable('derived_nodes', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   slug: text('slug').notNull().unique(),
   label: text('label').notNull(),
   description: text('description').notNull(),
@@ -35,30 +39,26 @@ export const derivedNodes = sqliteTable('derived_nodes', {
   radius: integer('radius').notNull(),
   importance: integer('importance').notNull(),
   depth: integer('depth').notNull().default(0),
-  isCentral: integer('is_central', { mode: 'boolean' }).notNull().default(false),
-  sentiment: real('sentiment'), // NULL-able, added via migration
-  createdAt: text('created_at')
-    .notNull()
-    .default(sql`(datetime('now'))`),
+  isCentral: boolean('is_central').notNull().default(false),
+  sentiment: real('sentiment'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 // ── node_links ──────────────────────────────────────────────────────────
-export const nodeLinks = sqliteTable(
+export const nodeLinks = pgTable(
   'node_links',
   {
-    id: integer('id').primaryKey({ autoIncrement: true }),
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
     sourceSlug: text('source_slug').notNull(),
     targetSlug: text('target_slug').notNull(),
     linkKind: text('link_kind').notNull().default('related'),
-    createdAt: text('created_at')
-      .notNull()
-      .default(sql`(datetime('now'))`),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [unique('node_links_source_target').on(table.sourceSlug, table.targetSlug)],
 );
 
 // ── doc_node_links ──────────────────────────────────────────────────────
-export const docNodeLinks = sqliteTable(
+export const docNodeLinks = pgTable(
   'doc_node_links',
   {
     docId: integer('doc_id')
@@ -68,31 +68,25 @@ export const docNodeLinks = sqliteTable(
       .notNull()
       .references(() => derivedNodes.slug),
     score: real('score').notNull(),
-    createdAt: text('created_at')
-      .notNull()
-      .default(sql`(datetime('now'))`),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.docId, table.nodeSlug] })],
 );
 
 // ── data_sources ────────────────────────────────────────────────────────
-export const dataSources = sqliteTable('data_sources', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
+export const dataSources = pgTable('data_sources', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   sourceType: text('source_type').notNull(),
   configJson: text('config_json').notNull().default('{}'),
   status: text('status').notNull().default('pending'),
   statusMessage: text('status_message'),
-  createdAt: text('created_at')
-    .notNull()
-    .default(sql`(datetime('now'))`),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 // ── waitlist_entries ──────────────────────────────────────────────────
-export const waitlistEntries = sqliteTable('waitlist_entries', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
+export const waitlistEntries = pgTable('waitlist_entries', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   email: text('email').notNull().unique(),
-  confirmationSent: integer('confirmation_sent', { mode: 'boolean' }).notNull().default(false),
-  createdAt: text('created_at')
-    .notNull()
-    .default(sql`(datetime('now'))`),
+  confirmationSent: boolean('confirmation_sent').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });

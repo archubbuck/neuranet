@@ -1,18 +1,23 @@
 /**
- * Integration tests for the Express API. Uses an in-memory SQLite database
- * and ephemeral ports so tests are fully isolated.
+ * Integration tests for the Express API. Requires a running Postgres
+ * instance specified by POSTGRES_URL. In CI this is provided by the
+ * postgres service container; for local dev set POSTGRES_URL or run
+ * `vercel env pull .env.local`.
  */
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { and, eq, sql, or } from 'drizzle-orm';
 
 // ESM hoists static imports above module code. Use vi.hoisted() to set
 // the env var before any module in the import chain reads it.
 vi.hoisted(() => {
-  process.env.NEURANET_DB_PATH = ':memory:';
+  process.env.POSTGRES_URL =
+    process.env['POSTGRES_URL'] || 'postgres://postgres:postgres@localhost:5432/neuranet_test';
 });
 
 import { app } from './index';
-import { db } from './db';
+import { drizzle } from './db';
+import * as s from './db/schema';
 import { fetchThread } from './reddit-fetcher';
 
 // Mock reddit-fetcher for tests that override fetchThread behaviour.
@@ -37,17 +42,15 @@ afterAll(async () => {
   await new Promise<void>((resolve) => server.close(resolve));
 });
 
-beforeEach(() => {
-  // Reset all tables to keep tests isolated. The schema lives in
-  // `:memory:` so we just truncate rather than re-create.
-  db.exec(`
-		DELETE FROM doc_node_links;
-		DELETE FROM node_links;
-		DELETE FROM derived_nodes;
-		DELETE FROM derived_clusters;
-		DELETE FROM docs;
-		DELETE FROM data_sources;
-	`);
+beforeEach(async () => {
+  // Reset all tables to keep tests isolated.
+  await drizzle.delete(s.docNodeLinks);
+  await drizzle.delete(s.nodeLinks);
+  await drizzle.delete(s.derivedNodes);
+  await drizzle.delete(s.derivedClusters);
+  await drizzle.delete(s.docs);
+  await drizzle.delete(s.dataSources);
+  await drizzle.delete(s.waitlistEntries);
 });
 
 /** Minimal JSON request helper — avoids a supertest dependency. */
@@ -72,59 +75,69 @@ async function request(
  * Seed the global dataset with two clusters, three nodes, one edge, and
  * one doc so search/reports/CRUD tests have something to act on.
  */
-function seedFixture() {
-  db.prepare('INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?)').run(
-    'c-alpha',
-    'Alpha',
-    '#22D3EE',
-  );
-  db.prepare('INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?)').run(
-    'c-beta',
-    'Beta',
-    '#A78BFA',
-  );
-  db.prepare(
-    'INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance) VALUES (?, ?, ?, ?, ?, ?)',
-  ).run('n-alpha-1', 'Climate', 'Climate change discussion', 'c-alpha', 14, 8);
-  db.prepare(
-    'INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance) VALUES (?, ?, ?, ?, ?, ?)',
-  ).run('n-alpha-2', 'Renewable', 'Solar and wind power', 'c-alpha', 12, 6);
-  db.prepare(
-    'INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance) VALUES (?, ?, ?, ?, ?, ?)',
-  ).run('n-beta-1', 'Genomics', 'Gene sequencing techniques', 'c-beta', 14, 8);
-  db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?)').run(
-    'n-alpha-1',
-    'n-alpha-2',
-    'same-doc',
-  );
-  db.prepare('INSERT INTO docs (title, text, status) VALUES (?, ?, ?)').run(
-    'Climate Brief',
-    'Climate change requires renewable energy and carbon capture.',
-    'derived',
-  );
+async function seedFixture() {
+  await drizzle.insert(s.derivedClusters).values([
+    { slug: 'c-alpha', label: 'Alpha', color: '#22D3EE' },
+    { slug: 'c-beta', label: 'Beta', color: '#A78BFA' },
+  ]);
+  await drizzle.insert(s.derivedNodes).values([
+    {
+      slug: 'n-alpha-1',
+      label: 'Climate',
+      description: 'Climate change discussion',
+      clusterSlug: 'c-alpha',
+      radius: 14,
+      importance: 8,
+    },
+    {
+      slug: 'n-alpha-2',
+      label: 'Renewable',
+      description: 'Solar and wind power',
+      clusterSlug: 'c-alpha',
+      radius: 12,
+      importance: 6,
+    },
+    {
+      slug: 'n-beta-1',
+      label: 'Genomics',
+      description: 'Gene sequencing techniques',
+      clusterSlug: 'c-beta',
+      radius: 14,
+      importance: 8,
+    },
+  ]);
+  await drizzle.insert(s.nodeLinks).values({
+    sourceSlug: 'n-alpha-1',
+    targetSlug: 'n-alpha-2',
+    linkKind: 'same-doc',
+  });
+  await drizzle.insert(s.docs).values({
+    title: 'Climate Brief',
+    text: 'Climate change requires renewable energy and carbon capture.',
+    status: 'derived',
+  });
 }
 
 describe('GET /api/search', () => {
   it('returns empty results for queries shorter than 2 chars', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('GET', '/api/search?q=a');
     expect(res.status).toBe(200);
     expect(res.body.results).toEqual([]);
   });
 
   it('matches node labels and ranks them above body-only hits', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('GET', '/api/search?q=climate');
     expect(res.status).toBe(200);
     const hits = res.body.results;
     expect(hits.length).toBeGreaterThan(0);
-    // First hit should be a node whose label matches.
     expect(hits[0].type).toBe('node');
     expect(hits[0].label).toBe('Climate');
   });
 
   it('returns doc hits with snippets including the needle', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('GET', '/api/search?q=carbon');
     expect(res.status).toBe(200);
     const docHit = res.body.results.find((r: any) => r.type === 'doc');
@@ -135,7 +148,7 @@ describe('GET /api/search', () => {
 
 describe('GET /api/reports', () => {
   it('returns totals and per-cluster counts', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('GET', '/api/reports');
     expect(res.status).toBe(200);
     expect(res.body.totals).toEqual({
@@ -154,19 +167,22 @@ describe('GET /api/reports', () => {
 
 describe('POST /api/clusters', () => {
   it('creates a new cluster with a slug derived from the label', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/clusters', { label: 'Gamma' });
     expect(res.status).toBe(201);
     expect(res.body.id).toBe('gamma');
     expect(res.body.label).toBe('Gamma');
     expect(res.body.color).toMatch(/^hsl\(/);
-    const row = db.prepare('SELECT * FROM derived_clusters WHERE slug = ?').get('gamma') as any;
+    const [row] = await drizzle
+      .select()
+      .from(s.derivedClusters)
+      .where(eq(s.derivedClusters.slug, 'gamma'));
     expect(row).toBeTruthy();
     expect(row.label).toBe('Gamma');
   });
 
   it('accepts an explicit color', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/clusters', { label: 'Delta', color: '#FF00FF' });
     expect(res.status).toBe(201);
     expect(res.body.color).toBe('#FF00FF');
@@ -178,7 +194,7 @@ describe('POST /api/clusters', () => {
   });
 
   it('rejects a duplicate slug with 409', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/clusters', { label: 'c-alpha' });
     expect(res.status).toBe(409);
   });
@@ -186,27 +202,28 @@ describe('POST /api/clusters', () => {
 
 describe('PUT /api/clusters/:slug', () => {
   it('renames the cluster and persists the change', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('PUT', '/api/clusters/c-alpha', {
       label: 'Alpha Renamed',
       color: '#FFFFFF',
     });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ id: 'c-alpha', label: 'Alpha Renamed', color: '#FFFFFF' });
-    const row = db
-      .prepare('SELECT label, color FROM derived_clusters WHERE slug = ?')
-      .get('c-alpha') as any;
+    const [row] = await drizzle
+      .select({ label: s.derivedClusters.label, color: s.derivedClusters.color })
+      .from(s.derivedClusters)
+      .where(eq(s.derivedClusters.slug, 'c-alpha'));
     expect(row.label).toBe('Alpha Renamed');
   });
 
   it('rejects an empty label with 400', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('PUT', '/api/clusters/c-alpha', { label: '   ' });
     expect(res.status).toBe(400);
   });
 
   it('returns 404 for an unknown cluster', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('PUT', '/api/clusters/nope', { label: 'x' });
     expect(res.status).toBe(404);
   });
@@ -214,18 +231,25 @@ describe('PUT /api/clusters/:slug', () => {
 
 describe('DELETE /api/clusters/:slug', () => {
   it('removes the cluster and its child nodes + edges', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('DELETE', '/api/clusters/c-alpha');
     expect(res.status).toBe(200);
-    expect((db.prepare('SELECT COUNT(*) AS n FROM derived_clusters').get() as any).n).toBe(1);
-    expect((db.prepare('SELECT COUNT(*) AS n FROM derived_nodes').get() as any).n).toBe(1);
-    expect((db.prepare('SELECT COUNT(*) AS n FROM node_links').get() as any).n).toBe(0);
+    const [{ n: clusterCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedClusters);
+    expect(clusterCount).toBe(1);
+    const [{ n: nodeCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedNodes);
+    expect(nodeCount).toBe(1);
+    const [{ n: edgeCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.nodeLinks);
+    expect(edgeCount).toBe(0);
   });
 });
 
 describe('PUT /api/nodes/:slug', () => {
   it('renames a node and reassigns its cluster', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('PUT', '/api/nodes/n-alpha-1', {
       label: 'Climate (renamed)',
       clusterSlug: 'c-beta',
@@ -239,7 +263,7 @@ describe('PUT /api/nodes/:slug', () => {
   });
 
   it('rejects reassignment to a cluster that does not exist', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('PUT', '/api/nodes/n-alpha-1', {
       clusterSlug: 'does-not-exist',
     });
@@ -249,17 +273,21 @@ describe('PUT /api/nodes/:slug', () => {
 
 describe('DELETE /api/nodes/:slug', () => {
   it('removes the node and its incident edges', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('DELETE', '/api/nodes/n-alpha-1');
     expect(res.status).toBe(200);
-    expect((db.prepare('SELECT COUNT(*) AS n FROM derived_nodes').get() as any).n).toBe(2);
-    expect((db.prepare('SELECT COUNT(*) AS n FROM node_links').get() as any).n).toBe(0);
+    const [{ n: nodeCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedNodes);
+    expect(nodeCount).toBe(2);
+    const [{ n: edgeCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.nodeLinks);
+    expect(edgeCount).toBe(0);
   });
 });
 
 describe('POST /api/nodes', () => {
   it('creates a new node in an existing cluster', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes', {
       label: 'Neural Networks',
       clusterSlug: 'c-alpha',
@@ -269,27 +297,28 @@ describe('POST /api/nodes', () => {
     expect(res.body.label).toBe('Neural Networks');
     expect(res.body.cluster).toBe('c-alpha');
     expect(res.body.id).toBe('neural-networks');
-    const row = db
-      .prepare('SELECT * FROM derived_nodes WHERE slug = ?')
-      .get('neural-networks') as any;
+    const [row] = await drizzle
+      .select()
+      .from(s.derivedNodes)
+      .where(eq(s.derivedNodes.slug, 'neural-networks'));
     expect(row).toBeTruthy();
     expect(row.label).toBe('Neural Networks');
   });
 
   it('rejects creation when label is empty', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes', { label: '', clusterSlug: 'c-alpha' });
     expect(res.status).toBe(400);
   });
 
   it('rejects creation when clusterSlug is missing', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes', { label: 'Test' });
     expect(res.status).toBe(400);
   });
 
   it('rejects creation when cluster does not exist', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes', {
       label: 'Test',
       clusterSlug: 'no-such-cluster',
@@ -298,7 +327,7 @@ describe('POST /api/nodes', () => {
   });
 
   it('rejects duplicate slug with 409', async () => {
-    seedFixture();
+    await seedFixture();
     await request('POST', '/api/nodes', { label: 'Unique Node', clusterSlug: 'c-alpha' });
     const res = await request('POST', '/api/nodes', {
       label: 'Unique Node',
@@ -310,12 +339,12 @@ describe('POST /api/nodes', () => {
 
 describe('POST /api/nodes/merge', () => {
   it('merges source nodes into the target, reassigning edges', async () => {
-    seedFixture();
-    db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?)').run(
-      'n-alpha-2',
-      'n-beta-1',
-      'related-topic',
-    );
+    await seedFixture();
+    await drizzle.insert(s.nodeLinks).values({
+      sourceSlug: 'n-alpha-2',
+      targetSlug: 'n-beta-1',
+      linkKind: 'related-topic',
+    });
 
     const res = await request('POST', '/api/nodes/merge', {
       targetSlug: 'n-alpha-1',
@@ -324,25 +353,32 @@ describe('POST /api/nodes/merge', () => {
     expect(res.status).toBe(200);
     expect(res.body.id).toBe('n-alpha-1');
 
-    expect(
-      (db.prepare('SELECT COUNT(*) AS n FROM derived_nodes WHERE slug = ?').get('n-alpha-2') as any)
-        .n,
-    ).toBe(0);
-    expect(
-      (db.prepare('SELECT COUNT(*) AS n FROM derived_nodes WHERE slug = ?').get('n-alpha-1') as any)
-        .n,
-    ).toBe(1);
+    const [deleted] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedNodes)
+      .where(eq(s.derivedNodes.slug, 'n-alpha-2'));
+    expect(deleted.n).toBe(0);
+    const [kept] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedNodes)
+      .where(eq(s.derivedNodes.slug, 'n-alpha-1'));
+    expect(kept.n).toBe(1);
 
-    const edge = db
-      .prepare(
-        "SELECT * FROM node_links WHERE source_slug = ? AND target_slug = ? AND link_kind = 'related-topic'",
-      )
-      .get('n-alpha-1', 'n-beta-1') as any;
+    const [edge] = await drizzle
+      .select()
+      .from(s.nodeLinks)
+      .where(
+        and(
+          eq(s.nodeLinks.sourceSlug, 'n-alpha-1'),
+          eq(s.nodeLinks.targetSlug, 'n-beta-1'),
+          eq(s.nodeLinks.linkKind, 'related-topic'),
+        ),
+      );
     expect(edge).toBeTruthy();
   });
 
   it('rejects merge when target is in sourceSlugs', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes/merge', {
       targetSlug: 'n-alpha-1',
       sourceSlugs: ['n-alpha-1', 'n-alpha-2'],
@@ -351,17 +387,17 @@ describe('POST /api/nodes/merge', () => {
   });
 
   it('merges nodes that share a common neighbour without violating edge uniqueness', async () => {
-    seedFixture();
-    db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?)').run(
-      'n-alpha-1',
-      'n-beta-1',
-      'related-topic',
-    );
-    db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?)').run(
-      'n-alpha-2',
-      'n-beta-1',
-      'related-topic',
-    );
+    await seedFixture();
+    await drizzle.insert(s.nodeLinks).values({
+      sourceSlug: 'n-alpha-1',
+      targetSlug: 'n-beta-1',
+      linkKind: 'related-topic',
+    });
+    await drizzle.insert(s.nodeLinks).values({
+      sourceSlug: 'n-alpha-2',
+      targetSlug: 'n-beta-1',
+      linkKind: 'related-topic',
+    });
 
     const res = await request('POST', '/api/nodes/merge', {
       targetSlug: 'n-alpha-1',
@@ -369,37 +405,40 @@ describe('POST /api/nodes/merge', () => {
     });
     expect(res.status).toBe(200);
 
-    const dupes = db
-      .prepare('SELECT COUNT(*) AS n FROM node_links WHERE source_slug = ? AND target_slug = ?')
-      .get('n-alpha-1', 'n-beta-1') as any;
+    const [dupes] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.nodeLinks)
+      .where(and(eq(s.nodeLinks.sourceSlug, 'n-alpha-1'), eq(s.nodeLinks.targetSlug, 'n-beta-1')));
     expect(dupes.n).toBe(1);
-    const stale = db
-      .prepare('SELECT COUNT(*) AS n FROM node_links WHERE source_slug = ? OR target_slug = ?')
-      .get('n-alpha-2', 'n-alpha-2') as any;
+    const [stale] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.nodeLinks)
+      .where(or(eq(s.nodeLinks.sourceSlug, 'n-alpha-2'), eq(s.nodeLinks.targetSlug, 'n-alpha-2')));
     expect(stale.n).toBe(0);
   });
 
   it('drops edges between target and source instead of leaving self-loops', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes/merge', {
       targetSlug: 'n-alpha-1',
       sourceSlugs: ['n-alpha-2'],
     });
     expect(res.status).toBe(200);
 
-    const selfLoops = db
-      .prepare('SELECT COUNT(*) AS n FROM node_links WHERE source_slug = target_slug')
-      .get() as any;
-    expect(selfLoops.n).toBe(0);
+    const [{ n: selfLoops }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.nodeLinks)
+      .where(eq(s.nodeLinks.sourceSlug, s.nodeLinks.targetSlug));
+    expect(selfLoops).toBe(0);
   });
 
   it('drops edges between two merged sources instead of leaving self-loops', async () => {
-    seedFixture();
-    db.prepare('INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (?, ?, ?)').run(
-      'n-alpha-2',
-      'n-beta-1',
-      'same-doc',
-    );
+    await seedFixture();
+    await drizzle.insert(s.nodeLinks).values({
+      sourceSlug: 'n-alpha-2',
+      targetSlug: 'n-beta-1',
+      linkKind: 'same-doc',
+    });
 
     const res = await request('POST', '/api/nodes/merge', {
       targetSlug: 'n-alpha-1',
@@ -407,15 +446,19 @@ describe('POST /api/nodes/merge', () => {
     });
     expect(res.status).toBe(200);
 
-    const selfLoops = db
-      .prepare('SELECT COUNT(*) AS n FROM node_links WHERE source_slug = target_slug')
-      .get() as any;
-    expect(selfLoops.n).toBe(0);
-    expect((db.prepare('SELECT COUNT(*) AS n FROM derived_nodes').get() as any).n).toBe(1);
+    const [{ n: selfLoops }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.nodeLinks)
+      .where(eq(s.nodeLinks.sourceSlug, s.nodeLinks.targetSlug));
+    expect(selfLoops).toBe(0);
+    const [{ n: nodeCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedNodes);
+    expect(nodeCount).toBe(1);
   });
 
   it('rejects merge when target does not exist', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes/merge', {
       targetSlug: 'no-such',
       sourceSlugs: ['n-alpha-1'],
@@ -424,7 +467,7 @@ describe('POST /api/nodes/merge', () => {
   });
 
   it('rejects merge when a source does not exist', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes/merge', {
       targetSlug: 'n-alpha-1',
       sourceSlugs: ['no-such-node'],
@@ -435,7 +478,7 @@ describe('POST /api/nodes/merge', () => {
 
 describe('POST /api/nodes/bulk-reassign', () => {
   it('reassigns multiple nodes to a different cluster', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes/bulk-reassign', {
       nodeSlugs: ['n-alpha-1', 'n-alpha-2'],
       clusterSlug: 'c-beta',
@@ -444,18 +487,20 @@ describe('POST /api/nodes/bulk-reassign', () => {
     expect(res.body.reassigned).toBe(2);
     expect(res.body.clusterSlug).toBe('c-beta');
 
-    const n1 = db
-      .prepare('SELECT cluster_slug FROM derived_nodes WHERE slug = ?')
-      .get('n-alpha-1') as any;
-    expect(n1.cluster_slug).toBe('c-beta');
-    const n2 = db
-      .prepare('SELECT cluster_slug FROM derived_nodes WHERE slug = ?')
-      .get('n-alpha-2') as any;
-    expect(n2.cluster_slug).toBe('c-beta');
+    const [n1] = await drizzle
+      .select({ clusterSlug: s.derivedNodes.clusterSlug })
+      .from(s.derivedNodes)
+      .where(eq(s.derivedNodes.slug, 'n-alpha-1'));
+    expect(n1.clusterSlug).toBe('c-beta');
+    const [n2] = await drizzle
+      .select({ clusterSlug: s.derivedNodes.clusterSlug })
+      .from(s.derivedNodes)
+      .where(eq(s.derivedNodes.slug, 'n-alpha-2'));
+    expect(n2.clusterSlug).toBe('c-beta');
   });
 
   it('rejects empty nodeSlugs', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes/bulk-reassign', {
       nodeSlugs: [],
       clusterSlug: 'c-beta',
@@ -464,7 +509,7 @@ describe('POST /api/nodes/bulk-reassign', () => {
   });
 
   it('rejects missing clusterSlug', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes/bulk-reassign', {
       nodeSlugs: ['n-alpha-1'],
     });
@@ -472,7 +517,7 @@ describe('POST /api/nodes/bulk-reassign', () => {
   });
 
   it('rejects if the target cluster does not exist', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes/bulk-reassign', {
       nodeSlugs: ['n-alpha-1'],
       clusterSlug: 'no-such',
@@ -515,7 +560,7 @@ describe('Source CRUD', () => {
 
 describe('POST /api/clusters/dissolve', () => {
   it('atomically reassigns nodes to the target and deletes source clusters', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/clusters/dissolve', {
       sourceSlugs: ['c-alpha'],
       targetSlug: 'c-beta',
@@ -523,38 +568,41 @@ describe('POST /api/clusters/dissolve', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ reassigned: 2, targetSlug: 'c-beta' });
 
-    expect(
-      (
-        db
-          .prepare("SELECT COUNT(*) AS n FROM derived_nodes WHERE cluster_slug = 'c-beta'")
-          .get() as any
-      ).n,
-    ).toBe(3);
-    expect(
-      (db.prepare("SELECT COUNT(*) AS n FROM derived_clusters WHERE slug = 'c-alpha'").get() as any)
-        .n,
-    ).toBe(0);
-    expect((db.prepare('SELECT COUNT(*) AS n FROM node_links').get() as any).n).toBe(1);
+    const [{ n: reassignedCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedNodes)
+      .where(eq(s.derivedNodes.clusterSlug, 'c-beta'));
+    expect(reassignedCount).toBe(3);
+    const [{ n: alphaGone }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedClusters)
+      .where(eq(s.derivedClusters.slug, 'c-alpha'));
+    expect(alphaGone).toBe(0);
+    const [{ n: edgeCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.nodeLinks);
+    expect(edgeCount).toBe(1);
   });
 
   it('supports dissolving multiple source clusters at once (merge)', async () => {
-    seedFixture();
-    db.prepare('INSERT INTO derived_clusters (slug, label, color) VALUES (?, ?, ?)').run(
-      'c-gamma',
-      'Gamma',
-      '#FFFFFF',
-    );
+    await seedFixture();
+    await drizzle.insert(s.derivedClusters).values({
+      slug: 'c-gamma',
+      label: 'Gamma',
+      color: '#FFFFFF',
+    });
     const res = await request('POST', '/api/clusters/dissolve', {
       sourceSlugs: ['c-alpha', 'c-beta'],
       targetSlug: 'c-gamma',
     });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ reassigned: 3, targetSlug: 'c-gamma' });
-    expect((db.prepare('SELECT COUNT(*) AS n FROM derived_clusters').get() as any).n).toBe(1);
+    const [{ n: clusterCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedClusters);
+    expect(clusterCount).toBe(1);
   });
 
   it('rejects when the target is among the sources', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/clusters/dissolve', {
       sourceSlugs: ['c-alpha', 'c-beta'],
       targetSlug: 'c-alpha',
@@ -563,7 +611,7 @@ describe('POST /api/clusters/dissolve', () => {
   });
 
   it('returns 400 when the target cluster does not exist', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/clusters/dissolve', {
       sourceSlugs: ['c-alpha'],
       targetSlug: 'no-such',
@@ -572,7 +620,7 @@ describe('POST /api/clusters/dissolve', () => {
   });
 
   it('returns 404 when a source cluster does not exist', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/clusters/dissolve', {
       sourceSlugs: ['no-such'],
       targetSlug: 'c-beta',
@@ -583,35 +631,42 @@ describe('POST /api/clusters/dissolve', () => {
 
 describe('POST /api/nodes/bulk-delete', () => {
   it('deletes multiple nodes and their incident edges atomically', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes/bulk-delete', {
       nodeSlugs: ['n-alpha-1', 'n-alpha-2'],
     });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ deleted: 2 });
-    expect((db.prepare('SELECT COUNT(*) AS n FROM derived_nodes').get() as any).n).toBe(1);
-    expect((db.prepare('SELECT COUNT(*) AS n FROM node_links').get() as any).n).toBe(0);
+    const [{ n: nodeCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedNodes);
+    expect(nodeCount).toBe(1);
+    const [{ n: edgeCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.nodeLinks);
+    expect(edgeCount).toBe(0);
   });
 
   it('rejects an empty nodeSlugs array', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes/bulk-delete', { nodeSlugs: [] });
     expect(res.status).toBe(400);
   });
 
   it('returns 404 when any node does not exist (and deletes nothing)', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes/bulk-delete', {
       nodeSlugs: ['n-alpha-1', 'no-such'],
     });
     expect(res.status).toBe(404);
-    expect((db.prepare('SELECT COUNT(*) AS n FROM derived_nodes').get() as any).n).toBe(3);
+    const [{ n: nodeCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedNodes);
+    expect(nodeCount).toBe(3);
   });
 });
 
 describe('GET /api/network', () => {
   it('returns clusters, nodes (with degree), and edges', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('GET', '/api/network');
     expect(res.status).toBe(200);
 
@@ -650,16 +705,17 @@ describe('POST /api/docs (derivation)', () => {
     expect(res.body.derivedNodeSlugs.length).toBeGreaterThan(0);
     expect(res.body.derivedNodeSlugs.length).toBeLessThanOrEqual(4);
 
-    expect((db.prepare('SELECT COUNT(*) AS n FROM derived_clusters').get() as any).n).toBe(1);
-    const links = (
-      db
-        .prepare('SELECT COUNT(*) AS n FROM doc_node_links WHERE doc_id = ?')
-        .get(res.body.id) as any
-    ).n;
-    expect(links).toBe(res.body.derivedNodeSlugs.length);
-    expect((db.prepare('SELECT COUNT(*) AS n FROM node_links').get() as any).n).toBe(
-      res.body.derivedNodeSlugs.length - 1,
-    );
+    const [{ n: clusterCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedClusters);
+    expect(clusterCount).toBe(1);
+    const [{ n: linkCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.docNodeLinks)
+      .where(eq(s.docNodeLinks.docId, res.body.id));
+    expect(linkCount).toBe(res.body.derivedNodeSlugs.length);
+    const [{ n: edgeCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.nodeLinks);
+    expect(edgeCount).toBe(res.body.derivedNodeSlugs.length - 1);
   });
 
   it('defaults the title when omitted', async () => {
@@ -690,14 +746,25 @@ describe('POST /api/docs (derivation)', () => {
 });
 
 describe('write atomicity', () => {
-  afterEach(() => {
-    db.exec('DROP TRIGGER IF EXISTS boom_doc_node_links; DROP TRIGGER IF EXISTS boom_node_links;');
+  afterEach(async () => {
+    await drizzle.execute(sql`DROP TRIGGER IF EXISTS boom_doc_node_links ON doc_node_links`);
+    await drizzle.execute(sql`DROP TRIGGER IF EXISTS boom_node_links ON node_links`);
+    await drizzle.execute(sql`DROP FUNCTION IF EXISTS boom`);
     vi.mocked(fetchThread).mockReset();
   });
 
   it('POST /api/docs rolls back the doc row when node derivation fails', async () => {
-    db.exec(`CREATE TRIGGER boom_doc_node_links BEFORE INSERT ON doc_node_links
-			BEGIN SELECT RAISE(ABORT, 'injected failure'); END;`);
+    await drizzle.execute(sql`
+      CREATE OR REPLACE FUNCTION boom() RETURNS trigger AS $$
+      BEGIN
+        RAISE EXCEPTION 'injected failure';
+      END;
+      $$ LANGUAGE plpgsql
+    `);
+    await drizzle.execute(sql`
+      CREATE TRIGGER boom_doc_node_links BEFORE INSERT ON doc_node_links
+      FOR EACH ROW EXECUTE FUNCTION boom()
+    `);
 
     const res = await request('POST', '/api/docs', {
       title: 'Atomicity probe',
@@ -705,9 +772,16 @@ describe('write atomicity', () => {
     });
     expect(res.status).toBe(500);
 
-    expect((db.prepare('SELECT COUNT(*) AS n FROM docs').get() as any).n).toBe(0);
-    expect((db.prepare('SELECT COUNT(*) AS n FROM derived_clusters').get() as any).n).toBe(0);
-    expect((db.prepare('SELECT COUNT(*) AS n FROM derived_nodes').get() as any).n).toBe(0);
+    const [{ n: docCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.docs);
+    expect(docCount).toBe(0);
+    const [{ n: clusterCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedClusters);
+    expect(clusterCount).toBe(0);
+    const [{ n: nodeCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedNodes);
+    expect(nodeCount).toBe(0);
   });
 
   it('POST /api/sources/:id/fetch rolls back derived rows when edge insert fails', async () => {
@@ -717,8 +791,17 @@ describe('write atomicity', () => {
       body: 'renewable energy storage grid batteries',
       comments: [],
     });
-    db.exec(`CREATE TRIGGER boom_node_links BEFORE INSERT ON node_links
-			BEGIN SELECT RAISE(ABORT, 'injected failure'); END;`);
+    await drizzle.execute(sql`
+      CREATE OR REPLACE FUNCTION boom() RETURNS trigger AS $$
+      BEGIN
+        RAISE EXCEPTION 'injected failure';
+      END;
+      $$ LANGUAGE plpgsql
+    `);
+    await drizzle.execute(sql`
+      CREATE TRIGGER boom_node_links BEFORE INSERT ON node_links
+      FOR EACH ROW EXECUTE FUNCTION boom()
+    `);
 
     const created = await request('POST', '/api/sources', {
       sourceType: 'reddit',
@@ -727,11 +810,18 @@ describe('write atomicity', () => {
     const res = await request('POST', `/api/sources/${created.body.id}/fetch`);
     expect(res.status).toBe(500);
 
-    expect((db.prepare('SELECT COUNT(*) AS n FROM derived_clusters').get() as any).n).toBe(0);
-    expect((db.prepare('SELECT COUNT(*) AS n FROM derived_nodes').get() as any).n).toBe(0);
-    const src = db
-      .prepare('SELECT status FROM data_sources WHERE id = ?')
-      .get(created.body.id) as any;
+    const [{ n: clusterCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedClusters);
+    expect(clusterCount).toBe(0);
+    const [{ n: nodeCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(s.derivedNodes);
+    expect(nodeCount).toBe(0);
+    const [src] = await drizzle
+      .select({ status: s.dataSources.status })
+      .from(s.dataSources)
+      .where(eq(s.dataSources.id, created.body.id));
     expect(src.status).toBe('error');
     expect(res.body.message).not.toContain('injected failure');
   });
@@ -742,7 +832,8 @@ describe('input validation', () => {
     const res = await request('POST', '/api/docs', { title: 'x', text: 123 });
     expect(res.status).toBe(400);
     expect(res.body.errors).toBeDefined();
-    expect((db.prepare('SELECT COUNT(*) AS n FROM docs').get() as any).n).toBe(0);
+    const [{ n: docCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.docs);
+    expect(docCount).toBe(0);
   });
 
   it('rejects POST /api/clusters with a non-string label', async () => {
@@ -751,7 +842,7 @@ describe('input validation', () => {
   });
 
   it('rejects POST /api/nodes/merge with a non-array sourceSlugs', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('POST', '/api/nodes/merge', {
       targetSlug: 'n-alpha-1',
       sourceSlugs: 'n-alpha-2',
@@ -765,7 +856,7 @@ describe('input validation', () => {
   });
 
   it('rejects PUT /api/nodes/:slug with a non-string clusterSlug', async () => {
-    seedFixture();
+    await seedFixture();
     const res = await request('PUT', '/api/nodes/n-alpha-1', { clusterSlug: 99 });
     expect(res.status).toBe(400);
   });

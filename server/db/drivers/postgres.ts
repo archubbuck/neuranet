@@ -1,7 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import { migrate as drizzleMigrate } from 'drizzle-orm/neon-http/migrator';
-import * as schema from '../schema.pg';
+import * as schema from '../schema';
 
 /**
  * Creates a Neon serverless Postgres connection and Drizzle client.

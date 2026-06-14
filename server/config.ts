@@ -10,18 +10,8 @@ try {
   /* optional */
 }
 
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
-const dataDir = path.join(__dirname, '..', 'data');
-
 export default {
   port: Number(process.env['API_PORT'] || 3000),
-  dataDir,
-  // `NEURANET_DB_PATH` lets tests point at an in-memory or temp database
-  // (`:memory:` or `/tmp/foo.db`) instead of clobbering the dev DB.
-  dbPath: process.env['NEURANET_DB_PATH'] || path.join(dataDir, 'neuranet.db'),
   rateLimits: {
     globalPerMinute: Number(process.env['NEURANET_GLOBAL_RATE_MAX'] ?? 1_000),
     fetchPerSourcePerMinute: Number(process.env['NEURANET_FETCH_RATE_MAX'] ?? 5),

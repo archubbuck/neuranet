@@ -11,7 +11,6 @@ export class DocsRepo {
   ) {}
 
   listAll() {
-    const aggFn = this.dialect === 'postgres' ? 'json_agg' : 'json_group_array';
     return this.db
       .select({
         id: s.docs.id,
@@ -19,7 +18,7 @@ export class DocsRepo {
         text: s.docs.text,
         status: s.docs.status,
         derivedNodeSlugs:
-          sql<string>`COALESCE((SELECT ${sql.raw(aggFn)}(node_slug) FROM doc_node_links dnl WHERE dnl.doc_id = docs.id), '[]')`.as(
+          sql<string>`COALESCE((SELECT json_agg(node_slug) FROM doc_node_links dnl WHERE dnl.doc_id = docs.id), '[]')`.as(
             'derivedNodeSlugs',
           ),
       })

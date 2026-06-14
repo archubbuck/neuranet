@@ -1,12 +1,9 @@
 /**
  * Database connection + schema. Importing this module opens the database
- * (creating the data directory and tables on first run via Drizzle
- * migrations) and returns the shared connection for both legacy
- * synchronous routes and the new repository-based code.
+ * connection and returns the shared Drizzle client for all repository-
+ * based code.
  */
-import fs from 'node:fs';
-import { sqlite, db, dialect } from './db/client';
-import config from './config';
+import { db, dialect } from './db/client';
 import { ClustersRepo } from './repositories/clusters.repo';
 import { NodesRepo } from './repositories/nodes.repo';
 import { DocsRepo } from './repositories/docs.repo';
@@ -15,16 +12,7 @@ import { NetworkRepo } from './repositories/network.repo';
 import { SearchRepo } from './repositories/search.repo';
 import { ReportsRepo } from './repositories/reports.repo';
 
-// Ensure the data directory exists (needed for file-based SQLite).
-if (!config.dbPath.startsWith(':memory:') && !fs.existsSync(config.dataDir)) {
-  fs.mkdirSync(config.dataDir, { recursive: true });
-}
-
-// Re-export the raw sqlite instance for legacy synchronous route handlers
-// that use `db.prepare(...).run/get/all()` directly.
-// In Postgres mode, sqlite is undefined — tests must use the Drizzle client.
-export { sqlite as db };
-// Also export the Drizzle client for new code.
+// Re-export the Drizzle client for routes and repositories.
 export { db as drizzle };
 export { dialect };
 

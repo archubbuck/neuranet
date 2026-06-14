@@ -96,7 +96,7 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/health/ready', async (_req, res) => {
   try {
     // Ping the database to verify connectivity.
-    drizzle.run(sql`SELECT 1`);
+    await drizzle.execute(sql`SELECT 1`);
     res.json({ status: 'ready', database: 'connected' });
   } catch {
     res.status(503).json({ status: 'not_ready', database: 'disconnected' });
