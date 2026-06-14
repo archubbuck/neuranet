@@ -3,8 +3,7 @@
   "outputDirectory": "dist/neuranet/browser",
   "functions": {
     "api/index.ts": {
-      "maxDuration": 30,
-      "includeFiles": "dist/server/**"
+      "maxDuration": 30
     }
   },
   "rewrites": [
