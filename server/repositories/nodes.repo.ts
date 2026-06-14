@@ -35,7 +35,7 @@ export class NodesRepo {
       isCentral: s.derivedNodes.isCentral,
       sentiment: s.derivedNodes.sentiment,
       degree:
-        sql<number>`COALESCE((SELECT COUNT(*) FROM node_links nl WHERE nl.source_slug = derived_nodes.slug OR nl.target_slug = derived_nodes.slug), 0)`.as(
+        sql<number>`COALESCE((SELECT COUNT(*)::int FROM node_links nl WHERE nl.source_slug = derived_nodes.slug OR nl.target_slug = derived_nodes.slug), 0)`.as(
           'degree',
         ),
     };

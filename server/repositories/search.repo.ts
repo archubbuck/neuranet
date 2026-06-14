@@ -1,4 +1,4 @@
-import { like, or } from 'drizzle-orm';
+import { ilike, or } from 'drizzle-orm';
 import * as s from '../db/schema';
 import type { Dialect } from '../lib/sql-helpers';
 
@@ -46,8 +46,8 @@ export class SearchRepo {
         .from(s.derivedNodes)
         .where(
           or(
-            like(s.derivedNodes.label, likePattern),
-            like(s.derivedNodes.description, likePattern),
+            ilike(s.derivedNodes.label, likePattern),
+            ilike(s.derivedNodes.description, likePattern),
           ),
         )
         .limit(25),
@@ -59,7 +59,7 @@ export class SearchRepo {
           text: s.docs.text,
         })
         .from(s.docs)
-        .where(or(like(s.docs.title, likePattern), like(s.docs.text, likePattern)))
+        .where(or(ilike(s.docs.title, likePattern), ilike(s.docs.text, likePattern)))
         .limit(25),
     ]);
 
