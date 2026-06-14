@@ -13,7 +13,7 @@ function isNeonUrl(url: string): boolean {
  * - POSTGRES_URL without neon.tech → pg (node-postgres) for CI/local PG
  * - No POSTGRES_URL → throws with a helpful error message
  */
-function createDb() {
+async function createDb() {
   const postgresUrl = process.env['POSTGRES_URL'];
 
   if (!postgresUrl) {
@@ -28,9 +28,7 @@ function createDb() {
 
   if (isNeonUrl(postgresUrl)) {
     // Neon serverless Postgres — HTTP driver (safe for Vercel serverless).
-    /* eslint-disable @typescript-eslint/no-require-imports */
-    const { createPostgresDriver, applyPostgresMigrations } = require('./drivers/postgres');
-    /* eslint-enable @typescript-eslint/no-require-imports */
+    const { createPostgresDriver, applyPostgresMigrations } = await import('./drivers/postgres');
     const { db } = createPostgresDriver(pgMigrationsDir);
 
     return {
@@ -41,18 +39,16 @@ function createDb() {
   }
 
   // Standard Postgres (CI/local) — use pg (node-postgres) driver.
-  /* eslint-disable @typescript-eslint/no-require-imports */
-  const { Pool } = require('pg');
-  const { drizzle } = require('drizzle-orm/node-postgres');
-  const { migrate } = require('drizzle-orm/node-postgres/migrator');
-  const schema = require('./schema');
-  /* eslint-enable @typescript-eslint/no-require-imports */
+  const { Pool } = await import('pg');
+  const { drizzle } = await import('drizzle-orm/node-postgres');
+  const { migrate } = await import('drizzle-orm/node-postgres/migrator');
+  const schema = await import('./schema');
 
   const pool = new Pool({ connectionString: postgresUrl });
   const db = drizzle({ client: pool, schema });
 
   // Apply pending migrations at startup.
-  migrate(db, { migrationsFolder: pgMigrationsDir });
+  await migrate(db, { migrationsFolder: pgMigrationsDir });
 
   return {
     db,
@@ -61,7 +57,7 @@ function createDb() {
   };
 }
 
-const { db, dialect } = createDb();
+const { db, dialect } = await createDb();
 
 export { db, dialect };
 export * from './schema';
