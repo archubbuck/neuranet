@@ -40,7 +40,7 @@ async function main() {
     const { neon } = await import('@neondatabase/serverless');
     const { drizzle } = await import('drizzle-orm/neon-http');
     const { migrate } = await import('drizzle-orm/neon-http/migrator');
-    const schema = await import('./schema');
+    const schema = await import('./schema.js');
 
     const sql = neon(postgresUrl);
     const db = drizzle({ client: sql, schema });
@@ -50,7 +50,7 @@ async function main() {
     const { Pool } = await import('pg');
     const { drizzle } = await import('drizzle-orm/node-postgres');
     const { migrate } = await import('drizzle-orm/node-postgres/migrator');
-    const schema = await import('./schema');
+    const schema = await import('./schema.js');
 
     const pool = new Pool({ connectionString: postgresUrl });
     const db = drizzle({ client: pool, schema });

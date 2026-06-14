@@ -4,14 +4,14 @@
  */
 import { Router } from 'express';
 import { eq } from 'drizzle-orm';
-import { drizzle } from '../db';
-import * as s from '../db/schema';
-import config from '../config';
-import * as schemas from '../schemas';
-import { validateBody } from '../middleware/validate';
-import { asyncHandler } from '../lib/async-handler';
-import { sendEmail } from '../lib/email';
-import { logger } from '../lib/logger';
+import { drizzle } from '../db.js';
+import * as s from '../db/schema.js';
+import config from '../config.js';
+import * as schemas from '../schemas.js';
+import { validateBody } from '../middleware/validate.js';
+import { asyncHandler } from '../lib/async-handler.js';
+import { sendEmail } from '../lib/email.js';
+import { logger } from '../lib/logger.js';
 
 const router = Router();
 

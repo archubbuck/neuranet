@@ -2,6 +2,7 @@
   "name": "neuranet",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@11.5.1",
   "engines": {
     "node": ">=22.12.0",
@@ -25,7 +26,6 @@
     "typecheck:server": "tsc -p server/tsconfig.json --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx server/db/migrate.ts",
-    "prepare": "husky",
     "prepare": "husky"
   },
   "dependencies": {

@@ -3,14 +3,14 @@
  * connection and returns the shared Drizzle client for all repository-
  * based code.
  */
-import { db, dialect } from './db/client';
-import { ClustersRepo } from './repositories/clusters.repo';
-import { NodesRepo } from './repositories/nodes.repo';
-import { DocsRepo } from './repositories/docs.repo';
-import { SourcesRepo } from './repositories/sources.repo';
-import { NetworkRepo } from './repositories/network.repo';
-import { SearchRepo } from './repositories/search.repo';
-import { ReportsRepo } from './repositories/reports.repo';
+import { db, dialect } from './db/client.js';
+import { ClustersRepo } from './repositories/clusters.repo.js';
+import { NodesRepo } from './repositories/nodes.repo.js';
+import { DocsRepo } from './repositories/docs.repo.js';
+import { SourcesRepo } from './repositories/sources.repo.js';
+import { NetworkRepo } from './repositories/network.repo.js';
+import { SearchRepo } from './repositories/search.repo.js';
+import { ReportsRepo } from './repositories/reports.repo.js';
 
 // Re-export the Drizzle client for routes and repositories.
 export { db as drizzle };

@@ -2,8 +2,8 @@
  * Network overlay: clusters, nodes (with computed degree), and edges.
  */
 import { Router } from 'express';
-import { networkRepo } from '../db';
-import { asyncHandler } from '../lib/async-handler';
+import { networkRepo } from '../db.js';
+import { asyncHandler } from '../lib/async-handler.js';
 
 const router = Router();
 

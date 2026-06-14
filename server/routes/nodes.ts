@@ -2,11 +2,11 @@
  * Node CRUD + merge, bulk reassign, bulk delete.
  */
 import { Router } from 'express';
-import { nodesRepo, clustersRepo } from '../db';
-import * as schemas from '../schemas';
-import { validateBody } from '../middleware/validate';
-import { asyncHandler } from '../lib/async-handler';
-import { slugify } from '../lib/derivation';
+import { nodesRepo, clustersRepo } from '../db.js';
+import * as schemas from '../schemas.js';
+import { validateBody } from '../middleware/validate.js';
+import { asyncHandler } from '../lib/async-handler.js';
+import { slugify } from '../lib/derivation.js';
 
 const router = Router();
 

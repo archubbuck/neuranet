@@ -2,13 +2,13 @@
  * Document upload + keyword-based cluster/node derivation.
  */
 import { Router } from 'express';
-import { docsRepo } from '../db';
-import config from '../config';
-import * as schemas from '../schemas';
-import { validateBody } from '../middleware/validate';
-import { asyncHandler } from '../lib/async-handler';
-import { slugify, titleCase, colorFromSlug, topKeywords } from '../lib/derivation';
-import { logger } from '../lib/logger';
+import { docsRepo } from '../db.js';
+import config from '../config.js';
+import * as schemas from '../schemas.js';
+import { validateBody } from '../middleware/validate.js';
+import { asyncHandler } from '../lib/async-handler.js';
+import { slugify, titleCase, colorFromSlug, topKeywords } from '../lib/derivation.js';
+import { logger } from '../lib/logger.js';
 
 const router = Router();
 
