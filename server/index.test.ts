@@ -235,14 +235,16 @@ describe('DELETE /api/clusters/:slug', () => {
     const res = await request('DELETE', '/api/clusters/c-alpha');
     expect(res.status).toBe(200);
     const [{ n: clusterCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedClusters);
     expect(clusterCount).toBe(1);
     const [{ n: nodeCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedNodes);
     expect(nodeCount).toBe(1);
-    const [{ n: edgeCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.nodeLinks);
+    const [{ n: edgeCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(s.nodeLinks);
     expect(edgeCount).toBe(0);
   });
 });
@@ -277,10 +279,12 @@ describe('DELETE /api/nodes/:slug', () => {
     const res = await request('DELETE', '/api/nodes/n-alpha-1');
     expect(res.status).toBe(200);
     const [{ n: nodeCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedNodes);
     expect(nodeCount).toBe(2);
-    const [{ n: edgeCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.nodeLinks);
+    const [{ n: edgeCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(s.nodeLinks);
     expect(edgeCount).toBe(0);
   });
 });
@@ -354,12 +358,12 @@ describe('POST /api/nodes/merge', () => {
     expect(res.body.id).toBe('n-alpha-1');
 
     const [deleted] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedNodes)
       .where(eq(s.derivedNodes.slug, 'n-alpha-2'));
     expect(deleted.n).toBe(0);
     const [kept] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedNodes)
       .where(eq(s.derivedNodes.slug, 'n-alpha-1'));
     expect(kept.n).toBe(1);
@@ -406,12 +410,12 @@ describe('POST /api/nodes/merge', () => {
     expect(res.status).toBe(200);
 
     const [dupes] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.nodeLinks)
       .where(and(eq(s.nodeLinks.sourceSlug, 'n-alpha-1'), eq(s.nodeLinks.targetSlug, 'n-beta-1')));
     expect(dupes.n).toBe(1);
     const [stale] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.nodeLinks)
       .where(or(eq(s.nodeLinks.sourceSlug, 'n-alpha-2'), eq(s.nodeLinks.targetSlug, 'n-alpha-2')));
     expect(stale.n).toBe(0);
@@ -426,7 +430,7 @@ describe('POST /api/nodes/merge', () => {
     expect(res.status).toBe(200);
 
     const [{ n: selfLoops }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.nodeLinks)
       .where(eq(s.nodeLinks.sourceSlug, s.nodeLinks.targetSlug));
     expect(selfLoops).toBe(0);
@@ -447,12 +451,12 @@ describe('POST /api/nodes/merge', () => {
     expect(res.status).toBe(200);
 
     const [{ n: selfLoops }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.nodeLinks)
       .where(eq(s.nodeLinks.sourceSlug, s.nodeLinks.targetSlug));
     expect(selfLoops).toBe(0);
     const [{ n: nodeCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedNodes);
     expect(nodeCount).toBe(1);
   });
@@ -569,16 +573,18 @@ describe('POST /api/clusters/dissolve', () => {
     expect(res.body).toMatchObject({ reassigned: 2, targetSlug: 'c-beta' });
 
     const [{ n: reassignedCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedNodes)
       .where(eq(s.derivedNodes.clusterSlug, 'c-beta'));
     expect(reassignedCount).toBe(3);
     const [{ n: alphaGone }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedClusters)
       .where(eq(s.derivedClusters.slug, 'c-alpha'));
     expect(alphaGone).toBe(0);
-    const [{ n: edgeCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.nodeLinks);
+    const [{ n: edgeCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(s.nodeLinks);
     expect(edgeCount).toBe(1);
   });
 
@@ -596,7 +602,7 @@ describe('POST /api/clusters/dissolve', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ reassigned: 3, targetSlug: 'c-gamma' });
     const [{ n: clusterCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedClusters);
     expect(clusterCount).toBe(1);
   });
@@ -638,10 +644,12 @@ describe('POST /api/nodes/bulk-delete', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ deleted: 2 });
     const [{ n: nodeCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedNodes);
     expect(nodeCount).toBe(1);
-    const [{ n: edgeCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.nodeLinks);
+    const [{ n: edgeCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(s.nodeLinks);
     expect(edgeCount).toBe(0);
   });
 
@@ -658,7 +666,7 @@ describe('POST /api/nodes/bulk-delete', () => {
     });
     expect(res.status).toBe(404);
     const [{ n: nodeCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedNodes);
     expect(nodeCount).toBe(3);
   });
@@ -706,15 +714,17 @@ describe('POST /api/docs (derivation)', () => {
     expect(res.body.derivedNodeSlugs.length).toBeLessThanOrEqual(4);
 
     const [{ n: clusterCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedClusters);
     expect(clusterCount).toBe(1);
     const [{ n: linkCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.docNodeLinks)
       .where(eq(s.docNodeLinks.docId, res.body.id));
     expect(linkCount).toBe(res.body.derivedNodeSlugs.length);
-    const [{ n: edgeCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.nodeLinks);
+    const [{ n: edgeCount }] = await drizzle
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(s.nodeLinks);
     expect(edgeCount).toBe(res.body.derivedNodeSlugs.length - 1);
   });
 
@@ -772,14 +782,14 @@ describe('write atomicity', () => {
     });
     expect(res.status).toBe(500);
 
-    const [{ n: docCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.docs);
+    const [{ n: docCount }] = await drizzle.select({ n: sql<number>`COUNT(*)::int` }).from(s.docs);
     expect(docCount).toBe(0);
     const [{ n: clusterCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedClusters);
     expect(clusterCount).toBe(0);
     const [{ n: nodeCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedNodes);
     expect(nodeCount).toBe(0);
   });
@@ -811,11 +821,11 @@ describe('write atomicity', () => {
     expect(res.status).toBe(500);
 
     const [{ n: clusterCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedClusters);
     expect(clusterCount).toBe(0);
     const [{ n: nodeCount }] = await drizzle
-      .select({ n: sql<number>`COUNT(*)` })
+      .select({ n: sql<number>`COUNT(*)::int` })
       .from(s.derivedNodes);
     expect(nodeCount).toBe(0);
     const [src] = await drizzle
@@ -832,7 +842,7 @@ describe('input validation', () => {
     const res = await request('POST', '/api/docs', { title: 'x', text: 123 });
     expect(res.status).toBe(400);
     expect(res.body.errors).toBeDefined();
-    const [{ n: docCount }] = await drizzle.select({ n: sql<number>`COUNT(*)` }).from(s.docs);
+    const [{ n: docCount }] = await drizzle.select({ n: sql<number>`COUNT(*)::int` }).from(s.docs);
     expect(docCount).toBe(0);
   });
 

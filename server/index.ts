@@ -17,7 +17,6 @@ import { errorHandler } from './middleware/error';
 import { requestIdMiddleware } from './middleware/request-id';
 import { logger } from './lib/logger';
 import { createUpstashLimiter } from './lib/redis';
-import { drizzle } from './db';
 import { sql } from 'drizzle-orm';
 
 // Route imports
@@ -95,7 +94,7 @@ app.get('/api/health', (_req, res) => {
 
 app.get('/api/health/ready', async (_req, res) => {
   try {
-    // Ping the database to verify connectivity.
+    const { drizzle } = await import('./db');
     await drizzle.execute(sql`SELECT 1`);
     res.json({ status: 'ready', database: 'connected' });
   } catch {
