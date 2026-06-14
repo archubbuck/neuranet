@@ -111,6 +111,13 @@ app.use('/api', nodesRouter);
 app.use('/api', docsRouter);
 app.use('/api', waitlistRouter);
 
+// ── Startup warnings ───────────────────────────────────────────────
+// Warn at startup if Resend is not configured (emails will silently
+// skip in production).  Not fatal — the app works without email.
+if (!config.resendApiKey && config.nodeEnv !== 'test') {
+  logger.warn('RESEND_API_KEY not set — transactional email is disabled');
+}
+
 // Central error handler — must be registered after all routes.
 app.use(errorHandler);
 

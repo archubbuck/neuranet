@@ -34,6 +34,8 @@ Neuranet is a full-stack application deployed on **Vercel** with a **Neon Postgr
 | `POSTGRES_URL` | Neon Postgres connection string (auto-set by Vercel Neon integration) |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint for distributed rate limiting |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis authentication token |
+| `RESEND_API_KEY` | Resend API key for transactional email (waitlist confirmations) |
+| `RESEND_FROM_ADDRESS` | Verified "From" address in Resend (e.g. `noreply@neuranetai.app`) |
 | `CORS_ORIGIN` | Allowed CORS origin (your Vercel deployment URL) |
 
 ### Optional
