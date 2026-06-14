@@ -100,22 +100,9 @@ jobs:
         env:
           POSTGRES_URL: postgres://postgres:postgres@localhost:5432/neuranet_test
       - name: Smoke test (health + ready)
-        run: |
-          npx tsx -e "
-            process.env.POSTGRES_URL = 'postgres://postgres:postgres@localhost:5432/neuranet_test';
-            (async () => {
-              const { app } = await import('./server/index');
-              const server = app.listen(0, async () => {
-                const port = server.address().port;
-                const res1 = await fetch('http://127.0.0.1:' + port + '/api/health');
-                console.log('health:', res1.status, await res1.json());
-                const res2 = await fetch('http://127.0.0.1:' + port + '/api/health/ready');
-                console.log('ready:', res2.status, await res2.json());
-                if (res2.status !== 200) process.exit(1);
-                server.close();
-              });
-            })();
-          "
+        run: pnpm exec vitest run --config server/vitest.config.mjs server/index.test.ts -t "health"
+        env:
+          POSTGRES_URL: postgres://postgres:postgres@localhost:5432/neuranet_test
 
   # ── Migration sanity check ───────────────────────────────────────
   migration-check:
