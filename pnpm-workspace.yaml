@@ -1,14 +1,7 @@
 # pnpm settings — see https://pnpm.io/settings
 #
-# Allow only these native-postinstall scripts to run. better-sqlite3 ships a
-# Node addon that needs node-gyp at install time; esbuild and @parcel/watcher
-# resolve their platform binaries via postinstall. Everything else is denied
-# (strictDepBuilds=true is the v11 default) to protect against supply-chain
-# attacks.
+# Only these packages are allowed to run postinstall scripts.
+# strictDepBuilds=true is the v11 default — everything else is blocked.
 allowBuilds:
   '@parcel/watcher': true
-  better-sqlite3: set this to true or false
   esbuild: true
-  # Transitive deps we don't actually exercise — skip their installer hooks.
-  lmdb: false
-  msgpackr-extract: false
