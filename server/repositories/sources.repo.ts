@@ -86,7 +86,7 @@ export class SourcesRepo {
         sql`INSERT INTO derived_clusters (slug, label, color) VALUES (${centralClusterSlug}, ${centralClusterLabel}, ${colorFromSlug(centralClusterSlug)}) ON CONFLICT(slug) DO NOTHING`,
       );
       await tx.execute(
-        sql`INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth, is_central) VALUES (${centralSlug}, ${centralLabel}, ${centralDesc}, ${centralClusterSlug}, 36, 10, 0, 1) ON CONFLICT(slug) DO UPDATE SET label=excluded.label`,
+        sql`INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth, is_central) VALUES (${centralSlug}, ${centralLabel}, ${centralDesc}, ${centralClusterSlug}, 36, 10, 0, ${true}) ON CONFLICT(slug) DO UPDATE SET label=excluded.label`,
       );
 
       // Depth-1 keywords.

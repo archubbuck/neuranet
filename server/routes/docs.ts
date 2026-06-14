@@ -18,7 +18,12 @@ router.get(
     const rawDocs = await docsRepo.listAll();
     const docs = rawDocs.map((row: Record<string, unknown>) => ({
       ...row,
-      derivedNodeSlugs: JSON.parse(row['derivedNodeSlugs'] as string),
+      derivedNodeSlugs: (() => {
+        const slugs = row['derivedNodeSlugs'];
+        if (Array.isArray(slugs)) return slugs;
+        if (typeof slugs === 'string') return JSON.parse(slugs);
+        return [];
+      })(),
     }));
     res.json(docs);
   }),
