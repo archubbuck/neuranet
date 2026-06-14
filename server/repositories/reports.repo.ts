@@ -10,29 +10,16 @@ export class ReportsRepo {
     private readonly dialect: Dialect,
   ) {}
 
-  getTotals() {
-    return {
-      nodes: this.db
-        .select({ n: sql<number>`COUNT(*)` })
-        .from(s.derivedNodes)
-        .get()!.n,
-      clusters: this.db
-        .select({ n: sql<number>`COUNT(*)` })
-        .from(s.derivedClusters)
-        .get()!.n,
-      edges: this.db
-        .select({ n: sql<number>`COUNT(*)` })
-        .from(s.nodeLinks)
-        .get()!.n,
-      sources: this.db
-        .select({ n: sql<number>`COUNT(*)` })
-        .from(s.dataSources)
-        .get()!.n,
-      docs: this.db
-        .select({ n: sql<number>`COUNT(*)` })
-        .from(s.docs)
-        .get()!.n,
-    };
+  async getTotals() {
+    const [[{ n: nodes }], [{ n: clusters }], [{ n: edges }], [{ n: sources }], [{ n: docs }]] =
+      await Promise.all([
+        this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.derivedNodes),
+        this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.derivedClusters),
+        this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.nodeLinks),
+        this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.dataSources),
+        this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.docs),
+      ]);
+    return { nodes, clusters, edges, sources, docs };
   }
 
   getClusterDistribution() {

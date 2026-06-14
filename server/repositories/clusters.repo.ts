@@ -25,21 +25,26 @@ export class ClustersRepo {
       .all();
   }
 
-  getBySlug(slug: string) {
-    return this.db.select().from(s.derivedClusters).where(eq(s.derivedClusters.slug, slug)).get();
+  async getBySlug(slug: string) {
+    const [row] = await this.db
+      .select()
+      .from(s.derivedClusters)
+      .where(eq(s.derivedClusters.slug, slug));
+    return row;
   }
 
-  create(input: { slug: string; label: string; color: string }) {
-    return this.db.insert(s.derivedClusters).values(input).returning().get();
+  async create(input: { slug: string; label: string; color: string }) {
+    const [row] = await this.db.insert(s.derivedClusters).values(input).returning();
+    return row;
   }
 
-  update(slug: string, patch: { label: string; color: string }) {
-    return this.db
+  async update(slug: string, patch: { label: string; color: string }) {
+    const [row] = await this.db
       .update(s.derivedClusters)
       .set(patch)
       .where(eq(s.derivedClusters.slug, slug))
-      .returning()
-      .get();
+      .returning();
+    return row;
   }
 
   /**
@@ -70,16 +75,16 @@ export class ClustersRepo {
    * cluster and deletes the source clusters.
    */
   async dissolve(sourceSlugs: string[], targetSlug: string): Promise<number> {
-    return this.db.transaction((tx: Db) => {
-      const result = tx
+    return await this.db.transaction(async (tx: Db) => {
+      const updated = await tx
         .update(s.derivedNodes)
         .set({ clusterSlug: targetSlug })
         .where(inArray(s.derivedNodes.clusterSlug, sourceSlugs))
-        .run();
+        .returning({ slug: s.derivedNodes.slug });
 
       tx.delete(s.derivedClusters).where(inArray(s.derivedClusters.slug, sourceSlugs)).run();
 
-      return result.changes;
+      return updated.length;
     });
   }
 }

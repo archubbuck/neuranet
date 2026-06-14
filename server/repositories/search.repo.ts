@@ -1,4 +1,4 @@
-import { like, or } from 'drizzle-orm';
+import { ilike, or } from 'drizzle-orm';
 import * as s from '../db/schema.js';
 import type { Dialect } from '../lib/sql-helpers.js';
 
@@ -35,30 +35,32 @@ export class SearchRepo {
 
     const likePattern = `%${q.replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
 
-    const nodeRows = this.db
-      .select({
-        id: s.derivedNodes.slug,
-        label: s.derivedNodes.label,
-        desc: s.derivedNodes.description,
-        cluster: s.derivedNodes.clusterSlug,
-      })
-      .from(s.derivedNodes)
-      .where(
-        or(like(s.derivedNodes.label, likePattern), like(s.derivedNodes.description, likePattern)),
-      )
-      .limit(25)
-      .all();
-
-    const docRows = this.db
-      .select({
-        id: s.docs.id,
-        title: s.docs.title,
-        text: s.docs.text,
-      })
-      .from(s.docs)
-      .where(or(like(s.docs.title, likePattern), like(s.docs.text, likePattern)))
-      .limit(25)
-      .all();
+    const [nodeRows, docRows] = await Promise.all([
+      this.db
+        .select({
+          id: s.derivedNodes.slug,
+          label: s.derivedNodes.label,
+          desc: s.derivedNodes.description,
+          cluster: s.derivedNodes.clusterSlug,
+        })
+        .from(s.derivedNodes)
+        .where(
+          or(
+            ilike(s.derivedNodes.label, likePattern),
+            ilike(s.derivedNodes.description, likePattern),
+          ),
+        )
+        .limit(25),
+      this.db
+        .select({
+          id: s.docs.id,
+          title: s.docs.title,
+          text: s.docs.text,
+        })
+        .from(s.docs)
+        .where(or(ilike(s.docs.title, likePattern), ilike(s.docs.text, likePattern)))
+        .limit(25),
+    ]);
 
     const results: SearchResult[] = [];
 

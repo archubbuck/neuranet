@@ -45,16 +45,17 @@ export class NodesRepo {
     return this.db.select(this.nodeFields()).from(s.derivedNodes).orderBy(s.derivedNodes.id).all();
   }
 
-  getBySlug(slug: string) {
-    return this.db
+  async getBySlug(slug: string) {
+    const [row] = await this.db
       .select(this.nodeFields())
       .from(s.derivedNodes)
-      .where(eq(s.derivedNodes.slug, slug))
-      .get();
+      .where(eq(s.derivedNodes.slug, slug));
+    return row;
   }
 
-  getRawBySlug(slug: string) {
-    return this.db.select().from(s.derivedNodes).where(eq(s.derivedNodes.slug, slug)).get();
+  async getRawBySlug(slug: string) {
+    const [row] = await this.db.select().from(s.derivedNodes).where(eq(s.derivedNodes.slug, slug));
+    return row;
   }
 
   create(input: {
@@ -66,7 +67,8 @@ export class NodesRepo {
     importance: number;
     depth: number;
   }) {
-    return this.db.insert(s.derivedNodes).values(input).returning().get();
+    const [row] = await this.db.insert(s.derivedNodes).values(input).returning();
+    return row;
   }
 
   update(
@@ -77,12 +79,12 @@ export class NodesRepo {
       clusterSlug?: string;
     },
   ) {
-    return this.db
+    const [row] = await this.db
       .update(s.derivedNodes)
       .set(patch)
       .where(eq(s.derivedNodes.slug, slug))
-      .returning()
-      .get();
+      .returning();
+    return row;
   }
 
   async delete(slug: string): Promise<void> {
@@ -94,14 +96,16 @@ export class NodesRepo {
   }
 
   async bulkDelete(nodeSlugs: string[]): Promise<number> {
-    return this.db.transaction((tx: Db) => {
+    return await this.db.transaction(async (tx: Db) => {
       const slugs = sqlIn(nodeSlugs);
       tx.run(
         sql`DELETE FROM node_links WHERE source_slug IN (${slugs}) OR target_slug IN (${slugs})`,
       );
-      tx.run(sql`DELETE FROM doc_node_links WHERE node_slug IN (${slugs})`);
-      const result = tx.run(sql`DELETE FROM derived_nodes WHERE slug IN (${slugs})`);
-      return result.changes;
+      await tx.execute(sql`DELETE FROM doc_node_links WHERE node_slug IN (${slugs})`);
+      const result = await tx.execute(
+        sql`DELETE FROM derived_nodes WHERE slug IN (${slugs}) RETURNING slug`,
+      );
+      return result.rows.length;
     });
   }
 
@@ -116,7 +120,7 @@ export class NodesRepo {
     targetSlug: string,
     sourceSlugs: string[],
   ): Promise<Record<string, unknown> | undefined> {
-    return this.db.transaction((tx: Db) => {
+    return await this.db.transaction(async (tx: Db) => {
       const srcList = sqlIn(sourceSlugs);
 
       // Drop edges between target ↔ sources and between sources.
@@ -130,29 +134,45 @@ export class NodesRepo {
         sql`DELETE FROM node_links WHERE source_slug IN (${srcList}) AND target_slug IN (${srcList})`,
       );
 
-      // Reassign edges (UPDATE OR IGNORE for UNIQUE constraint).
-      tx.run(
-        sql`UPDATE OR IGNORE node_links SET source_slug = ${targetSlug} WHERE source_slug IN (${srcList})`,
+      // Reassign edges, skipping any that would violate the unique constraint
+      // (Postgres equivalent of SQLite's UPDATE OR IGNORE).
+      await tx.execute(
+        sql`UPDATE node_links SET source_slug = ${targetSlug}
+            WHERE source_slug IN (${srcList})
+            AND NOT EXISTS (
+              SELECT 1 FROM node_links dup
+              WHERE dup.source_slug = ${targetSlug} AND dup.target_slug = node_links.target_slug
+            )`,
       );
-      tx.run(
-        sql`UPDATE OR IGNORE node_links SET target_slug = ${targetSlug} WHERE target_slug IN (${srcList})`,
+      await tx.execute(
+        sql`UPDATE node_links SET target_slug = ${targetSlug}
+            WHERE target_slug IN (${srcList})
+            AND NOT EXISTS (
+              SELECT 1 FROM node_links dup
+              WHERE dup.target_slug = ${targetSlug} AND dup.source_slug = node_links.source_slug
+            )`,
       );
-      tx.run(
-        sql`UPDATE OR IGNORE doc_node_links SET node_slug = ${targetSlug} WHERE node_slug IN (${srcList})`,
+      await tx.execute(
+        sql`UPDATE doc_node_links SET node_slug = ${targetSlug}
+            WHERE node_slug IN (${srcList})
+            AND NOT EXISTS (
+              SELECT 1 FROM doc_node_links dup
+              WHERE dup.doc_id = doc_node_links.doc_id AND dup.node_slug = ${targetSlug}
+            )`,
       );
 
-      // Delete empty source nodes and leftover duplicate edges.
+      // Delete source nodes and their remaining edges.
       for (const src of sourceSlugs) {
         tx.run(sql`DELETE FROM node_links WHERE source_slug = ${src} OR target_slug = ${src}`);
         tx.run(sql`DELETE FROM doc_node_links WHERE node_slug = ${src}`);
         tx.run(sql`DELETE FROM derived_nodes WHERE slug = ${src}`);
       }
 
-      return tx
+      const [node] = await tx
         .select(this.nodeFields())
         .from(s.derivedNodes)
-        .where(eq(s.derivedNodes.slug, targetSlug))
-        .get();
+        .where(eq(s.derivedNodes.slug, targetSlug));
+      return node;
     });
   }
 }

@@ -27,8 +27,9 @@ export class DocsRepo {
       .all();
   }
 
-  getById(id: number) {
-    return this.db.select().from(s.docs).where(eq(s.docs.id, id)).get();
+  async getById(id: number) {
+    const [row] = await this.db.select().from(s.docs).where(eq(s.docs.id, id));
+    return row;
   }
 
   /**
@@ -46,7 +47,7 @@ export class DocsRepo {
   }): Promise<Record<string, unknown>> {
     const { title, text, status, keywords, slugify, titleCase, colorFromSlug } = params;
 
-    return this.db.transaction((tx: Db) => {
+    return await this.db.transaction(async (tx: Db) => {
       // Insert doc.
       const doc = tx.insert(s.docs).values({ title, text, status }).returning().get();
 

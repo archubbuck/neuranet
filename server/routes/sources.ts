@@ -61,7 +61,8 @@ router.post(
 router.get(
   '/sources',
   asyncHandler(async (_req, res) => {
-    const sources = sourcesRepo.listAll().map((row: Record<string, unknown>) => ({
+    const rawSources = await sourcesRepo.listAll();
+    const sources = rawSources.map((row: Record<string, unknown>) => ({
       id: row['id'],
       source_type: row['sourceType'],
       config: JSON.parse(row['configJson'] as string),
