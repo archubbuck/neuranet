@@ -10,44 +10,35 @@ export class ReportsRepo {
     private readonly dialect: Dialect,
   ) {}
 
-  getTotals() {
+  async getTotals() {
+    const [[nodes], [clusters], [edges], [sources], [docs]] = await Promise.all([
+      this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.derivedNodes),
+      this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.derivedClusters),
+      this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.nodeLinks),
+      this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.dataSources),
+      this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.docs),
+    ]);
     return {
-      nodes: this.db
-        .select({ n: sql<number>`COUNT(*)` })
-        .from(s.derivedNodes)
-        .get()!.n,
-      clusters: this.db
-        .select({ n: sql<number>`COUNT(*)` })
-        .from(s.derivedClusters)
-        .get()!.n,
-      edges: this.db
-        .select({ n: sql<number>`COUNT(*)` })
-        .from(s.nodeLinks)
-        .get()!.n,
-      sources: this.db
-        .select({ n: sql<number>`COUNT(*)` })
-        .from(s.dataSources)
-        .get()!.n,
-      docs: this.db
-        .select({ n: sql<number>`COUNT(*)` })
-        .from(s.docs)
-        .get()!.n,
+      nodes: nodes.n,
+      clusters: clusters.n,
+      edges: edges.n,
+      sources: sources.n,
+      docs: docs.n,
     };
   }
 
-  getClusterDistribution() {
+  async getClusterDistribution() {
     return this.db
       .select({
         id: s.derivedClusters.slug,
         label: s.derivedClusters.label,
         color: s.derivedClusters.color,
         count:
-          sql<number>`COALESCE((SELECT COUNT(*) FROM derived_nodes dn WHERE dn.cluster_slug = derived_clusters.slug), 0)`.as(
+          sql<number>`COALESCE((SELECT COUNT(*)::int FROM derived_nodes dn WHERE dn.cluster_slug = derived_clusters.slug), 0)`.as(
             'count',
           ),
       })
       .from(s.derivedClusters)
-      .orderBy(sql`count DESC`, s.derivedClusters.label)
-      .all();
+      .orderBy(sql`count DESC`, s.derivedClusters.label);
   }
 }

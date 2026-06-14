@@ -15,35 +15,35 @@ export class SourcesRepo {
     private readonly dialect: Dialect,
   ) {}
 
-  listAll() {
-    return this.db.select().from(s.dataSources).orderBy(s.dataSources.createdAt).all();
+  async listAll() {
+    return this.db.select().from(s.dataSources).orderBy(s.dataSources.createdAt);
   }
 
-  getById(id: number) {
-    return this.db.select().from(s.dataSources).where(eq(s.dataSources.id, id)).get();
+  async getById(id: number) {
+    const rows = await this.db.select().from(s.dataSources).where(eq(s.dataSources.id, id));
+    return rows[0];
   }
 
-  create(input: { sourceType: string; configJson: string }) {
-    return this.db
+  async create(input: { sourceType: string; configJson: string }) {
+    const rows = await this.db
       .insert(s.dataSources)
       .values({
         sourceType: input.sourceType,
         configJson: input.configJson,
       })
-      .returning()
-      .get();
+      .returning();
+    return rows[0];
   }
 
-  delete(id: number) {
-    return this.db.delete(s.dataSources).where(eq(s.dataSources.id, id)).run();
+  async delete(id: number) {
+    return this.db.delete(s.dataSources).where(eq(s.dataSources.id, id));
   }
 
-  updateStatus(id: number, status: string, message: string | null = null) {
+  async updateStatus(id: number, status: string, message: string | null = null) {
     return this.db
       .update(s.dataSources)
       .set({ status, statusMessage: message })
-      .where(eq(s.dataSources.id, id))
-      .run();
+      .where(eq(s.dataSources.id, id));
   }
 
   /**
@@ -74,7 +74,7 @@ export class SourcesRepo {
   ): Promise<DeriveResult> {
     const { slugify, titleCase, colorFromSlug, tokenize, topKeywords, scoreTopicMatch } = helpers;
 
-    return this.db.transaction((tx: Db) => {
+    return this.db.transaction(async (tx: Db) => {
       // Central node.
       const centralSlug = `reddit-${threadData.threadId}`;
       const centralLabel = threadData.title.substring(0, 120);
@@ -82,10 +82,10 @@ export class SourcesRepo {
       const centralClusterSlug = `reddit-${threadData.threadId}`;
       const centralClusterLabel = `${centralLabel.substring(0, 40)} Discussion`;
 
-      tx.run(
+      await tx.execute(
         sql`INSERT INTO derived_clusters (slug, label, color) VALUES (${centralClusterSlug}, ${centralClusterLabel}, ${colorFromSlug(centralClusterSlug)}) ON CONFLICT(slug) DO NOTHING`,
       );
-      tx.run(
+      await tx.execute(
         sql`INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth, is_central) VALUES (${centralSlug}, ${centralLabel}, ${centralDesc}, ${centralClusterSlug}, 36, 10, 0, 1) ON CONFLICT(slug) DO UPDATE SET label=excluded.label`,
       );
 
@@ -100,12 +100,12 @@ export class SourcesRepo {
       for (let i = 0; i < depth1Keywords.length; i += 1) {
         const kw = depth1Keywords[i];
         const nodeSlug = `reddit-${threadData.threadId}-d1-${slugify(kw)}`;
-        tx.run(
+        await tx.execute(
           sql`INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (${nodeSlug}, ${titleCase(kw)}, ${'Topic from Reddit thread: ' + titleCase(kw)}, ${centralClusterSlug}, ${Math.max(14, 24 - i * 2)}, ${Math.max(5, 9 - i)}, 1) ON CONFLICT(slug) DO NOTHING`,
         );
         depth1Slugs.push(nodeSlug);
         nodes += 1;
-        tx.run(
+        await tx.execute(
           sql`INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (${centralSlug}, ${nodeSlug}, 'central-topic') ON CONFLICT(source_slug, target_slug) DO NOTHING`,
         );
         edges += 1;
@@ -122,11 +122,11 @@ export class SourcesRepo {
           let bestScore = 0;
           for (const d1Slug of depth1Slugs) {
             // Look up D1 node label from within transaction.
-            const d1Node = tx
+            const d1NodeRows = await tx
               .select({ label: s.derivedNodes.label })
               .from(s.derivedNodes)
-              .where(eq(s.derivedNodes.slug, d1Slug))
-              .get();
+              .where(eq(s.derivedNodes.slug, d1Slug));
+            const d1Node = d1NodeRows[0];
             if (!d1Node) continue;
             const s2 = scoreTopicMatch(commentTokenSet, d1Node.label);
             if (s2 > bestScore) {
@@ -137,11 +137,11 @@ export class SourcesRepo {
           if (bestScore === 0) continue;
 
           const nodeSlug = `reddit-${threadData.threadId}-d2-${slugify(kw)}`;
-          tx.run(
+          await tx.execute(
             sql`INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth) VALUES (${nodeSlug}, ${titleCase(kw)}, ${'Sub-topic from discussion: ' + titleCase(kw)}, ${centralClusterSlug}, 12, 4, 2) ON CONFLICT(slug) DO NOTHING`,
           );
           nodes += 1;
-          tx.run(
+          await tx.execute(
             sql`INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (${bestParent}, ${nodeSlug}, 'topic-subtopic') ON CONFLICT(source_slug, target_slug) DO NOTHING`,
           );
           edges += 1;
@@ -150,19 +150,19 @@ export class SourcesRepo {
 
       // Cross-link depth-1.
       for (let i = 1; i < depth1Slugs.length; i += 1) {
-        tx.run(
+        await tx.execute(
           sql`INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (${depth1Slugs[i - 1]}, ${depth1Slugs[i]}, 'related-topic') ON CONFLICT(source_slug, target_slug) DO NOTHING`,
         );
         edges += 1;
       }
 
-      tx.update(s.dataSources)
+      await tx
+        .update(s.dataSources)
         .set({
           status: 'done',
           statusMessage: `Extracted ${nodes} nodes and ${edges} edges`,
         })
-        .where(eq(s.dataSources.id, sourceId))
-        .run();
+        .where(eq(s.dataSources.id, sourceId));
 
       return { nodeCount: nodes, edgeCount: edges };
     });

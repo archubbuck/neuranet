@@ -30,35 +30,38 @@ export class SearchRepo {
     private readonly dialect: Dialect,
   ) {}
 
-  search(q: string): SearchResult[] {
+  async search(q: string): Promise<SearchResult[]> {
     if (q.length < 2) return [];
 
     const likePattern = `%${q.replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
 
-    const nodeRows = this.db
-      .select({
-        id: s.derivedNodes.slug,
-        label: s.derivedNodes.label,
-        desc: s.derivedNodes.description,
-        cluster: s.derivedNodes.clusterSlug,
-      })
-      .from(s.derivedNodes)
-      .where(
-        or(like(s.derivedNodes.label, likePattern), like(s.derivedNodes.description, likePattern)),
-      )
-      .limit(25)
-      .all();
+    const [nodeRows, docRows] = await Promise.all([
+      this.db
+        .select({
+          id: s.derivedNodes.slug,
+          label: s.derivedNodes.label,
+          desc: s.derivedNodes.description,
+          cluster: s.derivedNodes.clusterSlug,
+        })
+        .from(s.derivedNodes)
+        .where(
+          or(
+            like(s.derivedNodes.label, likePattern),
+            like(s.derivedNodes.description, likePattern),
+          ),
+        )
+        .limit(25),
 
-    const docRows = this.db
-      .select({
-        id: s.docs.id,
-        title: s.docs.title,
-        text: s.docs.text,
-      })
-      .from(s.docs)
-      .where(or(like(s.docs.title, likePattern), like(s.docs.text, likePattern)))
-      .limit(25)
-      .all();
+      this.db
+        .select({
+          id: s.docs.id,
+          title: s.docs.title,
+          text: s.docs.text,
+        })
+        .from(s.docs)
+        .where(or(like(s.docs.title, likePattern), like(s.docs.text, likePattern)))
+        .limit(25),
+    ]);
 
     const results: SearchResult[] = [];
 

@@ -10,7 +10,7 @@ const router = Router();
 router.get(
   '/network',
   asyncHandler(async (_req, res) => {
-    const data = networkRepo.getFullNetwork();
+    const data = await networkRepo.getFullNetwork();
     res.json(data);
   }),
 );

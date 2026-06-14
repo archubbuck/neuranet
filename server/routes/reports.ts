@@ -10,8 +10,8 @@ const router = Router();
 router.get(
   '/reports',
   asyncHandler(async (_req, res) => {
-    const totals = reportsRepo.getTotals();
-    const clusterDistribution = reportsRepo.getClusterDistribution();
+    const totals = await reportsRepo.getTotals();
+    const clusterDistribution = await reportsRepo.getClusterDistribution();
     res.json({ totals, clusterDistribution });
   }),
 );

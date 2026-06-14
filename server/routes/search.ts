@@ -11,7 +11,7 @@ router.get(
   '/search',
   asyncHandler(async (req, res) => {
     const q = typeof req.query['q'] === 'string' ? req.query['q'].trim() : '';
-    const results = searchRepo.search(q);
+    const results = await searchRepo.search(q);
     res.json({ results });
   }),
 );

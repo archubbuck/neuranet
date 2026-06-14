@@ -42,7 +42,7 @@ router.post(
       config: Record<string, unknown>;
     };
 
-    const created = sourcesRepo.create({
+    const created = await sourcesRepo.create({
       sourceType,
       configJson: JSON.stringify(sourceConfig),
     });
@@ -61,7 +61,7 @@ router.post(
 router.get(
   '/sources',
   asyncHandler(async (_req, res) => {
-    const sources = sourcesRepo.listAll().map((row: Record<string, unknown>) => ({
+    const sources = (await sourcesRepo.listAll()).map((row: Record<string, unknown>) => ({
       id: row['id'],
       source_type: row['sourceType'],
       config: JSON.parse(row['configJson'] as string),
@@ -77,12 +77,12 @@ router.get(
 router.delete(
   '/sources/:sourceId',
   asyncHandler(async (req, res) => {
-    const source = sourcesRepo.getById(Number(req.params['sourceId']));
+    const source = await sourcesRepo.getById(Number(req.params['sourceId']));
     if (!source) {
       res.status(404).json({ message: 'data source not found' });
       return;
     }
-    sourcesRepo.delete(source.id);
+    await sourcesRepo.delete(source.id);
     res.json({ deleted: true });
   }),
 );
@@ -91,7 +91,7 @@ router.post(
   '/sources/:sourceId/fetch',
   fetchLimiter,
   asyncHandler(async (req, res) => {
-    const source = sourcesRepo.getById(Number(req.params['sourceId']));
+    const source = await sourcesRepo.getById(Number(req.params['sourceId']));
     if (!source) {
       res.status(404).json({ message: 'data source not found' });
       return;
@@ -103,7 +103,7 @@ router.post(
       return;
     }
 
-    sourcesRepo.updateStatus(source.id, 'fetching');
+    await sourcesRepo.updateStatus(source.id, 'fetching');
 
     try {
       const sourceConfig = JSON.parse(source.configJson) as {
@@ -129,7 +129,7 @@ router.post(
         },
       );
 
-      const updated = sourcesRepo.getById(source.id)!;
+      const updated = (await sourcesRepo.getById(source.id))!;
       res.json({
         source: {
           id: updated.id,
@@ -144,7 +144,7 @@ router.post(
         edgeCount,
       });
     } catch (err) {
-      sourcesRepo.updateStatus(source.id, 'error', (err as Error).message);
+      await sourcesRepo.updateStatus(source.id, 'error', (err as Error).message);
       logger.error({ err, sourceId: source.id }, '[fetch] source failed');
       res.status(500).json({ message: 'failed to fetch or derive from source' });
     }

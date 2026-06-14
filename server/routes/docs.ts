@@ -15,10 +15,7 @@ const router = Router();
 router.get(
   '/docs',
   asyncHandler(async (_req, res) => {
-    const docs = docsRepo.listAll().map((row: Record<string, unknown>) => ({
-      ...row,
-      derivedNodeSlugs: JSON.parse(row['derivedNodeSlugs'] as string),
-    }));
+    const docs = await docsRepo.listAll();
     res.json(docs);
   }),
 );

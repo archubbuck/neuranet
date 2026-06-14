@@ -17,7 +17,7 @@ router.post(
     const { label } = req.body as { label: string; color?: string };
 
     const slug = slugify(label);
-    const exists = clustersRepo.getBySlug(slug);
+    const exists = await clustersRepo.getBySlug(slug);
     if (exists) {
       res.status(409).json({ message: 'a cluster with this name already exists' });
       return;
@@ -25,7 +25,7 @@ router.post(
 
     const color = (req.body as { color?: string }).color ?? colorFromSlug(slug);
 
-    const created = clustersRepo.create({ slug, label, color });
+    const created = await clustersRepo.create({ slug, label, color });
     res.status(201).json({ id: created.slug, label: created.label, color: created.color });
   }),
 );
@@ -35,7 +35,7 @@ router.put(
   validateBody(schemas.updateCluster),
   asyncHandler(async (req, res) => {
     const slug = req.params['slug'] as string;
-    const cluster = clustersRepo.getBySlug(slug);
+    const cluster = await clustersRepo.getBySlug(slug);
     if (!cluster) {
       res.status(404).json({ message: 'cluster not found' });
       return;
@@ -45,7 +45,7 @@ router.put(
     const label = body.label ?? cluster.label;
     const color = body.color ?? cluster.color;
 
-    clustersRepo.update(slug, { label, color });
+    await clustersRepo.update(slug, { label, color });
     res.json({ id: slug, label, color });
   }),
 );
@@ -54,7 +54,7 @@ router.delete(
   '/clusters/:slug',
   asyncHandler(async (req, res) => {
     const slug = req.params['slug'] as string;
-    const cluster = clustersRepo.getBySlug(slug);
+    const cluster = await clustersRepo.getBySlug(slug);
     if (!cluster) {
       res.status(404).json({ message: 'cluster not found' });
       return;
@@ -74,7 +74,7 @@ router.post(
       targetSlug: string;
     };
 
-    const target = clustersRepo.getBySlug(targetSlug);
+    const target = await clustersRepo.getBySlug(targetSlug);
     if (!target) {
       res.status(400).json({ message: 'target cluster does not exist' });
       return;
@@ -85,7 +85,7 @@ router.post(
         res.status(400).json({ message: 'target cluster cannot be in sourceSlugs' });
         return;
       }
-      if (!clustersRepo.getBySlug(src)) {
+      if (!(await clustersRepo.getBySlug(src))) {
         res.status(404).json({ message: `source cluster not found: ${src}` });
         return;
       }
