@@ -28,7 +28,7 @@ async function createDb() {
 
   if (isNeonUrl(postgresUrl)) {
     // Neon serverless Postgres — HTTP driver (safe for Vercel serverless).
-    const { createPostgresDriver, applyPostgresMigrations } = await import('./drivers/postgres');
+    const { createPostgresDriver, applyPostgresMigrations } = await import('./drivers/postgres.js');
     const { db } = createPostgresDriver(pgMigrationsDir);
 
     return {
@@ -42,7 +42,7 @@ async function createDb() {
   const { Pool } = await import('pg');
   const { drizzle } = await import('drizzle-orm/node-postgres');
   const { migrate } = await import('drizzle-orm/node-postgres/migrator');
-  const schema = await import('./schema');
+  const schema = await import('./schema.js');
 
   const pool = new Pool({ connectionString: postgresUrl });
   const db = drizzle({ client: pool, schema });
@@ -60,4 +60,4 @@ async function createDb() {
 const { db, dialect } = await createDb();
 
 export { db, dialect };
-export * from './schema';
+export * from './schema.js';

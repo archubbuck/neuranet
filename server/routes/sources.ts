@@ -3,12 +3,12 @@
  */
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
-import { sourcesRepo } from '../db';
-import config from '../config';
-import { fetchThread } from '../reddit-fetcher';
-import * as schemas from '../schemas';
-import { validateBody } from '../middleware/validate';
-import { asyncHandler } from '../lib/async-handler';
+import { sourcesRepo } from '../db.js';
+import config from '../config.js';
+import { fetchThread } from '../reddit-fetcher.js';
+import * as schemas from '../schemas.js';
+import { validateBody } from '../middleware/validate.js';
+import { asyncHandler } from '../lib/async-handler.js';
 import {
   slugify,
   titleCase,
@@ -16,8 +16,8 @@ import {
   tokenize,
   topKeywords,
   scoreTopicMatch,
-} from '../lib/derivation';
-import { logger } from '../lib/logger';
+} from '../lib/derivation.js';
+import { logger } from '../lib/logger.js';
 
 const router = Router();
 
@@ -61,7 +61,8 @@ router.post(
 router.get(
   '/sources',
   asyncHandler(async (_req, res) => {
-    const sources = (await sourcesRepo.listAll()).map((row: Record<string, unknown>) => ({
+    const rawSources = await sourcesRepo.listAll();
+    const sources = rawSources.map((row: Record<string, unknown>) => ({
       id: row['id'],
       source_type: row['sourceType'],
       config: JSON.parse(row['configJson'] as string),

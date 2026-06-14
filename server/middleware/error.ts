@@ -4,7 +4,7 @@
  * Internal details are logged server-side via pino, never sent to the client.
  */
 import type { Request, Response, NextFunction } from 'express';
-import { logger } from '../lib/logger';
+import { logger } from '../lib/logger.js';
 
 export function errorHandler(
   err: Error & { status?: number; statusCode?: number },

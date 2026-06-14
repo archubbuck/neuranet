@@ -12,22 +12,22 @@ import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 import cors from 'cors';
 import { fileURLToPath } from 'node:url';
-import config from './config';
-import { errorHandler } from './middleware/error';
-import { requestIdMiddleware } from './middleware/request-id';
-import { logger } from './lib/logger';
-import { createUpstashLimiter } from './lib/redis';
+import config from './config.js';
+import { errorHandler } from './middleware/error.js';
+import { requestIdMiddleware } from './middleware/request-id.js';
+import { logger } from './lib/logger.js';
+import { createUpstashLimiter } from './lib/redis.js';
 import { sql } from 'drizzle-orm';
 
 // Route imports
-import sourcesRouter from './routes/sources';
-import networkRouter from './routes/network';
-import searchRouter from './routes/search';
-import reportsRouter from './routes/reports';
-import clustersRouter from './routes/clusters';
-import nodesRouter from './routes/nodes';
-import docsRouter from './routes/docs';
-import waitlistRouter from './routes/waitlist';
+import sourcesRouter from './routes/sources.js';
+import networkRouter from './routes/network.js';
+import searchRouter from './routes/search.js';
+import reportsRouter from './routes/reports.js';
+import clustersRouter from './routes/clusters.js';
+import nodesRouter from './routes/nodes.js';
+import docsRouter from './routes/docs.js';
+import waitlistRouter from './routes/waitlist.js';
 
 export const app = express();
 
@@ -94,7 +94,7 @@ app.get('/api/health', (_req, res) => {
 
 app.get('/api/health/ready', async (_req, res) => {
   try {
-    const { drizzle } = await import('./db');
+    const { drizzle } = await import('./db.js');
     await drizzle.execute(sql`SELECT 1`);
     res.json({ status: 'ready', database: 'connected' });
   } catch {

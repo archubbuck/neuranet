@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
-import * as s from '../db/schema';
-import type { Dialect } from '../lib/sql-helpers';
+import * as s from '../db/schema.js';
+import type { Dialect } from '../lib/sql-helpers.js';
 
 type Db = any;
 
@@ -20,7 +20,6 @@ export class NetworkRepo {
         })
         .from(s.derivedClusters)
         .orderBy(s.derivedClusters.id),
-
       this.db
         .select({
           id: s.derivedNodes.slug,
@@ -39,7 +38,6 @@ export class NetworkRepo {
         })
         .from(s.derivedNodes)
         .orderBy(s.derivedNodes.id),
-
       this.db
         .select({
           source: s.nodeLinks.sourceSlug,

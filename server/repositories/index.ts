@@ -1,7 +1,7 @@
-export { ClustersRepo } from './clusters.repo';
-export { NodesRepo } from './nodes.repo';
-export { DocsRepo } from './docs.repo';
-export { SourcesRepo } from './sources.repo';
-export { NetworkRepo } from './network.repo';
-export { SearchRepo } from './search.repo';
-export { ReportsRepo } from './reports.repo';
+export { ClustersRepo } from './clusters.repo.js';
+export { NodesRepo } from './nodes.repo.js';
+export { DocsRepo } from './docs.repo.js';
+export { SourcesRepo } from './sources.repo.js';
+export { NetworkRepo } from './network.repo.js';
+export { SearchRepo } from './search.repo.js';
+export { ReportsRepo } from './reports.repo.js';

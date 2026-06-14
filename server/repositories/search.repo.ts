@@ -1,6 +1,6 @@
 import { ilike, or } from 'drizzle-orm';
-import * as s from '../db/schema';
-import type { Dialect } from '../lib/sql-helpers';
+import * as s from '../db/schema.js';
+import type { Dialect } from '../lib/sql-helpers.js';
 
 type Db = any;
 
@@ -51,7 +51,6 @@ export class SearchRepo {
           ),
         )
         .limit(25),
-
       this.db
         .select({
           id: s.docs.id,

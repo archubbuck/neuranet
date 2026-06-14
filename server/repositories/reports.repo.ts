@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
-import * as s from '../db/schema';
-import type { Dialect } from '../lib/sql-helpers';
+import * as s from '../db/schema.js';
+import type { Dialect } from '../lib/sql-helpers.js';
 
 type Db = any;
 
@@ -11,20 +11,15 @@ export class ReportsRepo {
   ) {}
 
   async getTotals() {
-    const [[nodes], [clusters], [edges], [sources], [docs]] = await Promise.all([
-      this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.derivedNodes),
-      this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.derivedClusters),
-      this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.nodeLinks),
-      this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.dataSources),
-      this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.docs),
-    ]);
-    return {
-      nodes: nodes.n,
-      clusters: clusters.n,
-      edges: edges.n,
-      sources: sources.n,
-      docs: docs.n,
-    };
+    const [[{ n: nodes }], [{ n: clusters }], [{ n: edges }], [{ n: sources }], [{ n: docs }]] =
+      await Promise.all([
+        this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.derivedNodes),
+        this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.derivedClusters),
+        this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.nodeLinks),
+        this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.dataSources),
+        this.db.select({ n: sql<number>`COUNT(*)::int` }).from(s.docs),
+      ]);
+    return { nodes, clusters, edges, sources, docs };
   }
 
   async getClusterDistribution() {

@@ -1,6 +1,6 @@
 import { eq, inArray } from 'drizzle-orm';
-import * as s from '../db/schema';
-import type { Dialect } from '../lib/sql-helpers';
+import * as s from '../db/schema.js';
+import type { Dialect } from '../lib/sql-helpers.js';
 
 type Db = any;
 
@@ -25,25 +25,25 @@ export class ClustersRepo {
   }
 
   async getBySlug(slug: string) {
-    const rows = await this.db
+    const [row] = await this.db
       .select()
       .from(s.derivedClusters)
       .where(eq(s.derivedClusters.slug, slug));
-    return rows[0];
+    return row;
   }
 
   async create(input: { slug: string; label: string; color: string }) {
-    const rows = await this.db.insert(s.derivedClusters).values(input).returning();
-    return rows[0];
+    const [row] = await this.db.insert(s.derivedClusters).values(input).returning();
+    return row;
   }
 
   async update(slug: string, patch: { label: string; color: string }) {
-    const rows = await this.db
+    const [row] = await this.db
       .update(s.derivedClusters)
       .set(patch)
       .where(eq(s.derivedClusters.slug, slug))
       .returning();
-    return rows[0];
+    return row;
   }
 
   /**
@@ -73,16 +73,16 @@ export class ClustersRepo {
    * cluster and deletes the source clusters.
    */
   async dissolve(sourceSlugs: string[], targetSlug: string): Promise<number> {
-    return this.db.transaction(async (tx: Db) => {
-      const result = await tx
+    return await this.db.transaction(async (tx: Db) => {
+      const updated = await tx
         .update(s.derivedNodes)
         .set({ clusterSlug: targetSlug })
         .where(inArray(s.derivedNodes.clusterSlug, sourceSlugs))
-        .returning();
+        .returning({ slug: s.derivedNodes.slug });
 
       await tx.delete(s.derivedClusters).where(inArray(s.derivedClusters.slug, sourceSlugs));
 
-      return result.length;
+      return updated.length;
     });
   }
 }

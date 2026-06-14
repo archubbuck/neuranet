@@ -2,8 +2,8 @@
  * Aggregate reporting: entity totals + per-cluster node distribution.
  */
 import { Router } from 'express';
-import { reportsRepo } from '../db';
-import { asyncHandler } from '../lib/async-handler';
+import { reportsRepo } from '../db.js';
+import { asyncHandler } from '../lib/async-handler.js';
 
 const router = Router();
 

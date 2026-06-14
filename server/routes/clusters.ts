@@ -2,11 +2,11 @@
  * Cluster CRUD + atomic dissolve/merge.
  */
 import { Router } from 'express';
-import { clustersRepo } from '../db';
-import * as schemas from '../schemas';
-import { validateBody } from '../middleware/validate';
-import { asyncHandler } from '../lib/async-handler';
-import { slugify, colorFromSlug } from '../lib/derivation';
+import { clustersRepo } from '../db.js';
+import * as schemas from '../schemas.js';
+import { validateBody } from '../middleware/validate.js';
+import { asyncHandler } from '../lib/async-handler.js';
+import { slugify, colorFromSlug } from '../lib/derivation.js';
 
 const router = Router();
 

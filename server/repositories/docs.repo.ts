@@ -1,6 +1,6 @@
 import { sql, eq } from 'drizzle-orm';
-import * as s from '../db/schema';
-import type { Dialect } from '../lib/sql-helpers';
+import * as s from '../db/schema.js';
+import type { Dialect } from '../lib/sql-helpers.js';
 
 type Db = any;
 
@@ -17,19 +17,18 @@ export class DocsRepo {
         title: s.docs.title,
         text: s.docs.text,
         status: s.docs.status,
-        derivedNodeSlugs: sql<
-          string[]
-        >`COALESCE((SELECT json_agg(node_slug) FROM doc_node_links dnl WHERE dnl.doc_id = docs.id), '[]'::json)`.as(
-          'derivedNodeSlugs',
-        ),
+        derivedNodeSlugs:
+          sql<string>`COALESCE((SELECT json_agg(node_slug) FROM doc_node_links dnl WHERE dnl.doc_id = docs.id), '[]')`.as(
+            'derivedNodeSlugs',
+          ),
       })
       .from(s.docs)
       .orderBy(s.docs.id);
   }
 
   async getById(id: number) {
-    const rows = await this.db.select().from(s.docs).where(eq(s.docs.id, id));
-    return rows[0];
+    const [row] = await this.db.select().from(s.docs).where(eq(s.docs.id, id));
+    return row;
   }
 
   /**
@@ -47,7 +46,7 @@ export class DocsRepo {
   }): Promise<Record<string, unknown>> {
     const { title, text, status, keywords, slugify, titleCase, colorFromSlug } = params;
 
-    return this.db.transaction(async (tx: Db) => {
+    return await this.db.transaction(async (tx: Db) => {
       // Insert doc.
       const [doc] = await tx.insert(s.docs).values({ title, text, status }).returning();
 

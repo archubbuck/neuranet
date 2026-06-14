@@ -2,8 +2,8 @@
  * Ranked search across nodes (label + description) and docs (title + text).
  */
 import { Router } from 'express';
-import { searchRepo } from '../db';
-import { asyncHandler } from '../lib/async-handler';
+import { searchRepo } from '../db.js';
+import { asyncHandler } from '../lib/async-handler.js';
 
 const router = Router();
 

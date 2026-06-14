@@ -1,6 +1,6 @@
 import { sql, eq } from 'drizzle-orm';
-import * as s from '../db/schema';
-import type { Dialect } from '../lib/sql-helpers';
+import * as s from '../db/schema.js';
+import type { Dialect } from '../lib/sql-helpers.js';
 
 type Db = any;
 
@@ -20,27 +20,27 @@ export class SourcesRepo {
   }
 
   async getById(id: number) {
-    const rows = await this.db.select().from(s.dataSources).where(eq(s.dataSources.id, id));
-    return rows[0];
+    const [row] = await this.db.select().from(s.dataSources).where(eq(s.dataSources.id, id));
+    return row;
   }
 
   async create(input: { sourceType: string; configJson: string }) {
-    const rows = await this.db
+    const [row] = await this.db
       .insert(s.dataSources)
       .values({
         sourceType: input.sourceType,
         configJson: input.configJson,
       })
       .returning();
-    return rows[0];
+    return row;
   }
 
   async delete(id: number) {
-    return this.db.delete(s.dataSources).where(eq(s.dataSources.id, id));
+    await this.db.delete(s.dataSources).where(eq(s.dataSources.id, id));
   }
 
   async updateStatus(id: number, status: string, message: string | null = null) {
-    return this.db
+    await this.db
       .update(s.dataSources)
       .set({ status, statusMessage: message })
       .where(eq(s.dataSources.id, id));
@@ -74,7 +74,7 @@ export class SourcesRepo {
   ): Promise<DeriveResult> {
     const { slugify, titleCase, colorFromSlug, tokenize, topKeywords, scoreTopicMatch } = helpers;
 
-    return this.db.transaction(async (tx: Db) => {
+    return await this.db.transaction(async (tx: Db) => {
       // Central node.
       const centralSlug = `reddit-${threadData.threadId}`;
       const centralLabel = threadData.title.substring(0, 120);
@@ -86,7 +86,7 @@ export class SourcesRepo {
         sql`INSERT INTO derived_clusters (slug, label, color) VALUES (${centralClusterSlug}, ${centralClusterLabel}, ${colorFromSlug(centralClusterSlug)}) ON CONFLICT(slug) DO NOTHING`,
       );
       await tx.execute(
-        sql`INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth, is_central) VALUES (${centralSlug}, ${centralLabel}, ${centralDesc}, ${centralClusterSlug}, 36, 10, 0, 1) ON CONFLICT(slug) DO UPDATE SET label=excluded.label`,
+        sql`INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance, depth, is_central) VALUES (${centralSlug}, ${centralLabel}, ${centralDesc}, ${centralClusterSlug}, 36, 10, 0, ${true}) ON CONFLICT(slug) DO UPDATE SET label=excluded.label`,
       );
 
       // Depth-1 keywords.
@@ -122,11 +122,10 @@ export class SourcesRepo {
           let bestScore = 0;
           for (const d1Slug of depth1Slugs) {
             // Look up D1 node label from within transaction.
-            const d1NodeRows = await tx
+            const [d1Node] = await tx
               .select({ label: s.derivedNodes.label })
               .from(s.derivedNodes)
               .where(eq(s.derivedNodes.slug, d1Slug));
-            const d1Node = d1NodeRows[0];
             if (!d1Node) continue;
             const s2 = scoreTopicMatch(commentTokenSet, d1Node.label);
             if (s2 > bestScore) {
