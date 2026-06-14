@@ -71,6 +71,20 @@ async function request(
   return { status: res.status, body: data };
 }
 
+describe('health endpoints', () => {
+  it('GET /api/health returns ok', async () => {
+    const res = await request('GET', '/api/health');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'ok' });
+  });
+
+  it('GET /api/health/ready returns ready when the database is connected', async () => {
+    const res = await request('GET', '/api/health/ready');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'ready', database: 'connected' });
+  });
+});
+
 /**
  * Seed the global dataset with two clusters, three nodes, one edge, and
  * one doc so search/reports/CRUD tests have something to act on.
