@@ -31,6 +31,12 @@ import waitlistRouter from './routes/waitlist.js';
 
 export const app = express();
 
+// ── Trust proxy ────────────────────────────────────────────────────
+// On Vercel (and any reverse-proxy deployment), the platform sets
+// X-Forwarded-For / Forwarded headers.  Without this, req.ip stays the
+// proxy's IP and express-rate-limit throws ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+app.set('trust proxy', 1);
+
 // ── Security headers ──────────────────────────────────────────────
 app.use(helmet());
 
