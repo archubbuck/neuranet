@@ -29,7 +29,7 @@ export class ReportsRepo {
         label: s.derivedClusters.label,
         color: s.derivedClusters.color,
         count:
-          sql<number>`COALESCE((SELECT COUNT(*) FROM derived_nodes dn WHERE dn.cluster_slug = derived_clusters.slug), 0)`.as(
+          sql<number>`COALESCE((SELECT COUNT(*)::int FROM derived_nodes dn WHERE dn.cluster_slug = derived_clusters.slug), 0)`.as(
             'count',
           ),
       })
