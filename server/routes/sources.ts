@@ -130,7 +130,7 @@ router.post(
         },
       );
 
-      const updated = (await sourcesRepo.getById(source.id))!;
+      const updated = await sourcesRepo.getById(source.id)!;
       res.json({
         source: {
           id: updated.id,

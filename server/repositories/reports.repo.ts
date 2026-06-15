@@ -22,7 +22,7 @@ export class ReportsRepo {
     return { nodes, clusters, edges, sources, docs };
   }
 
-  async getClusterDistribution() {
+  getClusterDistribution() {
     return this.db
       .select({
         id: s.derivedClusters.slug,

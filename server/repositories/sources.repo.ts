@@ -15,7 +15,7 @@ export class SourcesRepo {
     private readonly dialect: Dialect,
   ) {}
 
-  async listAll() {
+  listAll() {
     return this.db.select().from(s.dataSources).orderBy(s.dataSources.createdAt);
   }
 

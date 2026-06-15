@@ -13,7 +13,7 @@ export class ClustersRepo {
     private readonly dialect: Dialect,
   ) {}
 
-  async listAll() {
+  listAll() {
     return this.db
       .select({
         id: s.derivedClusters.slug,

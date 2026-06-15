@@ -10,7 +10,7 @@ export class DocsRepo {
     private readonly dialect: Dialect,
   ) {}
 
-  async listAll() {
+  listAll() {
     return this.db
       .select({
         id: s.docs.id,

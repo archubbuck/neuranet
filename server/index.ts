@@ -31,6 +31,12 @@ import waitlistRouter from './routes/waitlist.js';
 
 export const app = express();
 
+// ── Trust proxy ────────────────────────────────────────────────────
+// On Vercel (and any reverse-proxy deployment), the platform sets
+// X-Forwarded-For / Forwarded headers.  Without this, req.ip stays the
+// proxy's IP and express-rate-limit throws ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+app.set('trust proxy', 1);
+
 // ── Security headers ──────────────────────────────────────────────
 app.use(helmet());
 
@@ -110,6 +116,13 @@ app.use('/api', clustersRouter);
 app.use('/api', nodesRouter);
 app.use('/api', docsRouter);
 app.use('/api', waitlistRouter);
+
+// ── Startup warnings ───────────────────────────────────────────────
+// Warn at startup if Resend is not configured (emails will silently
+// skip in production).  Not fatal — the app works without email.
+if (!config.resendApiKey && config.nodeEnv !== 'test') {
+  logger.warn('RESEND_API_KEY not set — transactional email is disabled');
+}
 
 // Central error handler — must be registered after all routes.
 app.use(errorHandler);

@@ -35,13 +35,13 @@ export class NodesRepo {
       isCentral: s.derivedNodes.isCentral,
       sentiment: s.derivedNodes.sentiment,
       degree:
-        sql<number>`COALESCE((SELECT COUNT(*)::int FROM node_links nl WHERE nl.source_slug = derived_nodes.slug OR nl.target_slug = derived_nodes.slug), 0)`.as(
+        sql<number>`COALESCE((SELECT COUNT(*) FROM node_links nl WHERE nl.source_slug = derived_nodes.slug OR nl.target_slug = derived_nodes.slug), 0)`.as(
           'degree',
         ),
     };
   }
 
-  async listAll() {
+  listAll() {
     return this.db.select(this.nodeFields()).from(s.derivedNodes).orderBy(s.derivedNodes.id);
   }
 
@@ -111,9 +111,9 @@ export class NodesRepo {
     });
   }
 
-  async bulkReassign(nodeSlugs: string[], clusterSlug: string): Promise<void> {
+  async bulkReassign(nodeSlugs: string[], clusterSlug: string) {
     const slugs = sqlIn(nodeSlugs);
-    await this.db.execute(
+    return await this.db.execute(
       sql`UPDATE derived_nodes SET cluster_slug = ${clusterSlug} WHERE slug IN (${slugs})`,
     );
   }
