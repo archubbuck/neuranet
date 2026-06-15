@@ -21,8 +21,6 @@ router.post(
   asyncHandler(async (req, res) => {
     const { email } = req.body as { email: string };
 
-    console.log('[waitlist] route entered, email:', email);
-
     // Check for duplicate.
     const rows = await drizzle
       .select()
@@ -31,18 +29,21 @@ router.post(
     const existing = rows[0];
 
     if (existing) {
-      // Don't reveal whether the email is already registered.
-      res.status(201).json({ ok: true });
-      return;
+      // If confirmation was already sent, silently succeed.
+      if (existing.confirmationSent) {
+        res.status(201).json({ ok: true });
+        return;
+      }
+      // Entry exists but confirmation never sent (previous attempt
+      // failed) — fall through to retry the email below.
+    } else {
+      // Insert the entry.
+      await drizzle.insert(s.waitlistEntries).values({ email });
     }
-
-    // Insert the entry.
-    await drizzle.insert(s.waitlistEntries).values({ email });
 
     // Send confirmation email and update the record. On Vercel
     // serverless functions the runtime may freeze after the response
     // is sent, so we must await the send before responding.
-    console.log('[waitlist] about to call sendEmail');
     try {
       const result = await sendEmail({
         from: config.resendFromAddress,
@@ -53,17 +54,14 @@ router.post(
       });
 
       if (result.ok) {
-        console.log('[waitlist] email sent, id:', result.id);
         await drizzle
           .update(s.waitlistEntries)
           .set({ confirmationSent: true })
           .where(eq(s.waitlistEntries.email, email));
       } else {
-        console.log('[waitlist] email FAILED:', result.error);
         logger.warn({ email }, 'Waitlist confirmation email failed to send');
       }
     } catch (err) {
-      console.log('[waitlist] email THREW:', err);
       logger.error({ err, email }, 'Waitlist confirmation email threw');
     }
 
