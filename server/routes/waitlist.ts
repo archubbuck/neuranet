@@ -37,28 +37,29 @@ router.post(
     // Insert the entry.
     await drizzle.insert(s.waitlistEntries).values({ email });
 
-    // Send confirmation email (fire-and-forget — don't block the
-    // response on email delivery).
-    sendEmail({
-      from: config.resendFromAddress,
-      to: email,
-      subject: "You're on the Neuranet waitlist!",
-      text: `Hi there,\n\nThanks for joining the Neuranet waitlist! We'll let you know as soon as early access opens up.\n\n— The Neuranet Team`,
-      html: `<p>Hi there,</p><p>Thanks for joining the <strong>Neuranet</strong> waitlist! We'll let you know as soon as early access opens up.</p><p>— The Neuranet Team</p>`,
-    })
-      .then(async (result) => {
-        if (result.ok) {
-          await drizzle
-            .update(s.waitlistEntries)
-            .set({ confirmationSent: true })
-            .where(eq(s.waitlistEntries.email, email));
-        } else {
-          logger.warn({ email }, 'Waitlist confirmation email failed to send');
-        }
-      })
-      .catch((err) => {
-        logger.error({ err, email }, 'Waitlist confirmation email threw');
+    // Send confirmation email and update the record. On Vercel
+    // serverless functions the runtime may freeze after the response
+    // is sent, so we must await the send before responding.
+    try {
+      const result = await sendEmail({
+        from: config.resendFromAddress,
+        to: email,
+        subject: "You're on the Neuranet waitlist!",
+        text: `Hi there,\n\nThanks for joining the Neuranet waitlist! We'll let you know as soon as early access opens up.\n\n— The Neuranet Team`,
+        html: `<p>Hi there,</p><p>Thanks for joining the <strong>Neuranet</strong> waitlist! We'll let you know as soon as early access opens up.</p><p>— The Neuranet Team</p>`,
       });
+
+      if (result.ok) {
+        await drizzle
+          .update(s.waitlistEntries)
+          .set({ confirmationSent: true })
+          .where(eq(s.waitlistEntries.email, email));
+      } else {
+        logger.warn({ email }, 'Waitlist confirmation email failed to send');
+      }
+    } catch (err) {
+      logger.error({ err, email }, 'Waitlist confirmation email threw');
+    }
 
     res.status(201).json({ ok: true });
   }),
