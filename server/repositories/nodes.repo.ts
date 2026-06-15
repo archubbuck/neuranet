@@ -58,7 +58,7 @@ export class NodesRepo {
     return row;
   }
 
-  create(input: {
+  async create(input: {
     slug: string;
     label: string;
     description: string;
@@ -71,7 +71,7 @@ export class NodesRepo {
     return row;
   }
 
-  update(
+  async update(
     slug: string,
     patch: {
       label?: string;

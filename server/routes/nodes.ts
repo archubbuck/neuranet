@@ -21,20 +21,20 @@ router.post(
     };
     const desc = (req.body as { desc?: string }).desc ?? (label || 'Manually created topic');
 
-    const cluster = clustersRepo.getBySlug(clusterSlug);
+    const cluster = await clustersRepo.getBySlug(clusterSlug);
     if (!cluster) {
       res.status(400).json({ message: 'target cluster does not exist' });
       return;
     }
 
     const slug = slugify(label);
-    const existing = nodesRepo.getRawBySlug(slug);
+    const existing = await nodesRepo.getRawBySlug(slug);
     if (existing) {
       res.status(409).json({ message: 'a node with this name already exists' });
       return;
     }
 
-    nodesRepo.create({
+    await nodesRepo.create({
       slug,
       label,
       description: desc,
@@ -52,7 +52,7 @@ router.put(
   validateBody(schemas.updateNode),
   asyncHandler(async (req, res) => {
     const slug = req.params['slug'] as string;
-    const node = nodesRepo.getRawBySlug(slug);
+    const node = await nodesRepo.getRawBySlug(slug);
     if (!node) {
       res.status(404).json({ message: 'node not found' });
       return;
@@ -67,7 +67,7 @@ router.put(
     const description = body.description ?? node.description;
     let clusterSlug = node.clusterSlug;
     if (body.clusterSlug) {
-      const target = clustersRepo.getBySlug(body.clusterSlug);
+      const target = await clustersRepo.getBySlug(body.clusterSlug);
       if (!target) {
         res.status(400).json({ message: 'target cluster does not exist' });
         return;
@@ -75,7 +75,7 @@ router.put(
       clusterSlug = body.clusterSlug;
     }
 
-    nodesRepo.update(slug, { label, description, clusterSlug });
+    await nodesRepo.update(slug, { label, description, clusterSlug });
     res.json({ id: slug, label, desc: description, cluster: clusterSlug });
   }),
 );

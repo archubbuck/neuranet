@@ -30,7 +30,7 @@ export class SearchRepo {
     private readonly dialect: Dialect,
   ) {}
 
-  search(q: string): SearchResult[] {
+  async search(q: string): Promise<SearchResult[]> {
     if (q.length < 2) return [];
 
     const likePattern = `%${q.replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
