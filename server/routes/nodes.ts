@@ -84,7 +84,7 @@ router.delete(
   '/nodes/:slug',
   asyncHandler(async (req, res) => {
     const slug = req.params['slug'] as string;
-    const node = nodesRepo.getRawBySlug(slug);
+    const node = await nodesRepo.getRawBySlug(slug);
     if (!node) {
       res.status(404).json({ message: 'node not found' });
       return;
@@ -102,7 +102,7 @@ router.post(
     const { nodeSlugs } = req.body as { nodeSlugs: string[] };
 
     for (const slug of nodeSlugs) {
-      if (!nodesRepo.getRawBySlug(slug)) {
+      if (!(await nodesRepo.getRawBySlug(slug))) {
         res.status(404).json({ message: `node not found: ${slug}` });
         return;
       }
@@ -122,7 +122,7 @@ router.post(
       sourceSlugs: string[];
     };
 
-    const target = nodesRepo.getRawBySlug(targetSlug);
+    const target = await nodesRepo.getRawBySlug(targetSlug);
     if (!target) {
       res.status(404).json({ message: 'target node not found' });
       return;
@@ -133,7 +133,7 @@ router.post(
         res.status(400).json({ message: 'target node cannot be in sourceSlugs' });
         return;
       }
-      if (!nodesRepo.getRawBySlug(src)) {
+      if (!(await nodesRepo.getRawBySlug(src))) {
         res.status(404).json({ message: `source node not found: ${src}` });
         return;
       }
@@ -153,20 +153,20 @@ router.post(
       clusterSlug: string;
     };
 
-    const cluster = clustersRepo.getBySlug(clusterSlug);
+    const cluster = await clustersRepo.getBySlug(clusterSlug);
     if (!cluster) {
       res.status(400).json({ message: 'target cluster does not exist' });
       return;
     }
 
     for (const slug of nodeSlugs) {
-      if (!nodesRepo.getRawBySlug(slug)) {
+      if (!(await nodesRepo.getRawBySlug(slug))) {
         res.status(404).json({ message: `node not found: ${slug}` });
         return;
       }
     }
 
-    nodesRepo.bulkReassign(nodeSlugs, clusterSlug);
+    await nodesRepo.bulkReassign(nodeSlugs, clusterSlug);
     res.json({ reassigned: nodeSlugs.length, clusterSlug });
   }),
 );

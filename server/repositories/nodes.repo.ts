@@ -126,13 +126,13 @@ export class NodesRepo {
       const srcList = sqlIn(sourceSlugs);
 
       // Drop edges between target ↔ sources and between sources.
-      tx.run(
+      await tx.execute(
         sql`DELETE FROM node_links WHERE source_slug = ${targetSlug} AND target_slug IN (${srcList})`,
       );
-      tx.run(
+      await tx.execute(
         sql`DELETE FROM node_links WHERE target_slug = ${targetSlug} AND source_slug IN (${srcList})`,
       );
-      tx.run(
+      await tx.execute(
         sql`DELETE FROM node_links WHERE source_slug IN (${srcList}) AND target_slug IN (${srcList})`,
       );
 

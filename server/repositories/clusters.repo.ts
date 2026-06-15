@@ -80,7 +80,7 @@ export class ClustersRepo {
         .where(inArray(s.derivedNodes.clusterSlug, sourceSlugs))
         .returning({ slug: s.derivedNodes.slug });
 
-      tx.delete(s.derivedClusters).where(inArray(s.derivedClusters.slug, sourceSlugs));
+      await tx.delete(s.derivedClusters).where(inArray(s.derivedClusters.slug, sourceSlugs));
 
       return updated.length;
     });
