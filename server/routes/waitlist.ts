@@ -21,6 +21,8 @@ router.post(
   asyncHandler(async (req, res) => {
     const { email } = req.body as { email: string };
 
+    console.log('[waitlist] route entered, email:', email);
+
     // Check for duplicate.
     const rows = await drizzle
       .select()
@@ -40,6 +42,7 @@ router.post(
     // Send confirmation email and update the record. On Vercel
     // serverless functions the runtime may freeze after the response
     // is sent, so we must await the send before responding.
+    console.log('[waitlist] about to call sendEmail');
     try {
       const result = await sendEmail({
         from: config.resendFromAddress,
@@ -50,14 +53,17 @@ router.post(
       });
 
       if (result.ok) {
+        console.log('[waitlist] email sent, id:', result.id);
         await drizzle
           .update(s.waitlistEntries)
           .set({ confirmationSent: true })
           .where(eq(s.waitlistEntries.email, email));
       } else {
+        console.log('[waitlist] email FAILED:', result.error);
         logger.warn({ email }, 'Waitlist confirmation email failed to send');
       }
     } catch (err) {
+      console.log('[waitlist] email THREW:', err);
       logger.error({ err, email }, 'Waitlist confirmation email threw');
     }
 

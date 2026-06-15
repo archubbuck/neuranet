@@ -38,7 +38,10 @@ export interface SendEmailError {
  * The "from" address must be a domain you've verified in Resend.
  */
 export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult | SendEmailError> {
+  console.log('[email] sendEmail called, to:', opts.to);
+
   if (!config.resendApiKey) {
+    console.log('[email] no API key configured');
     logger.warn('sendEmail skipped: RESEND_API_KEY not configured');
     return { ok: false, error: 'Email service not configured' };
   }
@@ -54,6 +57,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult
 
   let response: Response;
   try {
+    console.log('[email] about to fetch', RESEND_API + '/emails');
     response = await fetch(`${RESEND_API}/emails`, {
       method: 'POST',
       headers: {
@@ -63,12 +67,14 @@ export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult
       body: JSON.stringify(body),
     });
   } catch (err) {
+    console.log('[email] fetch threw:', err);
     // This is the real network error that the Resend SDK swallows.
     logger.error({ err, from: opts.from, to: opts.to }, 'Resend fetch failed (network)');
     return { ok: false, error: 'Failed to send email' };
   }
 
   if (!response.ok) {
+    console.log('[email] API error, status:', response.status);
     let errorBody: unknown;
     try {
       errorBody = await response.json();
@@ -83,6 +89,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult
   }
 
   const data = (await response.json()) as { id: string };
+  console.log('[email] sent successfully, id:', data.id);
   logger.info({ emailId: data.id }, 'Email sent');
   return { ok: true, id: data.id };
 }
