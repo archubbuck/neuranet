@@ -23,8 +23,7 @@ export class DocsRepo {
           ),
       })
       .from(s.docs)
-      .orderBy(s.docs.id)
-      .all();
+      .orderBy(s.docs.id);
   }
 
   async getById(id: number) {
@@ -49,13 +48,13 @@ export class DocsRepo {
 
     return await this.db.transaction(async (tx: Db) => {
       // Insert doc.
-      const doc = tx.insert(s.docs).values({ title, text, status }).returning().get();
+      const [doc] = await tx.insert(s.docs).values({ title, text, status }).returning();
 
       const primaryKeyword = keywords[0] ?? 'general';
       const clusterSlug = `derived-${slugify(primaryKeyword)}`;
 
       // Create cluster (ON CONFLICT DO NOTHING).
-      tx.run(
+      await tx.execute(
         sql`INSERT INTO derived_clusters (slug, label, color) VALUES (${clusterSlug}, ${titleCase(primaryKeyword) + ' Concepts'}, ${colorFromSlug(clusterSlug)}) ON CONFLICT(slug) DO NOTHING`,
       );
 
@@ -64,10 +63,10 @@ export class DocsRepo {
       for (let i = 0; i < keywords.length; i += 1) {
         const kw = keywords[i];
         const nodeSlug = `user-${doc.id}-${slugify(kw)}`;
-        tx.run(
+        await tx.execute(
           sql`INSERT INTO derived_nodes (slug, label, description, cluster_slug, radius, importance) VALUES (${nodeSlug}, ${titleCase(kw)}, ${'Derived from document ' + doc.id + ': ' + titleCase(kw)}, ${clusterSlug}, ${Math.max(12, 18 - i * 2)}, ${Math.max(4, 8 - i)}) ON CONFLICT(slug) DO NOTHING`,
         );
-        tx.run(
+        await tx.execute(
           sql`INSERT INTO doc_node_links (doc_id, node_slug, score) VALUES (${doc.id}, ${nodeSlug}, ${Math.max(0.2, 1 - i * 0.15)}) ON CONFLICT(doc_id, node_slug) DO NOTHING`,
         );
         createdNodeSlugs.push(nodeSlug);
@@ -75,7 +74,7 @@ export class DocsRepo {
 
       // Chain edges between consecutive nodes.
       for (let i = 1; i < createdNodeSlugs.length; i += 1) {
-        tx.run(
+        await tx.execute(
           sql`INSERT INTO node_links (source_slug, target_slug, link_kind) VALUES (${createdNodeSlugs[i - 1]}, ${createdNodeSlugs[i]}, 'same-doc') ON CONFLICT(source_slug, target_slug) DO NOTHING`,
         );
       }

@@ -21,8 +21,7 @@ export class ClustersRepo {
         color: s.derivedClusters.color,
       })
       .from(s.derivedClusters)
-      .orderBy(s.derivedClusters.id)
-      .all();
+      .orderBy(s.derivedClusters.id);
   }
 
   async getBySlug(slug: string) {
@@ -52,21 +51,20 @@ export class ClustersRepo {
    * doc-node links — all within a single transaction.
    */
   async deleteCascade(slug: string): Promise<void> {
-    this.db.transaction((tx: Db) => {
-      const nodeSlugs = tx
+    await this.db.transaction(async (tx: Db) => {
+      const nodeSlugs = await tx
         .select({ slug: s.derivedNodes.slug })
         .from(s.derivedNodes)
-        .where(eq(s.derivedNodes.clusterSlug, slug))
-        .all();
+        .where(eq(s.derivedNodes.clusterSlug, slug));
 
       for (const node of nodeSlugs) {
-        tx.delete(s.nodeLinks).where(eq(s.nodeLinks.sourceSlug, node.slug)).run();
-        tx.delete(s.nodeLinks).where(eq(s.nodeLinks.targetSlug, node.slug)).run();
-        tx.delete(s.docNodeLinks).where(eq(s.docNodeLinks.nodeSlug, node.slug)).run();
+        await tx.delete(s.nodeLinks).where(eq(s.nodeLinks.sourceSlug, node.slug));
+        await tx.delete(s.nodeLinks).where(eq(s.nodeLinks.targetSlug, node.slug));
+        await tx.delete(s.docNodeLinks).where(eq(s.docNodeLinks.nodeSlug, node.slug));
       }
 
-      tx.delete(s.derivedNodes).where(eq(s.derivedNodes.clusterSlug, slug)).run();
-      tx.delete(s.derivedClusters).where(eq(s.derivedClusters.slug, slug)).run();
+      await tx.delete(s.derivedNodes).where(eq(s.derivedNodes.clusterSlug, slug));
+      await tx.delete(s.derivedClusters).where(eq(s.derivedClusters.slug, slug));
     });
   }
 
@@ -82,7 +80,7 @@ export class ClustersRepo {
         .where(inArray(s.derivedNodes.clusterSlug, sourceSlugs))
         .returning({ slug: s.derivedNodes.slug });
 
-      tx.delete(s.derivedClusters).where(inArray(s.derivedClusters.slug, sourceSlugs)).run();
+      tx.delete(s.derivedClusters).where(inArray(s.derivedClusters.slug, sourceSlugs));
 
       return updated.length;
     });

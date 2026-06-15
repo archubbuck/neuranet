@@ -42,7 +42,7 @@ export class NodesRepo {
   }
 
   listAll() {
-    return this.db.select(this.nodeFields()).from(s.derivedNodes).orderBy(s.derivedNodes.id).all();
+    return this.db.select(this.nodeFields()).from(s.derivedNodes).orderBy(s.derivedNodes.id);
   }
 
   async getBySlug(slug: string) {
@@ -88,17 +88,19 @@ export class NodesRepo {
   }
 
   async delete(slug: string): Promise<void> {
-    this.db.transaction((tx: Db) => {
-      tx.run(sql`DELETE FROM node_links WHERE source_slug = ${slug} OR target_slug = ${slug}`);
-      tx.run(sql`DELETE FROM doc_node_links WHERE node_slug = ${slug}`);
-      tx.run(sql`DELETE FROM derived_nodes WHERE slug = ${slug}`);
+    await this.db.transaction(async (tx: Db) => {
+      await tx.execute(
+        sql`DELETE FROM node_links WHERE source_slug = ${slug} OR target_slug = ${slug}`,
+      );
+      await tx.execute(sql`DELETE FROM doc_node_links WHERE node_slug = ${slug}`);
+      await tx.execute(sql`DELETE FROM derived_nodes WHERE slug = ${slug}`);
     });
   }
 
   async bulkDelete(nodeSlugs: string[]): Promise<number> {
     return await this.db.transaction(async (tx: Db) => {
       const slugs = sqlIn(nodeSlugs);
-      tx.run(
+      await tx.execute(
         sql`DELETE FROM node_links WHERE source_slug IN (${slugs}) OR target_slug IN (${slugs})`,
       );
       await tx.execute(sql`DELETE FROM doc_node_links WHERE node_slug IN (${slugs})`);
@@ -109,9 +111,9 @@ export class NodesRepo {
     });
   }
 
-  bulkReassign(nodeSlugs: string[], clusterSlug: string) {
+  async bulkReassign(nodeSlugs: string[], clusterSlug: string) {
     const slugs = sqlIn(nodeSlugs);
-    return this.db.run(
+    return await this.db.execute(
       sql`UPDATE derived_nodes SET cluster_slug = ${clusterSlug} WHERE slug IN (${slugs})`,
     );
   }
@@ -163,9 +165,11 @@ export class NodesRepo {
 
       // Delete source nodes and their remaining edges.
       for (const src of sourceSlugs) {
-        tx.run(sql`DELETE FROM node_links WHERE source_slug = ${src} OR target_slug = ${src}`);
-        tx.run(sql`DELETE FROM doc_node_links WHERE node_slug = ${src}`);
-        tx.run(sql`DELETE FROM derived_nodes WHERE slug = ${src}`);
+        await tx.execute(
+          sql`DELETE FROM node_links WHERE source_slug = ${src} OR target_slug = ${src}`,
+        );
+        await tx.execute(sql`DELETE FROM doc_node_links WHERE node_slug = ${src}`);
+        await tx.execute(sql`DELETE FROM derived_nodes WHERE slug = ${src}`);
       }
 
       const [node] = await tx

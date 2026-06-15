@@ -34,7 +34,6 @@ export class ReportsRepo {
           ),
       })
       .from(s.derivedClusters)
-      .orderBy(sql`count DESC`, s.derivedClusters.label)
-      .all();
+      .orderBy(sql`count DESC`, s.derivedClusters.label);
   }
 }
