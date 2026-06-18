@@ -3,6 +3,8 @@ name: performance-optimization
 description: Optimizes application performance. Use when performance requirements exist, when you suspect performance regressions, or when Core Web Vitals or load times need improvement. Use when profiling reveals bottlenecks that need fixing.
 ---
 
+> **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
+
 # Performance Optimization
 
 ## Overview

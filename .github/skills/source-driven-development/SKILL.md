@@ -3,6 +3,8 @@ name: source-driven-development
 description: Grounds every implementation decision in official documentation. Use when you want authoritative, source-cited code free from outdated patterns. Use when building with any framework or library where correctness matters.
 ---
 
+> **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
+
 # Source-Driven Development
 
 ## Overview

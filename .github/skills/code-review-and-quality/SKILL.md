@@ -3,6 +3,8 @@ name: code-review-and-quality
 description: Conducts multi-axis code review. Use before merging any change. Use when reviewing code written by yourself, another agent, or a human. Use when you need to assess code quality across multiple dimensions before it enters the main branch.
 ---
 
+> **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
+
 # Code Review and Quality
 
 ## Overview

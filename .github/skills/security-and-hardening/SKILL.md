@@ -3,6 +3,8 @@ name: security-and-hardening
 description: Hardens code against vulnerabilities. Use when handling user input, authentication, data storage, or external integrations. Use when building any feature that accepts untrusted data, manages user sessions, or interacts with third-party services.
 ---
 
+> **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
+
 # Security and Hardening
 
 ## Overview

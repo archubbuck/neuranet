@@ -3,6 +3,8 @@ name: deprecation-and-migration
 description: Manages deprecation and migration. Use when removing old systems, APIs, or features. Use when migrating users from one implementation to another. Use when deciding whether to maintain or sunset existing code.
 ---
 
+> **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
+
 # Deprecation and Migration
 
 ## Overview
