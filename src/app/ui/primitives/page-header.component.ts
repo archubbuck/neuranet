@@ -13,50 +13,18 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   selector: 'app-page-header',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="header-row">
-      <div class="header-text">
-        <h1>{{ heading() }}</h1>
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-[22px] font-bold text-fg-1 mb-1.5 tracking-tight">{{ heading() }}</h1>
         @if (subtitle()) {
-          <p>{{ subtitle() }}</p>
+          <p class="text-[13px] text-fg-3 m-0 max-w-[560px]">{{ subtitle() }}</p>
         }
       </div>
-      <div class="header-actions">
+      <div class="flex items-center gap-[10px] shrink-0">
         <ng-content />
       </div>
     </div>
   `,
-  styles: [
-    `
-      :host {
-        display: block;
-      }
-      .header-row {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-      }
-      .header-text h1 {
-        font-size: 22px;
-        font-weight: 700;
-        color: var(--c-fg1, #f1f5f9);
-        margin: 0 0 6px;
-        letter-spacing: -0.02em;
-      }
-      .header-text p {
-        font-size: 13px;
-        color: var(--c-fg3, #475569);
-        margin: 0;
-        max-width: 560px;
-      }
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-shrink: 0;
-      }
-    `,
-  ],
 })
 export class PageHeaderComponent {
   readonly heading = input.required<string>();

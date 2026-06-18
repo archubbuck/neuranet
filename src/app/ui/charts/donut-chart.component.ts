@@ -14,7 +14,7 @@ export interface DonutSegment {
   selector: 'app-donut-chart',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <svg [attr.width]="size()" [attr.height]="size()" style="display: block; flex-shrink: 0;">
+    <svg [attr.width]="size()" [attr.height]="size()" class="block shrink-0">
       <!-- background ring -->
       <circle
         [attr.cx]="cx()"

@@ -27,17 +27,19 @@ import { ZoomControlsComponent } from './zoom-controls.component';
     IconComponent,
   ],
   template: `
-    <div class="screen" [class.mobile]="isMobile()">
+    <div class="flex flex-1 min-h-0 relative">
       @if (!isMobile()) {
         <app-clusters-panel />
       }
 
-      <div class="canvas-wrap">
+      <div class="relative flex-1 min-w-0 min-h-0 overflow-hidden">
         @defer {
           <app-network-graph #graph />
 
           @if (!selectedId()) {
-            <div class="idle-hint">
+            <div
+              class="absolute top-3.5 left-1/2 -translate-x-1/2 z-[4] flex items-center gap-2 px-3.5 py-1.5 bg-[rgba(11,17,32,0.7)] border border-border-subtle backdrop-blur-sm pointer-events-none font-display text-xs text-fg-3"
+            >
               <app-icon name="circle-dot" [size]="13" color="#475569" />
               <span>Select a node to explore · scroll to zoom · drag to pan</span>
             </div>
@@ -52,15 +54,22 @@ import { ZoomControlsComponent } from './zoom-controls.component';
             (resetView)="graph.resetView()"
           />
         } @placeholder {
-          <div class="graph-skeleton" aria-hidden="true"></div>
+          <div class="absolute inset-0 bg-[#060912]" aria-hidden="true"></div>
         }
 
         @if (isMobile()) {
-          <button class="filter-pill" type="button" (click)="drawerOpen.set(true)">
+          <button
+            class="absolute bottom-4 left-1/2 -translate-x-1/2 z-[6] inline-flex items-center gap-2 px-4 py-2 bg-[rgba(11,17,32,0.92)] border border-border-def text-fg-1 font-display text-[13px] font-medium cursor-pointer backdrop-blur-md"
+            type="button"
+            (click)="drawerOpen.set(true)"
+          >
             <app-icon name="layers" [size]="14" />
             <span>Filter</span>
             @if (filterCount() > 0) {
-              <span class="badge">{{ filterCount() }}</span>
+              <span
+                class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 bg-amber text-[#1a1208] font-mono text-[10.5px] font-semibold"
+                >{{ filterCount() }}</span
+              >
             }
           </button>
           <app-clusters-panel
@@ -74,87 +83,14 @@ import { ZoomControlsComponent } from './zoom-controls.component';
       </div>
     </div>
   `,
-  styles: [
-    `
-      :host {
-        display: flex;
-        flex: 1;
-        min-height: 0;
-        background: #060912;
-      }
-      .screen {
-        display: flex;
-        flex: 1;
-        min-height: 0;
-        position: relative;
-      }
-      .canvas-wrap {
-        position: relative;
-        flex: 1;
-        min-width: 0;
-        min-height: 0;
-        overflow: hidden;
-      }
-      .graph-skeleton {
-        position: absolute;
-        inset: 0;
-        background: #060912;
-      }
-      .idle-hint {
-        position: absolute;
-        top: 14px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 4;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 7px 14px;
-        border-radius: 0;
-        background: rgba(11, 17, 32, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(6px);
-        pointer-events: none;
-        font-family: 'Space Grotesk', system-ui, sans-serif;
-        font-size: 12px;
-        color: #475569;
-      }
-      .filter-pill {
-        position: absolute;
-        bottom: 16px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 6;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 16px;
-        border-radius: 0;
-        background: rgba(11, 17, 32, 0.92);
-        border: 1px solid rgba(255, 255, 255, 0.09);
-        color: #f1f5f9;
-        font-family: 'Space Grotesk', system-ui, sans-serif;
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        backdrop-filter: blur(8px);
-      }
-      .filter-pill .badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 18px;
-        height: 18px;
-        padding: 0 6px;
-        border-radius: 0;
-        background: #fbbf24;
-        color: #1a1208;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 10.5px;
-        font-weight: 600;
-      }
-    `,
-  ],
+  styles: `
+    :host {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      background: #060912;
+    }
+  `,
 })
 export class NetworkScreenComponent {
   private readonly viewport = inject(ViewportService);

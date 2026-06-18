@@ -11,9 +11,10 @@ Components in `ui/` are the design system. They must be:
   (lint-enforced). Domain-shaped data is passed in pre-formatted, or the
   primitive defines its own local type (see `BadgeStatus` in
   `status-badge.component.ts`).
-- **Token-styled**: CSS custom properties with fallbacks
-  (`var(--c-amber, #fbbf24)`); constants from `ui/tokens.ts` in TS code.
-  No new raw hex values.
+- **Token-styled**: Tailwind utility classes referencing the `@theme` in
+  `src/tailwind.css` (`bg-amber`, `text-fg-1`, `border-border-def`). For
+  dynamic colors in TypeScript, import constants from `ui/tokens.ts`. No new
+  raw hex values.
 - **Accessible by default**: keyboard interaction, `aria-*` on icon-only
   controls, no `autofocus`, outputs never named after native DOM events.
 - **Tested**: every primitive has a spec covering rendering and each

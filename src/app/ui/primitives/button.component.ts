@@ -1,6 +1,9 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+
+const BASE_CLASSES =
+  'inline-flex items-center justify-center gap-[7px] text-[13px] font-semibold px-3.5 py-2 rounded-none cursor-pointer border border-transparent disabled:opacity-40 disabled:cursor-default';
 
 /**
  * Standard button. Variants map to the design tokens; content is projected:
@@ -11,74 +14,25 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
   selector: 'app-button',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <button
-      class="btn"
-      [class]="'btn ' + variant()"
-      type="button"
-      [disabled]="disabled()"
-      (click)="pressed.emit()"
-    >
+    <button [class]="btnClass()" type="button" [disabled]="disabled()" (click)="pressed.emit()">
       <ng-content />
     </button>
   `,
-  styles: [
-    `
-      :host {
-        display: inline-flex;
-      }
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 7px;
-        font-family: inherit;
-        font-size: 13px;
-        font-weight: 600;
-        padding: 8px 14px;
-        border-radius: 0;
-        cursor: pointer;
-        border: 1px solid transparent;
-      }
-      .btn:disabled {
-        opacity: 0.4;
-        cursor: default;
-      }
-      .primary {
-        background: var(--c-amber, #fbbf24);
-        color: var(--c-fg-on-accent, #06090f);
-      }
-      .primary:hover:not(:disabled) {
-        background: var(--c-amber-hover, #fcd34d);
-      }
-      .secondary {
-        background: var(--c-bg-elevated, #0f1828);
-        border-color: var(--c-border-def, rgba(255, 255, 255, 0.09));
-        color: var(--c-fg1, #f1f5f9);
-      }
-      .secondary:hover:not(:disabled) {
-        background: var(--c-bg-overlay, #152035);
-      }
-      .ghost {
-        background: transparent;
-        color: var(--c-fg2, #94a3b8);
-      }
-      .ghost:hover:not(:disabled) {
-        background: var(--c-bg-hover, rgba(255, 255, 255, 0.04));
-        color: var(--c-fg1, #f1f5f9);
-      }
-      .danger {
-        background: transparent;
-        border-color: var(--c-error, #fb7185);
-        color: var(--c-error, #fb7185);
-      }
-      .danger:hover:not(:disabled) {
-        background: rgba(251, 113, 133, 0.1);
-      }
-    `,
-  ],
+  styles: ':host { display: inline-flex; }',
 })
 export class ButtonComponent {
   readonly variant = input<ButtonVariant>('primary');
   readonly disabled = input<boolean>(false);
   readonly pressed = output<void>();
+
+  protected readonly btnClass = computed(() => {
+    const variant = this.variant();
+    const vClasses = {
+      primary: 'bg-amber text-fg-on-accent hover:bg-amber-hover',
+      secondary: 'bg-bg-elevated border-border-def text-fg-1 hover:bg-bg-overlay',
+      ghost: 'bg-transparent text-fg-2 hover:bg-bg-hover hover:text-fg-1',
+      danger: 'bg-transparent border-rose text-rose hover:bg-rose/10',
+    }[variant];
+    return `${BASE_CLASSES} ${vClasses}`;
+  });
 }

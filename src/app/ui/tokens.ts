@@ -1,9 +1,10 @@
 /**
  * Neuranet design tokens.
  *
- * Use these constants from TypeScript; the matching CSS custom properties
- * are exported by `src/styles.css` for stylesheet usage (e.g.
- * `color: var(--c-amber)`).
+ * Use these constants from TypeScript for dynamic color lookups (e.g.
+ * SVG node fills in the network graph). For static styling, prefer
+ * Tailwind utility classes referencing the `@theme` in `src/tailwind.css`
+ * (e.g. `text-fg-1`, `bg-amber`, `border-border-def`).
  */
 
 export const C = {

@@ -12,54 +12,20 @@ import { IconComponent } from './icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, IconComponent],
   template: `
-    <div class="search-wrap">
-      <span class="search-icon"><app-icon name="search" [size]="14" color="#475569" /></span>
+    <div class="relative w-[240px] shrink-0">
+      <span class="absolute left-[10px] top-1/2 -translate-y-1/2 flex pointer-events-none"
+        ><app-icon name="search" [size]="14" color="#475569"
+      /></span>
       <input
-        class="search-input"
         type="search"
+        class="w-full bg-bg-elevated border border-border-def rounded-none text-fg-1 font-inherit text-[13px] px-[10px] py-2 pl-[32px] outline-none placeholder:text-fg-3"
         [ngModel]="value()"
         (ngModelChange)="value.set($event)"
         [placeholder]="placeholder()"
       />
     </div>
   `,
-  styles: [
-    `
-      :host {
-        display: block;
-      }
-      .search-wrap {
-        position: relative;
-        width: 240px;
-        flex-shrink: 0;
-      }
-      .search-icon {
-        position: absolute;
-        left: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        display: flex;
-      }
-      .search-input {
-        width: 100%;
-        box-sizing: border-box;
-        background: var(--c-bg-elevated, #0f1828);
-        border: 1px solid var(--c-border-def, rgba(255, 255, 255, 0.09));
-        border-radius: 0;
-        color: var(--c-fg1, #f1f5f9);
-        font-family: inherit;
-        font-size: 13px;
-        padding: 8px 10px 8px 32px;
-        outline: none;
-      }
-      .search-input:focus {
-        border-color: var(--c-border-accent, rgba(251, 191, 36, 0.35));
-      }
-      .search-input::placeholder {
-        color: var(--c-fg3, #475569);
-      }
-    `,
-  ],
+  styles: ':host { display: block; }',
 })
 export class SearchInputComponent {
   readonly value = model<string>('');

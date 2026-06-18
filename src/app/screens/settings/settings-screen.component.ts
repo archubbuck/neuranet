@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /**
@@ -9,76 +8,25 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 @Component({
   selector: 'app-settings-screen',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule],
   template: `
-    <div class="root">
+    <div
+      class="flex-1 px-8 py-9 overflow-y-auto font-display text-fg-2 max-w-[720px] w-full mx-auto flex flex-col gap-6"
+    >
       <header>
-        <h1>Settings</h1>
-        <p>Application preferences.</p>
+        <h1 class="text-[22px] font-bold text-fg-1 tracking-tight m-0 mb-1.5">Settings</h1>
+        <p class="text-[13px] text-fg-3 m-0">Application preferences.</p>
       </header>
-      <section class="card">
-        <h2>Coming soon</h2>
-        <p class="hint">
+      <section
+        class="bg-bg-elevated border border-border-subtle p-[22px_24px] flex flex-col gap-[10px]"
+      >
+        <h2 class="text-sm font-semibold text-fg-1 m-0">Coming soon</h2>
+        <p class="text-xs text-fg-3 m-0 leading-relaxed">
           User preferences and account settings will live here in a future release. For now the app
           runs against a single global dataset.
         </p>
       </section>
     </div>
   `,
-  styles: [
-    `
-      :host {
-        display: flex;
-        flex: 1;
-        min-height: 0;
-      }
-      .root {
-        flex: 1;
-        padding: 36px 32px;
-        overflow-y: auto;
-        font-family: 'Space Grotesk', system-ui, sans-serif;
-        color: #94a3b8;
-        max-width: 720px;
-        width: 100%;
-        margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-      }
-      header h1 {
-        font-size: 22px;
-        font-weight: 700;
-        color: #f1f5f9;
-        letter-spacing: -0.02em;
-        margin: 0 0 6px;
-      }
-      header p {
-        font-size: 13px;
-        color: #475569;
-        margin: 0;
-      }
-      .card {
-        background: #0f1828;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 0;
-        padding: 22px 24px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      h2 {
-        font-size: 14px;
-        font-weight: 600;
-        color: #f1f5f9;
-        margin: 0;
-      }
-      .hint {
-        font-size: 12px;
-        color: #475569;
-        margin: 0;
-        line-height: 1.6;
-      }
-    `,
-  ],
+  styles: ':host { display: flex; flex: 1; min-height: 0; }',
 })
 export class SettingsScreenComponent {}

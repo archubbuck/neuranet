@@ -23,8 +23,8 @@ describe('LandingScreenComponent', () => {
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('h1')?.textContent).toContain('Map the network');
-    expect(root.querySelector('.hero-copy form.cta-row')).toBeTruthy();
-    expect(root.querySelector('.cta-confirm')).toBeNull();
+    expect(root.querySelector('form[novalidate]')).toBeTruthy();
+    expect(root.querySelector('[role="status"]')).toBeNull();
   });
 
   it('shows the confirmation message after a valid email is submitted', async () => {
@@ -39,8 +39,8 @@ describe('LandingScreenComponent', () => {
     await vi.waitFor(() => expect(joinWaitlist).toHaveBeenCalledWith('hello@example.com'));
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('.hero-copy form.cta-row')).toBeNull();
-    expect(root.querySelector('.cta-confirm')?.textContent).toContain("You're on the list");
+    expect(root.querySelector('form[novalidate]')).toBeNull();
+    expect(root.querySelector('[role="status"]')?.textContent).toContain("You're on the list");
   });
 
   it('ignores submissions that are missing or malformed', () => {
@@ -63,10 +63,11 @@ describe('LandingScreenComponent', () => {
   it('renders the three "how it works" markers', () => {
     const fixture = TestBed.createComponent(LandingScreenComponent);
     fixture.detectChanges();
-    const markers = (fixture.nativeElement as HTMLElement).querySelectorAll('.how-marker');
-    expect(markers.length).toBe(3);
-    expect(markers[0]?.textContent).toContain('Connect sources');
-    expect(markers[1]?.textContent).toContain('Structure emerges');
-    expect(markers[2]?.textContent).toContain('Answers, quantified');
+    const howSection = (fixture.nativeElement as HTMLElement).querySelector('#how')!;
+    const markerHeadings = Array.from(howSection.querySelectorAll(':scope > div:last-child h3'));
+    expect(markerHeadings.length).toBe(3);
+    expect(markerHeadings[0]?.textContent).toContain('Connect sources');
+    expect(markerHeadings[1]?.textContent).toContain('Structure emerges');
+    expect(markerHeadings[2]?.textContent).toContain('Answers, quantified');
   });
 });

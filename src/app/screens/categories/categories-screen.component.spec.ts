@@ -57,9 +57,9 @@ describe('CategoriesScreenComponent', () => {
     fixture.detectChanges();
     // The header now has two buttons: Filter (secondary) and + (primary).
     // Target the primary variant.
-    const btn = (fixture.nativeElement as HTMLElement).querySelector(
-      'app-page-header .header-actions app-button .btn.primary',
-    ) as HTMLButtonElement;
+    const header = (fixture.nativeElement as HTMLElement).querySelector('app-page-header')!;
+    const buttons = header.querySelectorAll('app-button');
+    const btn = buttons[buttons.length - 1].querySelector('button') as HTMLButtonElement;
     btn.click();
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
@@ -71,9 +71,9 @@ describe('CategoriesScreenComponent', () => {
     const fixture = TestBed.createComponent(CategoriesScreenComponent);
     fixture.detectChanges();
     // Click the Analytics tab
-    const tabs = (fixture.nativeElement as HTMLElement).querySelectorAll('.tab');
-    expect(tabs.length).toBe(2);
-    (tabs[1] as HTMLButtonElement).click();
+    const tabButtons = (fixture.nativeElement as HTMLElement).querySelectorAll('[role="tab"]');
+    expect(tabButtons.length).toBe(2);
+    (tabButtons[1] as HTMLButtonElement).click();
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Nodes per category');

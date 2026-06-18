@@ -42,16 +42,16 @@ describe('NetworkScreenComponent', () => {
   it('opens the slide-in detail when a node is selected', () => {
     store.selectNode('n1');
     fixture.detectChanges();
-    const panel = (fixture.nativeElement as HTMLElement).querySelector(
-      'app-slide-in-detail .panel',
-    );
-    expect(panel?.classList.contains('open')).toBe(true);
+    const el = (fixture.nativeElement as HTMLElement).querySelector('app-slide-in-detail');
+    const panel = el?.firstElementChild;
+    expect(panel?.classList.contains('translate-x-0')).toBe(true);
   });
 
   it('renders one row per cluster in the panel', () => {
     const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll(
-      'app-clusters-panel .row:not(.all)',
+      'app-clusters-panel button',
     );
-    expect(buttons.length).toBe(2);
+    // First button is "All groups" filter, remaining are cluster rows
+    expect(buttons.length - 1).toBe(2);
   });
 });

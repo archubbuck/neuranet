@@ -17,23 +17,27 @@ describe('TabsComponent', () => {
     return fixture;
   }
 
+  function buttons(fixture: any): NodeListOf<HTMLButtonElement> {
+    return (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+      '[role="tab"]',
+    );
+  }
+
   it('renders one tab per definition with the active one marked', async () => {
     const fixture = await create('insights');
-    const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll('.tab');
-    expect(buttons).toHaveLength(2);
-    expect(buttons[1].classList.contains('on')).toBe(true);
-    expect(buttons[1].getAttribute('aria-selected')).toBe('true');
-    expect(buttons[0].classList.contains('on')).toBe(false);
+    const btns = buttons(fixture);
+    expect(btns).toHaveLength(2);
+    expect(btns[1].classList.contains('text-amber')).toBe(true);
+    expect(btns[1].getAttribute('aria-selected')).toBe('true');
+    expect(btns[0].classList.contains('text-amber')).toBe(false);
   });
 
   it('clicking a tab updates the active model', async () => {
     const fixture = await create('records');
-    const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
-      '.tab',
-    );
-    buttons[1].click();
+    const btns = buttons(fixture);
+    btns[1].click();
     fixture.detectChanges();
     expect(fixture.componentInstance.active()).toBe('insights');
-    expect(buttons[1].classList.contains('on')).toBe(true);
+    expect(btns[1].classList.contains('text-amber')).toBe(true);
   });
 });

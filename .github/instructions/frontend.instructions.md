@@ -32,11 +32,15 @@ Every component: standalone, `ChangeDetectionStrategy.OnPush`, signal APIs
   popover, checkbox, status-badge, charts) before writing new inline UI.
 
 ## Styling
-- Token-only colors: constants from `ui/tokens.ts` in TS, CSS custom
-  properties (`var(--c-amber)` etc., defined in `src/styles.css`) in styles.
-  No new hardcoded hex values.
-- Component styles live in the `styles` array; screens must not redefine
-  `.btn-*`, card, or table styles that exist as primitives.
+- **TailwindCSS v4** (`src/tailwind.css`) with a `@theme` block mapping all
+  design tokens. Use utility classes (`text-fg-1`, `bg-amber`,
+  `border-border-def`, `font-display`) in templates.
+- Component `styles` arrays are minimal — only `:host` rules, `@keyframes`
+  animations, and pseudo-elements that Tailwind cannot express.
+- For dynamic/programmatic colors (SVG fills, viewport breakpoints), use
+  constants from `ui/tokens.ts` (`C`, `BREAKPOINTS`, etc.).
+- No hardcoded hex values in new components — use Tailwind theme tokens or
+  arbitrary values (`text-[#22D3EE]`) for one-off cluster colors.
 
 ## Routing
 - New screens: feature folder `screens/<feature>/`, lazy `loadComponent`,

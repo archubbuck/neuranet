@@ -170,34 +170,32 @@ const ZOOM_OUT_FACTOR = 0.926;
       </svg>
     </div>
   `,
-  styles: [
-    `
-      :host {
-        position: absolute;
-        inset: 0;
-        display: block;
-      }
-      .canvas {
-        position: absolute;
-        inset: 0;
-        overflow: hidden;
-        touch-action: none;
-        background: #060912;
-      }
-      svg {
-        display: block;
-      }
-      g.node {
-        cursor: pointer;
-        transition: opacity 200ms ease-out;
-        outline: none;
-      }
-      text {
-        pointer-events: none;
-        user-select: none;
-      }
-    `,
-  ],
+  styles: `
+    :host {
+      position: absolute;
+      inset: 0;
+      display: block;
+    }
+    .canvas {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      touch-action: none;
+      background: #060912;
+    }
+    svg {
+      display: block;
+    }
+    g.node {
+      cursor: pointer;
+      transition: opacity 200ms ease-out;
+      outline: none;
+    }
+    text {
+      pointer-events: none;
+      user-select: none;
+    }
+  `,
 })
 export class NetworkGraphComponent {
   protected readonly VIEW_WIDTH = VIEW_WIDTH;

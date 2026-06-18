@@ -12,10 +12,18 @@ describe('ButtonComponent', () => {
     return fixture;
   }
 
-  it('applies the variant class', async () => {
+  it('applies the variant classes', async () => {
     const fixture = await create('danger');
     const btn = (fixture.nativeElement as HTMLElement).querySelector('button')!;
-    expect(btn.classList.contains('danger')).toBe(true);
+    expect(btn.classList.contains('text-rose')).toBe(true);
+    expect(btn.classList.contains('border-rose')).toBe(true);
+  });
+
+  it('applies base Tailwind classes', async () => {
+    const fixture = await create();
+    const btn = (fixture.nativeElement as HTMLElement).querySelector('button')!;
+    expect(btn.classList.contains('inline-flex')).toBe(true);
+    expect(btn.classList.contains('font-semibold')).toBe(true);
   });
 
   it('emits pressed on click', async () => {

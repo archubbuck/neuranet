@@ -16,48 +16,20 @@ import { ToastComponent } from '../ui/overlays/toast.component';
   imports: [RouterOutlet, SidebarComponent, MobileNavComponent, ToastComponent],
   template: `
     @if (isMobile()) {
-      <div class="layout mobile">
-        <main class="content"><router-outlet /></main>
+      <div class="flex flex-col h-full w-full">
+        <main class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden"><router-outlet /></main>
         <app-mobile-nav />
       </div>
     } @else {
-      <div class="layout desktop">
+      <div class="flex flex-row h-full w-full">
         <app-sidebar />
-        <main class="content"><router-outlet /></main>
+        <main class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden"><router-outlet /></main>
       </div>
     }
     <app-toast />
   `,
-  styles: [
-    `
-      :host {
-        display: block;
-        height: 100%;
-        width: 100%;
-        background: #090e1c;
-        color: #f1f5f9;
-      }
-      .layout {
-        display: flex;
-        height: 100%;
-        width: 100%;
-      }
-      .layout.desktop {
-        flex-direction: row;
-      }
-      .layout.mobile {
-        flex-direction: column;
-      }
-      .content {
-        flex: 1 1 auto;
-        min-width: 0;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-    `,
-  ],
+  styles:
+    ':host { display: block; height: 100%; width: 100%; background: var(--color-bg-base); color: var(--color-fg-1); }',
 })
 export class AppShellComponent {
   private readonly viewport = inject(ViewportService);

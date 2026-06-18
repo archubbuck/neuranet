@@ -11,43 +11,30 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
-      <div class="backdrop" aria-hidden="true" (click)="closed.emit()"></div>
-      <div class="panel" [style]="style()">
+      <div class="fixed inset-0 z-[4000]" aria-hidden="true" (click)="closed.emit()"></div>
+      <div
+        class="absolute z-[4001] bg-bg-overlay border border-border-def animate-[tnPop_160ms_ease-out]"
+        [style]="style()"
+      >
         <ng-content />
       </div>
     }
   `,
-  styles: [
-    `
-      :host {
-        display: contents;
+  styles: `
+    :host {
+      display: contents;
+    }
+    @keyframes tnPop {
+      from {
+        opacity: 0;
+        transform: scale(0.94);
       }
-      .backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: 4000;
+      to {
+        opacity: 1;
+        transform: scale(1);
       }
-      .panel {
-        position: absolute;
-        z-index: 4001;
-        background: #152035;
-        border: 1px solid rgba(255, 255, 255, 0.09);
-        border-radius: 0;
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-        animation: tnPop 160ms ease-out;
-      }
-      @keyframes tnPop {
-        from {
-          opacity: 0;
-          transform: scale(0.94);
-        }
-        to {
-          opacity: 1;
-          transform: scale(1);
-        }
-      }
-    `,
-  ],
+    }
+  `,
 })
 export class PopoverComponent {
   readonly open = input(false);

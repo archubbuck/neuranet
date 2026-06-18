@@ -9,55 +9,29 @@ import { AppStore } from '../../data/app.store';
   selector: 'app-stats-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="bar">
-      <span class="stat">
-        <span class="value">{{ visibleNodes() }}</span>
-        <span class="label">{{ visibleNodes() === 1 ? 'node' : 'nodes' }}</span>
+    <div
+      class="inline-flex items-center gap-[11px] px-[11px_15px] py-1.5 bg-[rgba(11,17,32,0.86)] border border-border-def backdrop-blur-md shadow-[0_4px_12px_rgba(0,0,0,0.5)] font-display text-[11.5px] pointer-events-auto"
+    >
+      <span>
+        <span class="text-fg-1 font-semibold font-mono">{{ visibleNodes() }}</span>
+        <span class="text-fg-3 ml-1">{{ visibleNodes() === 1 ? 'node' : 'nodes' }}</span>
       </span>
-      <span class="dot">·</span>
-      <span class="stat">
-        <span class="value">{{ sourceCount() }}</span>
-        <span class="label">{{ sourceCount() === 1 ? 'source' : 'sources' }}</span>
+      <span class="text-[#2a3d66]">·</span>
+      <span>
+        <span class="text-fg-1 font-semibold font-mono">{{ sourceCount() }}</span>
+        <span class="text-fg-3 ml-1">{{ sourceCount() === 1 ? 'source' : 'sources' }}</span>
       </span>
     </div>
   `,
-  styles: [
-    `
-      :host {
-        position: absolute;
-        bottom: 16px;
-        left: 16px;
-        z-index: 5;
-        pointer-events: none;
-      }
-      .bar {
-        display: inline-flex;
-        align-items: center;
-        gap: 11px;
-        padding: 7px 15px;
-        border-radius: 0;
-        background: rgba(11, 17, 32, 0.86);
-        border: 1px solid rgba(255, 255, 255, 0.09);
-        backdrop-filter: blur(8px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-        font-family: 'Space Grotesk', system-ui, sans-serif;
-        font-size: 11.5px;
-        pointer-events: auto;
-      }
-      .value {
-        color: #f1f5f9;
-        font-weight: 600;
-        font-family: 'JetBrains Mono', monospace;
-      }
-      .label {
-        color: #475569;
-        margin-left: 4px;
-      }
-      .dot {
-        color: #2a3d66;
-      }
-    `,
-  ],
+  styles: `
+    :host {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      z-index: 5;
+      pointer-events: none;
+    }
+  `,
 })
 export class StatsBarComponent {
   private readonly store = inject(AppStore);

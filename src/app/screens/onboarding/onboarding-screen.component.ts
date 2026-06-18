@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ViewChild, inject, signal } from '@angular/core';
 import { AppStore } from '../../data/app.store';
 import { IconComponent } from '../../ui/primitives/icon.component';
@@ -18,37 +17,57 @@ import { AddSourceModalComponent } from '../sources/add-source-modal.component';
 @Component({
   selector: 'app-onboarding-screen',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, IconComponent, AddSourceModalComponent],
+  imports: [IconComponent, AddSourceModalComponent],
   template: `
-    <div class="root">
-      <div class="card">
-        <div class="icon-wrap">
+    <div class="flex-1 flex items-center justify-center p-6 bg-bg-base font-display">
+      <div
+        class="flex flex-col items-center gap-4 p-9 max-w-[380px] w-full text-center bg-[rgba(9,14,28,0.86)] border border-border-def backdrop-blur-lg"
+        style="box-shadow: 0 12px 48px rgba(0,0,0,0.5)"
+      >
+        <div
+          class="w-[46px] h-[46px] rounded-full bg-amber-dim border-[1.5px] border-amber-border flex items-center justify-center"
+        >
           <app-icon name="network" [size]="22" color="var(--c-amber)" />
         </div>
         <div>
-          <h1>Your network is empty</h1>
-          <p>
+          <h1 class="text-lg font-bold text-fg-1 mb-2 tracking-tight">Your network is empty</h1>
+          <p class="text-[13px] text-fg-3 leading-relaxed">
             Add a source to start populating your knowledge graph. Neuranet ingests Reddit threads
             today and grows from there.
           </p>
         </div>
 
         @if (errorMessage()) {
-          <p class="error">{{ errorMessage() }}</p>
+          <p
+            class="text-xs text-rose bg-[rgba(244,63,94,0.08)] border border-[rgba(244,63,94,0.25)] px-3 py-2 w-full"
+          >
+            {{ errorMessage() }}
+          </p>
         }
 
         @if (store.ingesting()) {
-          <div class="loading">
-            <div class="spinner"></div>
+          <div class="flex items-center gap-[10px] text-fg-3 text-[13px]">
+            <span
+              class="block w-[14px] h-[14px] rounded-full border-2 border-amber/25 animate-[spin_800ms_linear_infinite]"
+              style="border-top-color: var(--c-amber)"
+            ></span>
             <span>Building demo data…</span>
           </div>
         } @else {
-          <button class="primary" type="button" (click)="modal.open()">
+          <button
+            class="inline-flex items-center justify-center gap-2 font-display cursor-pointer border-none text-[13px] font-semibold bg-amber text-[#1a1208] px-[22px] py-3 hover:bg-amber-hover"
+            type="button"
+            (click)="modal.open()"
+          >
             <app-icon name="plus" [size]="14" />
             <span>Add first source</span>
           </button>
-          <button class="ghost" type="button" (click)="loadDemo()">
-            or <span class="link">explore a demo dataset</span>
+          <button
+            class="inline-flex items-center justify-center gap-2 font-display cursor-pointer border-none text-xs bg-transparent text-fg-4 px-1 py-[4px]"
+            type="button"
+            (click)="loadDemo()"
+          >
+            or <span class="text-info">explore a demo dataset</span>
           </button>
         }
       </div>
@@ -56,119 +75,18 @@ import { AddSourceModalComponent } from '../sources/add-source-modal.component';
 
     <app-add-source-modal #modal />
   `,
-  styles: [
-    `
-      :host {
-        display: flex;
-        flex: 1;
-        min-height: 0;
+  styles: `
+    :host {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
       }
-      .root {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
-        background: var(--c-bg-base);
-        font-family: var(--font-display);
-      }
-      .card {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 16px;
-        padding: 36px;
-        border-radius: 0;
-        max-width: 380px;
-        width: 100%;
-        text-align: center;
-        background: rgba(9, 14, 28, 0.86);
-        border: 1px solid var(--c-border-def);
-        backdrop-filter: blur(12px);
-        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
-      }
-      .icon-wrap {
-        width: 46px;
-        height: 46px;
-        border-radius: 50%;
-        background: var(--c-amber-dim);
-        border: 1.5px solid var(--c-amber-border);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      h1 {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--c-fg-1);
-        margin-bottom: 8px;
-        letter-spacing: -0.02em;
-      }
-      p {
-        font-size: 13px;
-        color: var(--c-fg-3);
-        line-height: 1.55;
-      }
-      .error {
-        font-size: 12px;
-        color: var(--c-rose);
-        background: rgba(244, 63, 94, 0.08);
-        border: 1px solid rgba(244, 63, 94, 0.25);
-        padding: 8px 12px;
-        border-radius: 0;
-        width: 100%;
-      }
-      .loading {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: var(--c-fg-3);
-        font-size: 13px;
-      }
-      .spinner {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        border: 2px solid rgba(251, 191, 36, 0.25);
-        border-top-color: var(--c-amber);
-        animation: spin 800ms linear infinite;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      button {
-        font-family: var(--font-display);
-        cursor: pointer;
-        border: none;
-        border-radius: 0;
-        font-size: 13px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-      }
-      button.primary {
-        background: var(--c-amber);
-        color: #1a1208;
-        font-weight: 600;
-        padding: 12px 22px;
-      }
-      button.primary:hover {
-        background: #fcd34d;
-      }
-      button.ghost {
-        background: none;
-        color: var(--c-fg-4);
-        font-size: 12px;
-        padding: 4px;
-      }
-      .link {
-        color: var(--c-info);
-      }
-    `,
-  ],
+    }
+  `,
 })
 export class OnboardingScreenComponent {
   readonly store = inject(AppStore);

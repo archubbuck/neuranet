@@ -23,25 +23,14 @@ import { ICONS, type IconName } from '../icons';
     [attr.height]="size()"
     viewBox="0 0 24 24"
     fill="none"
+    class="block shrink-0"
     [attr.stroke]="color()"
     [attr.stroke-width]="strokeWidth()"
     stroke-linecap="round"
     stroke-linejoin="round"
     [innerHTML]="paths()"
   ></svg>`,
-  styles: [
-    `
-      :host {
-        display: inline-flex;
-        flex-shrink: 0;
-        line-height: 0;
-      }
-      svg {
-        display: block;
-        flex-shrink: 0;
-      }
-    `,
-  ],
+  styles: ':host { display: inline-flex; flex-shrink: 0; line-height: 0; }',
 })
 export class IconComponent {
   private readonly sanitizer = inject(DomSanitizer);

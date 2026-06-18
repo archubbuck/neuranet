@@ -15,23 +15,25 @@ export interface SentBarRow {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (rows().length === 0) {
-      <div class="empty">No data</div>
+      <div class="text-[12.5px] text-fg-3">No data</div>
     } @else {
-      <div class="list">
+      <div class="flex flex-col gap-[10px]">
         @for (r of rows(); track r.label) {
           @let pos = r.value >= 0;
           @let barPct = barWidth(r.value);
-          <div class="row">
+          <div class="flex items-center gap-[10px]">
             <span
-              class="dot"
+              class="w-[8px] h-[8px] rounded-full shrink-0"
               [style.background]="r.color"
               [style.boxShadow]="'0 0 5px ' + r.color + '80'"
             ></span>
-            <span class="label" [title]="r.label">{{ r.label }}</span>
-            <div class="track">
-              <div class="center-line"></div>
+            <span class="w-[116px] shrink-0 text-[12.5px] text-fg-2 truncate" [title]="r.label">{{
+              r.label
+            }}</span>
+            <div class="flex-1 h-2 bg-[rgba(255,255,255,0.05)] relative">
+              <div class="absolute left-1/2 top-0 w-px h-full bg-[rgba(255,255,255,0.14)]"></div>
               <div
-                class="bar"
+                class="absolute top-0 h-full"
                 [style.left]="pos ? '50%' : ''"
                 [style.right]="pos ? '' : '50%'"
                 [style.width.%]="barPct / 2"
@@ -41,74 +43,16 @@ export interface SentBarRow {
                 [style.borderRadius]="pos ? '0 3px 3px 0' : '3px 0 0 3px'"
               ></div>
             </div>
-            <span class="val" [style.color]="pos ? '#34D399' : '#FB7185'">{{
-              (pos ? '+' : '−') + (r.value < 0 ? -r.value : r.value).toFixed(2)
-            }}</span>
+            <span
+              class="w-[46px] text-right shrink-0 font-mono text-xs"
+              [style.color]="pos ? '#34D399' : '#FB7185'"
+              >{{ (pos ? '+' : '−') + (r.value < 0 ? -r.value : r.value).toFixed(2) }}</span
+            >
           </div>
         }
       </div>
     }
   `,
-  styles: [
-    `
-      .list {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
-      .label {
-        width: 116px;
-        flex-shrink: 0;
-        font-size: 12.5px;
-        color: #94a3b8;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .track {
-        flex: 1;
-        height: 8px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 0;
-        position: relative;
-      }
-      .center-line {
-        position: absolute;
-        left: 50%;
-        top: 0;
-        width: 1px;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.14);
-      }
-      .bar {
-        position: absolute;
-        top: 0;
-        height: 100%;
-      }
-      .val {
-        width: 46px;
-        text-align: right;
-        flex-shrink: 0;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 12px;
-      }
-      .empty {
-        font-size: 12.5px;
-        color: #475569;
-      }
-    `,
-  ],
 })
 export class SentBarsComponent {
   readonly rows = input<readonly SentBarRow[]>([]);

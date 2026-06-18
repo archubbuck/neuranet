@@ -10,92 +10,32 @@ import { RouterLink } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `
-    <div class="page">
-      <header class="header">
-        <a routerLink="/" class="logo">Neuranet</a>
-        <nav>
-          <a routerLink="/login">Sign In</a>
+    <div class="flex flex-col min-h-screen">
+      <header
+        class="flex justify-between items-center px-8 py-4 border-b border-[rgba(255,255,255,0.08)]"
+      >
+        <a routerLink="/" class="text-xl font-semibold text-cyan-400 no-underline">Neuranet</a>
+        <nav class="flex gap-6">
+          <a routerLink="/login" class="text-fg-2 no-underline text-sm hover:text-fg-1">Sign In</a>
         </nav>
       </header>
-      <main class="content">
-        <h1>Terms of Service</h1>
-        <p>Coming soon — our terms of service will be published here.</p>
+      <main class="flex-1 px-8 py-16 max-w-[48rem] mx-auto">
+        <h1 class="text-[2rem] mb-4">Terms of Service</h1>
+        <p class="text-fg-2 leading-relaxed">
+          Coming soon — our terms of service will be published here.
+        </p>
       </main>
-      <footer class="footer">
-        <a routerLink="/roadmap">Roadmap</a>
-        <a routerLink="/privacy">Privacy</a>
+      <footer class="flex gap-6 px-8 py-6 border-t border-[rgba(255,255,255,0.08)] justify-center">
+        <a routerLink="/roadmap" class="text-slate-500 no-underline text-[13px] hover:text-fg-2"
+          >Roadmap</a
+        >
+        <a routerLink="/privacy" class="text-slate-500 no-underline text-[13px] hover:text-fg-2"
+          >Privacy</a
+        >
       </footer>
     </div>
   `,
-  styles: [
-    `
-      :host {
-        display: block;
-        min-height: 100vh;
-        background: #090e1c;
-        color: #f1f5f9;
-        font-family: 'Space Grotesk', sans-serif;
-      }
-      .page {
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-      }
-      .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 2rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      }
-      .logo {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #22d3ee;
-        text-decoration: none;
-      }
-      nav {
-        display: flex;
-        gap: 1.5rem;
-      }
-      nav a {
-        color: #94a3b8;
-        text-decoration: none;
-        font-size: 0.875rem;
-      }
-      nav a:hover {
-        color: #f1f5f9;
-      }
-      .content {
-        flex: 1;
-        padding: 4rem 2rem;
-        max-width: 48rem;
-        margin: 0 auto;
-      }
-      h1 {
-        font-size: 2rem;
-        margin-bottom: 1rem;
-      }
-      p {
-        color: #94a3b8;
-        line-height: 1.6;
-      }
-      .footer {
-        display: flex;
-        gap: 1.5rem;
-        padding: 1.5rem 2rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
-        justify-content: center;
-      }
-      .footer a {
-        color: #64748b;
-        text-decoration: none;
-        font-size: 0.8125rem;
-      }
-      .footer a:hover {
-        color: #94a3b8;
-      }
-    `,
-  ],
+  styles:
+    ':host { display: block; min-height: 100vh; background: var(--color-bg-base); color: var(--color-fg-1); font-family: var(--font-display); }',
 })
 export class TermsScreenComponent {}

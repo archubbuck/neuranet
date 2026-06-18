@@ -62,104 +62,98 @@ import { ModalComponent } from '../../ui/overlays/modal.component';
       </div>
     </app-modal>
   `,
-  styles: [
-    `
-      .field {
-        margin-bottom: 16px;
-      }
-      .field-label {
-        font-size: 11px;
-        font-family: 'JetBrains Mono', monospace;
-        color: var(--c-fg3, #475569);
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        margin-bottom: 7px;
-      }
-      .field-input {
-        width: 100%;
-        box-sizing: border-box;
-        background: var(--c-bg-elevated, #0f1828);
-        border: 1px solid var(--c-border-def, rgba(255, 255, 255, 0.09));
-        border-radius: 0;
-        color: var(--c-fg1, #f1f5f9);
-        font-family: inherit;
-        font-size: 13px;
-        padding: 9px 11px;
-        outline: none;
-      }
-      .field-input:focus {
-        border-color: var(--c-border-accent, rgba(251, 191, 36, 0.35));
-      }
-      .color-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-      .color-swatch {
-        width: 30px;
-        height: 30px;
-        border-radius: 0;
-        cursor: pointer;
-        border: 2px solid transparent;
-      }
-      .color-swatch.picked {
-        border-color: var(--c-fg1, #f1f5f9);
-      }
-      .preview-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-top: 4px;
-      }
-      .preview-dot {
-        width: 26px;
-        height: 26px;
-        border-radius: 999px;
-        flex-shrink: 0;
-      }
-      .preview-name {
-        font-size: 13px;
-        color: var(--c-fg1, #f1f5f9);
-        font-weight: 600;
-      }
-      .preview-hint {
-        font-size: 11px;
-        color: var(--c-fg3, #475569);
-      }
-      .btn-ghost {
-        background: transparent;
-        border: none;
-        color: var(--c-fg2, #94a3b8);
-        font-family: inherit;
-        font-size: 13px;
-        font-weight: 600;
-        padding: 8px 14px;
-        cursor: pointer;
-        border-radius: 0;
-      }
-      .btn-ghost:hover {
-        color: var(--c-fg1, #f1f5f9);
-      }
-      .btn-primary {
-        background: var(--c-amber, #fbbf24);
-        color: var(--c-fg-on-accent, #06090f);
-        border: none;
-        border-radius: 0;
-        font-family: inherit;
-        font-size: 13px;
-        font-weight: 600;
-        padding: 8px 16px;
-        cursor: pointer;
-      }
-      .btn-primary:hover {
-        background: var(--c-amber-hover, #fcd34d);
-      }
-      .btn-primary:disabled {
-        opacity: 0.4;
-        cursor: default;
-      }
-    `,
-  ],
+  styles: `
+    .field {
+      margin-bottom: 16px;
+    }
+    .field-label {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--c-fg3, #475569);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+    .field-input {
+      width: 100%;
+      box-sizing: border-box;
+      background: var(--c-bg-elevated, #0f1828);
+      border: 1px solid var(--c-border-def, rgba(255, 255, 255, 0.09));
+      color: var(--c-fg1, #f1f5f9);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 9px 11px;
+      outline: none;
+    }
+    .field-input:focus {
+      border-color: var(--c-border-accent, rgba(251, 191, 36, 0.35));
+    }
+    .color-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .color-swatch {
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+    .color-swatch.picked {
+      border-color: var(--c-fg1, #f1f5f9);
+    }
+    .preview-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+    }
+    .preview-dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .preview-name {
+      font-size: 13px;
+      color: var(--c-fg1, #f1f5f9);
+      font-weight: 600;
+    }
+    .preview-hint {
+      font-size: 11px;
+      color: var(--c-fg3, #475569);
+    }
+    .btn-ghost {
+      background: transparent;
+      border: none;
+      color: var(--c-fg2, #94a3b8);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+    .btn-ghost:hover {
+      color: var(--c-fg1, #f1f5f9);
+    }
+    .btn-primary {
+      background: var(--c-amber, #fbbf24);
+      color: var(--c-fg-on-accent, #06090f);
+      border: none;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      cursor: pointer;
+    }
+    .btn-primary:hover {
+      background: var(--c-amber-hover, #fcd34d);
+    }
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  `,
 })
 export class NewCategoryModalComponent {
   readonly open = input.required<boolean>();

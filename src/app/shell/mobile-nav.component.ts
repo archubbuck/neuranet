@@ -23,56 +23,32 @@ const NAV: readonly NavItem[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IconComponent, RouterLink, RouterLinkActive],
   template: `
-    <nav>
+    <nav class="grid grid-cols-5 px-2 py-[6px_10px]">
       @for (item of nav; track item.path) {
         <a
-          class="tab"
+          class="flex flex-col items-center gap-1 px-1 py-2 text-fg-2 no-underline text-[11px] transition-[color,background] duration-120 ease-out hover:text-fg-1"
           [routerLink]="item.path"
           [routerLinkActiveOptions]="{ exact: item.path === '/' }"
           routerLinkActive="active"
         >
           <app-icon [name]="item.icon" [size]="18" />
-          <span class="label">{{ item.label }}</span>
+          <span>{{ item.label }}</span>
         </a>
       }
     </nav>
   `,
-  styles: [
-    `
-      :host {
-        display: block;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-        background: #0b1120;
-        font-family: 'Space Grotesk', system-ui, sans-serif;
-        flex-shrink: 0;
-      }
-      nav {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        padding: 6px 8px 10px;
-      }
-      .tab {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-        padding: 8px 4px;
-        color: #94a3b8;
-        text-decoration: none;
-        font-size: 11px;
-        border-radius: 0;
-        transition:
-          color 120ms ease-out,
-          background 120ms ease-out;
-      }
-      .tab:hover {
-        color: #f1f5f9;
-      }
-      .tab.active {
-        color: #fbbf24;
-      }
-    `,
-  ],
+  styles: `
+    :host {
+      display: block;
+      border-top: 1px solid var(--color-border-subtle);
+      background: var(--color-bg-surface);
+      font-family: var(--font-display);
+      flex-shrink: 0;
+    }
+    .active {
+      color: var(--color-amber);
+    }
+  `,
 })
 export class MobileNavComponent {
   protected readonly nav = NAV;

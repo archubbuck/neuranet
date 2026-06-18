@@ -19,24 +19,38 @@ interface UserMenuUser {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (user(); as u) {
-      <div class="user-menu">
-        <button class="trigger" (click)="open = !open" aria-label="User menu" title="User menu">
+      <div class="relative">
+        <button
+          class="flex items-center gap-2 w-full px-3 py-2 border-none bg-transparent text-slate-300 cursor-pointer font-inherit text-[13px] transition-[background] duration-120 ease-out hover:bg-[rgba(255,255,255,0.06)] hover:text-fg-1"
+          (click)="open = !open"
+          aria-label="User menu"
+          title="User menu"
+        >
           @if (u.image) {
-            <img [src]="u.image" alt="" class="avatar" />
+            <img [src]="u.image" alt="" class="w-6 h-6 rounded-full shrink-0" />
           } @else {
-            <span class="avatar-placeholder">{{ initials(u.name) }}</span>
+            <span
+              class="w-6 h-6 rounded-full shrink-0 flex items-center justify-center bg-cyan-400 text-[#090e1c] font-semibold text-[0.7rem]"
+            >
+              {{ initials(u.name) }}
+            </span>
           }
           @if (!compact()) {
-            <span class="name">{{ u.name }}</span>
+            <span class="truncate">{{ u.name }}</span>
           }
         </button>
 
         @if (open) {
-          <div class="dropdown">
-            <div class="dropdown-header">
-              <span class="dropdown-email">{{ u.email }}</span>
+          <div
+            class="absolute bottom-full left-0 right-0 mb-1 bg-[#0f172a] border border-[rgba(255,255,255,0.08)] rounded-lg overflow-hidden z-50"
+          >
+            <div class="px-3 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
+              <span class="text-xs text-slate-500 truncate block">{{ u.email }}</span>
             </div>
-            <button class="dropdown-item sign-out" (click)="open = false; signOut.emit()">
+            <button
+              class="block w-full px-3 py-2 border-none bg-transparent text-slate-300 cursor-pointer text-left font-inherit text-[13px] hover:text-rose-400"
+              (click)="open = false; signOut.emit()"
+            >
               Sign Out
             </button>
           </div>
@@ -44,113 +58,21 @@ interface UserMenuUser {
       </div>
     }
   `,
-  styles: [
-    `
-      :host {
-        display: block;
-        position: relative;
-      }
-      .user-menu {
-        position: relative;
-      }
-      .trigger {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        width: 100%;
-        padding: 0.5rem 0.75rem;
-        border: none;
-        background: none;
-        color: #cbd5e1;
-        cursor: pointer;
-        font: inherit;
-        font-size: 0.8125rem;
-        transition: background 120ms ease-out;
-      }
-      .trigger:hover {
-        background: rgba(255, 255, 255, 0.06);
-        color: #f1f5f9;
-      }
-      .avatar,
-      .avatar-placeholder {
-        width: 1.5rem;
-        height: 1.5rem;
-        border-radius: 50%;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .avatar-placeholder {
-        background: #22d3ee;
-        color: #090e1c;
-        font-weight: 600;
-        font-size: 0.7rem;
-      }
-      .name {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .dropdown {
-        position: absolute;
-        bottom: 100%;
-        left: 0;
-        right: 0;
-        margin-bottom: 0.25rem;
-        background: #0f172a;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 8px;
-        overflow: hidden;
-        z-index: 50;
-      }
-      .dropdown-header {
-        padding: 0.625rem 0.75rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      }
-      .dropdown-email {
-        font-size: 0.75rem;
-        color: #64748b;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        display: block;
-      }
-      .dropdown-item {
-        display: block;
-        width: 100%;
-        padding: 0.5rem 0.75rem;
-        border: none;
-        background: none;
-        color: #e2e8f0;
-        cursor: pointer;
-        text-align: left;
-        font: inherit;
-        font-size: 0.8125rem;
-      }
-      .dropdown-item:hover {
-        background: rgba(255, 255, 255, 0.06);
-      }
-      .sign-out {
-        color: #f87171;
-      }
-    `,
-  ],
+  styles: ':host { display: block; position: relative; }',
 })
 export class UserMenuComponent {
   readonly user = input<UserMenuUser | null>(null);
-  /** When true, hides the user name and shows only the avatar. */
   readonly compact = input(false);
   readonly signOut = output<void>();
-
   protected open = false;
 
   protected initials(name: string): string {
     return name
       .split(' ')
-      .map((p) => p[0])
+      .map((w) => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
       .join('')
-      .toUpperCase()
-      .slice(0, 2);
+      .toUpperCase();
   }
 }

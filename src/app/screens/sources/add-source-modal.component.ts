@@ -73,164 +73,152 @@ import type { SourceType } from '../../data/types';
       </div>
     }
   `,
-  styles: [
-    `
-      :host {
-        display: contents;
-      }
-      .overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(2, 6, 14, 0.7);
-        backdrop-filter: blur(8px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 50;
-        padding: 16px;
-        font-family: var(--font-display);
-      }
-      .modal {
-        background: var(--c-bg-surface);
-        border: 1px solid var(--c-border-def);
-        border-radius: 0;
-        width: 100%;
-        max-width: 460px;
-        padding: 24px;
-        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
-      header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      h2 {
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--c-fg-1);
-        letter-spacing: -0.01em;
-      }
-      .close {
-        background: none;
-        border: none;
-        color: var(--c-fg-3);
-        cursor: pointer;
-        padding: 4px;
-        border-radius: 0;
-      }
-      .close:hover {
-        color: var(--c-fg-1);
-        background: rgba(255, 255, 255, 0.05);
-      }
-      .type-tabs {
-        display: flex;
-        gap: 6px;
-      }
-      .type-tab {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 7px 14px;
-        border: 1px solid var(--c-border-def);
-        border-radius: 0;
-        background: transparent;
-        color: var(--c-fg-3);
-        font-family: var(--font-display);
-        font-size: 12.5px;
-        cursor: pointer;
-        transition:
-          background 0.12s ease,
-          color 0.12s ease;
-      }
-      .type-tab:hover {
-        color: var(--c-fg-1);
-        background: rgba(255, 255, 255, 0.04);
-      }
-      .type-tab.active {
-        color: var(--c-amber);
-        border-color: var(--c-amber);
-        background: rgba(251, 191, 36, 0.06);
-      }
-      .hint {
-        font-size: 12px;
-        color: var(--c-fg-4);
-        line-height: 1.5;
-      }
-      .field {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .field span {
-        font-size: 12px;
-        color: var(--c-fg-3);
-      }
-      .field input {
-        background: var(--c-bg-base);
-        border: 1px solid var(--c-border-def);
-        color: var(--c-fg-1);
-        border-radius: 0;
-        padding: 10px 12px;
-        font-size: 13px;
-        font-family: var(--font-mono);
-        outline: none;
-      }
-      .field input:focus {
-        border-color: var(--c-amber);
-      }
-      .field input:disabled {
-        opacity: 0.5;
-      }
-      .error {
-        font-size: 12px;
-        color: var(--c-rose);
-        background: rgba(244, 63, 94, 0.08);
-        border: 1px solid rgba(244, 63, 94, 0.25);
-        padding: 8px 12px;
-        border-radius: 0;
-      }
-      footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 4px;
-      }
-      button.ghost,
-      button.primary {
-        font-family: var(--font-display);
-        font-size: 13px;
-        font-weight: 500;
-        padding: 9px 16px;
-        border-radius: 0;
-        cursor: pointer;
-        border: 1px solid transparent;
-        transition: background 0.12s ease;
-      }
-      button.ghost {
-        background: transparent;
-        border-color: var(--c-border-def);
-        color: var(--c-fg-2);
-      }
-      button.ghost:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.04);
-      }
-      button.primary {
-        background: var(--c-amber);
-        color: #1a1208;
-      }
-      button.primary:hover:not(:disabled) {
-        background: #fcd34d;
-      }
-      button.primary:disabled,
-      button.ghost:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-      }
-    `,
-  ],
+  styles: `
+    :host {
+      display: contents;
+    }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 14, 0.7);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 16px;
+      font-family: var(--font-display);
+    }
+    .modal {
+      background: var(--c-bg-surface);
+      border: 1px solid var(--c-border-def);
+      width: 100%;
+      max-width: 460px;
+      padding: 24px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--c-fg-1);
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+    .close {
+      background: none;
+      border: none;
+      color: var(--c-fg-3);
+      cursor: pointer;
+      padding: 4px;
+    }
+    .close:hover {
+      color: var(--c-fg-1);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .type-tabs {
+      display: flex;
+      gap: 6px;
+    }
+    .type-tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: 1px solid var(--c-border-def);
+      background: transparent;
+      color: var(--c-fg-3);
+      font-family: var(--font-display);
+      font-size: 12.5px;
+      cursor: pointer;
+      transition:
+        background 0.12s ease,
+        color 0.12s ease;
+    }
+    .type-tab:hover {
+      color: var(--c-fg-1);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .type-tab.active {
+      color: var(--c-amber);
+      border-color: var(--c-amber);
+      background: rgba(251, 191, 36, 0.06);
+    }
+    .hint {
+      font-size: 12px;
+      color: var(--c-fg-4);
+      line-height: 1.5;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field span {
+      font-size: 12px;
+      color: var(--c-fg-3);
+    }
+    .field input {
+      background: var(--c-bg-base);
+      border: 1px solid var(--c-border-def);
+      color: var(--c-fg-1);
+      padding: 10px 12px;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      outline: none;
+    }
+    .field input:focus {
+      border-color: var(--c-amber);
+    }
+    .field input:disabled {
+      opacity: 0.5;
+    }
+    .error {
+      font-size: 12px;
+      color: var(--c-rose);
+      background: rgba(244, 63, 94, 0.08);
+      border: 1px solid rgba(244, 63, 94, 0.25);
+      padding: 8px 12px;
+    }
+    footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    button.ghost,
+    button.primary {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 9px 16px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.12s ease;
+    }
+    button.ghost {
+      background: transparent;
+      border-color: var(--c-border-def);
+      color: var(--c-fg-2);
+    }
+    button.ghost:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    button.primary {
+      background: var(--c-amber);
+      color: #1a1208;
+    }
+    button.primary:hover:not(:disabled) {
+      background: #fcd34d;
+    }
+    button.primary:disabled,
+    button.ghost:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  `,
 })
 export class AddSourceModalComponent {
   private readonly store = inject(AppStore);

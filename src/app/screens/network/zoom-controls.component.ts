@@ -11,69 +11,63 @@ import { IconComponent } from '../../ui/primitives/icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IconComponent],
   template: `
-    <div class="stack">
-      <button type="button" title="Zoom in" (click)="zoomIn.emit()">
+    <div
+      class="flex flex-col bg-[rgba(11,17,32,0.86)] border border-border-def backdrop-blur-md overflow-hidden"
+    >
+      <button
+        type="button"
+        title="Zoom in"
+        class="w-[30px] h-[30px] flex items-center justify-center bg-transparent border-none text-fg-2 cursor-pointer transition-[background,color] duration-150 hover:bg-bg-hover hover:text-fg-1"
+        (click)="zoomIn.emit()"
+      >
         <app-icon name="plus" [size]="15" />
       </button>
-      <div class="sep"></div>
-      <button type="button" title="Zoom out" (click)="zoomOut.emit()">
+      <div class="h-px bg-[rgba(255,255,255,0.05)]"></div>
+      <button
+        type="button"
+        title="Zoom out"
+        class="w-[30px] h-[30px] flex items-center justify-center bg-transparent border-none text-fg-2 cursor-pointer transition-[background,color] duration-150 hover:bg-bg-hover hover:text-fg-1"
+        (click)="zoomOut.emit()"
+      >
         <app-icon name="minus" [size]="15" />
       </button>
-      <div class="sep"></div>
-      <button type="button" title="Spread nodes apart" (click)="spreadOut.emit()">
+      <div class="h-px bg-[rgba(255,255,255,0.05)]"></div>
+      <button
+        type="button"
+        title="Spread nodes apart"
+        class="w-[30px] h-[30px] flex items-center justify-center bg-transparent border-none text-fg-2 cursor-pointer transition-[background,color] duration-150 hover:bg-bg-hover hover:text-fg-1"
+        (click)="spreadOut.emit()"
+      >
         <app-icon name="arrow-right" [size]="15" />
       </button>
-      <div class="sep"></div>
-      <button type="button" title="Bring nodes closer" (click)="tightenUp.emit()">
+      <div class="h-px bg-[rgba(255,255,255,0.05)]"></div>
+      <button
+        type="button"
+        title="Bring nodes closer"
+        class="w-[30px] h-[30px] flex items-center justify-center bg-transparent border-none text-fg-2 cursor-pointer transition-[background,color] duration-150 hover:bg-bg-hover hover:text-fg-1"
+        (click)="tightenUp.emit()"
+      >
         <app-icon name="arrow-left" [size]="15" />
       </button>
-      <div class="sep"></div>
-      <button type="button" title="Reset view" (click)="resetView.emit()">
+      <div class="h-px bg-[rgba(255,255,255,0.05)]"></div>
+      <button
+        type="button"
+        title="Reset view"
+        class="w-[30px] h-[30px] flex items-center justify-center bg-transparent border-none text-fg-2 cursor-pointer transition-[background,color] duration-150 hover:bg-bg-hover hover:text-fg-1"
+        (click)="resetView.emit()"
+      >
         <app-icon name="maximize" [size]="14" />
       </button>
     </div>
   `,
-  styles: [
-    `
-      :host {
-        position: absolute;
-        bottom: 16px;
-        right: 16px;
-        z-index: 5;
-      }
-      .stack {
-        display: flex;
-        flex-direction: column;
-        background: rgba(11, 17, 32, 0.86);
-        border: 1px solid rgba(255, 255, 255, 0.09);
-        border-radius: 0;
-        backdrop-filter: blur(8px);
-        overflow: hidden;
-      }
-      button {
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: transparent;
-        border: none;
-        color: #94a3b8;
-        cursor: pointer;
-        transition:
-          background 150ms ease-out,
-          color 150ms ease-out;
-      }
-      button:hover {
-        background: rgba(255, 255, 255, 0.04);
-        color: #f1f5f9;
-      }
-      .sep {
-        height: 1px;
-        background: rgba(255, 255, 255, 0.05);
-      }
-    `,
-  ],
+  styles: `
+    :host {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      z-index: 5;
+    }
+  `,
 })
 export class ZoomControlsComponent {
   readonly zoomIn = output<void>();
