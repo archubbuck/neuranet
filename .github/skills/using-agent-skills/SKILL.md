@@ -5,6 +5,50 @@ description: Discovers and invokes agent skills. Use when starting a session or 
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### Skill → task mapping
+
+| Skill | When to use |
+|-------|-------------|
+| `test-driven-development` | Any new logic, bug fix, or behavior change |
+| `incremental-implementation` | Any multi-file feature or refactor |
+| `code-review-and-quality` | Before merging any PR |
+| `code-simplification` | Reviewing existing code for clarity |
+| `debugging-and-error-recovery` | Test failures, build breaks, runtime bugs |
+| `frontend-ui-engineering` | Building or modifying UI components |
+| `performance-optimization` | Slow pages, Core Web Vitals, bundle size |
+| `security-and-hardening` | Auth, input validation, external integrations |
+| `ci-cd-and-automation` | Pipeline setup, quality gates |
+| `shipping-and-launch` | Production deployment, pre-launch checklist |
+| `deprecation-and-migration` | Removing old code, migrating dependencies |
+| `documentation-and-adrs` | Recording architecture decisions |
+| `api-and-interface-design` | Designing module boundaries and types |
+| `spec-driven-development` | Starting a new feature without clear spec |
+| `source-driven-development` | Verifying patterns against official docs |
+| `planning-and-task-breakdown` | Breaking large tasks into ordered slices |
+| `doubt-driven-development` | High-stakes correctness review |
+| `fable-mode` | Large multi-session tasks requiring staged execution |
+| `context-engineering` | Setting up agent context for a new session |
+| `git-workflow-and-versioning` | Commit conventions, branching strategy |
+| `browser-testing-with-devtools` | Runtime verification in the browser |
+| `idea-refine` | Stress-testing vague requirements |
+| `interview-me` | Extracting implicit requirements |
+| `code-review-and-quality` | Five-axis review before merge |
+
+### Agent → task mapping
+
+| Agent | Purpose |
+|-------|---------|
+| `code-reviewer` | Five-axis review, output template |
+| `security-auditor` | Vulnerability detection, OWASP audit |
+| `test-engineer` | Test strategy, coverage, Prove-It |
+
+### Instructions files (mandatory first read)
+- `.github/instructions/frontend.instructions.md` — before component work
+- `.github/instructions/backend.instructions.md` — before backend work
+- `.github/instructions/ui-primitives.instructions.md` — before UI primitive work
+
 # Using Agent Skills
 
 ## Overview

@@ -5,6 +5,44 @@ description: Records decisions and documentation. Use when making architectural 
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### ADR location and naming
+- All ADRs at `docs/adr/NNN-title.md` (zero-padded, kebab-case)
+- Current ADRs: 001–008 covering layout, layering, endpoints, UI primitives,
+  zoneless/signals, Drizzle ORM, Vercel/Neon deployment, TailwindCSS migration
+
+### When to write an ADR
+- Architectural decisions that affect multiple layers
+- Technology choices (framework, library, database)
+- Migration strategies that span multiple PRs
+- Any decision a future engineer would need to understand
+
+### ADR format (per `docs/adr/` examples)
+```markdown
+# ADR-NNN: Title
+
+**Status:** proposed | accepted | deprecated | superseded
+**Date:** YYYY-MM-DD
+
+## Context
+[Why this decision is needed]
+
+## Decision
+[What was decided]
+
+## Consequences
+[Trade-offs, migration cost, follow-up work]
+```
+
+### Canonical documentation sources
+| Topic | File |
+|-------|------|
+| Component recipe, styling | `frontend.instructions.md` |
+| Backend layering, validation | `backend.instructions.md` |
+| UI primitive rules | `ui-primitives.instructions.md` |
+| Shared principles | `principles.md` |
+
 # Documentation and ADRs
 
 ## Overview

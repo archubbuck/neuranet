@@ -5,6 +5,33 @@ description: Automates CI/CD pipeline setup. Use when setting up or modifying bu
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### PR gates (`.github/workflows/ci.yml`)
+
+Every PR must pass these gates in order:
+```
+lint → typecheck → tests → build
+```
+- `pnpm lint` — ESLint (includes layer boundary rules via no-restricted-imports)
+- `pnpm typecheck` — TypeScript (`tsc --noEmit`)
+- `pnpm test` — Frontend Vitest suite
+- `pnpm test:server` — Backend Vitest suite (`pool:forks`, isolate each file)
+- `pnpm build` — Production build (Angular + API)
+
+### Local dev database
+- `docker compose up -d` for Postgres 16 (same image as CI). No manual Neon setup.
+- CI uses a Postgres 16 service container — ephemeral, no setup.
+- Production/Preview: Neon HTTP driver via `DB_DRIVER=neon-http`.
+
+### Preview environments
+- Neon branch created per PR via `dev-bootstrap.mjs`
+- Preview teardown (`preview-teardown.yml`) deletes Neon branches when PRs close
+
+### Migration gate (CI)
+- A consolidated `migration-gate` job applies migrations to a fresh PG,
+  smoke-tests the schema, and verifies no unexpected diff
+
 # CI/CD and Automation
 
 ## Overview

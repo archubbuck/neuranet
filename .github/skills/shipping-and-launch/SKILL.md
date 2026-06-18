@@ -5,6 +5,36 @@ description: Prepares production launches. Use when preparing to deploy to produ
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### Deployment stack
+- **Hosting:** Vercel (Frontend + API as serverless functions)
+- **Database:** Neon Postgres (serverless, branching per preview)
+- **Auth:** Neon Auth (Better Auth, managed OAuth)
+- **Deployment:** `vercel.json` config at repo root
+- See `docs/adr/007-vercel-neon-deployment.md` for full architecture
+
+### Pre-launch checklist
+
+- [ ] `pnpm lint` — no ESLint errors (layer boundaries included)
+- [ ] `pnpm typecheck` — no type errors
+- [ ] `pnpm test` — all frontend tests pass
+- [ ] `pnpm test:server` — all backend tests pass
+- [ ] `pnpm build` — production build succeeds
+- [ ] DB migrations applied (via `pnpm db:migrate`)
+- [ ] CORS origin matches production domain
+- [ ] Rate limits tuned for production traffic
+- [ ] Auth: Neon Auth configured with production OAuth credentials
+
+### Preview environments
+- PR deployments auto-create Neon branches via `dev-bootstrap.mjs`
+- `preview-teardown.yml` cleans up Neon branches on PR close
+- `vercel.json` deploys both `src/` (Angular) and `api/` (Express serverless)
+
+### Rollback strategy
+- Vercel: promote previous production deployment
+- Database: Neon point-in-time restore or branch revert
+
 # Shipping and Launch
 
 ## Overview

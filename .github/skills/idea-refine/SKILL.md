@@ -5,6 +5,27 @@ description: Refines raw ideas into sharp, actionable concepts through structure
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### Refining a feature idea into a spec
+
+1. **Document the problem** — what user need does this address?
+2. **Sketch the API contract** — types in `src/app/data/types.ts`, endpoint
+   shape, zod schema in `server/schemas.ts`
+3. **Sketch the UI** — which `ui/` primitives exist (button, modal, tabs,
+   search-input)? Which need extending vs creating?
+4. **Identify the layers** — `server/repositories/` → `server/routes/` →
+   `src/app/data/api.service.ts` → `src/app/data/app.store.ts` →
+   `src/app/screens/<feature>/`
+5. **Record in an ADR** if architectural — use `docs/adr/NNN-title.md` format
+
+### Questions to stress-test
+- Does this respect layer boundaries? (`ui/` ↛ `data/`)
+- Does every POST/PUT have a zod schema?
+- Does multi-write logic need `db.transaction()`?
+- Are there existing `ui/` primitives I can reuse?
+- Does this add a new dependency? (Must ask first.)
+
 # Idea Refine
 
 Refines raw ideas into sharp, actionable concepts worth building through structured divergent and convergent thinking.

@@ -5,6 +5,42 @@ description: Structures git workflow practices. Use when making any code change.
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### Branch strategy
+- Main branch: `master`
+- Feature branches: `feat/<short-description>`
+- Fix branches: `fix/<short-description>`
+
+### Commit conventions
+- Use imperative mood: "Add", "Fix", "Remove", "Refactor", "Docs"
+- Prefix with scope when relevant: `docs:`, `feat:`, `fix:`, `refactor:`
+- Descriptive body when context isn't obvious from the diff
+- Never: "Fix bug", "Add patch", "WIP"
+
+### CI-enforced quality gates
+```
+lint → typecheck → tests → build
+```
+- All checks run via `pnpm` scripts
+- PRs must pass all gates before merge
+
+### Package manager
+- pnpm 11 (pinned via `packageManager` in `package.json`)
+- `pnpm-workspace.yaml` for monorepo config
+- `allowBuilds:` in workspace config for native deps (`@parcel/watcher`, `better-sqlite3`, `esbuild`)
+
+### Key commands
+```bash
+pnpm test            # Frontend tests
+pnpm test:server     # Backend tests
+pnpm lint            # ESLint
+pnpm typecheck       # tsc --noEmit
+pnpm build           # Production build
+pnpm db:migrate      # Run migrations
+pnpm db:seed         # Seed data
+```
+
 # Git Workflow and Versioning
 
 ## Overview

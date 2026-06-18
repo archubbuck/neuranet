@@ -5,6 +5,39 @@ description: Optimizes application performance. Use when performance requirement
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### Frontend: computed view-models
+- Network graph precomputes `nodeVms`/`edgeVms` via `computed()` to avoid
+  per-template method calls on every change detection cycle
+  (`src/app/screens/network/network-graph.component.ts`)
+- New SVG or heavy-render components should follow the same pattern
+
+### Frontend: @for tracking
+- Always use `track` with a stable identity (`track node.id`)
+- Never use `$index` on dynamic lists (causes full re-render on reorder)
+
+### Frontend: @defer for heavy subtrees
+```angular-html
+@defer {
+  <app-network-graph />
+} @placeholder {
+  <div class="h-96 animate-pulse bg-bg-elevated rounded-xl" />
+}
+```
+- In specs: `fixture.getDeferBlocks()` + `DeferBlockState.Complete`
+
+### Backend: query patterns
+- Routes call repository methods (not raw Drizzle) — repositories can be
+  profiled/tuned independently
+- Search uses LIKE-based matching with label score=2 / body=1 weighting
+- List endpoints should paginate (see `reports` endpoint pattern)
+- Indexes: `CREATE INDEX CONCURRENTLY` for zero-downtime in production
+
+### Bundle: TailwindCSS v4
+- `@theme` in `src/tailwind.css` generates only used utility classes
+- No unused CSS in production builds
+
 # Performance Optimization
 
 ## Overview

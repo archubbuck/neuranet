@@ -5,6 +5,55 @@ description: Creates specs before coding. Use when starting a new project, featu
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### Spec format for new features
+
+**API contract first:**
+```typescript
+// src/app/data/types.ts
+export interface NewFeaturePayload {
+  readonly id: string;
+  readonly label: string;
+}
+```
+
+**Zod schema:**
+```typescript
+// server/schemas.ts
+export const createNewFeature = z.object({
+  label: z.string().trim().min(1),
+});
+```
+
+**Endpoint:**
+```
+POST /api/new-feature
+GET  /api/new-feature
+```
+
+### Before writing code, document:
+
+- [ ] Types defined in `data/types.ts`
+- [ ] Zod schema in `server/schemas.ts` (if mutating)
+- [ ] Which `ui/` primitives are reused vs new
+- [ ] Store action or screen-local state?
+- [ ] Auth required? (public route or inside `AppShellComponent`?)
+- [ ] ADR needed? (Architecture decisions → `docs/adr/NNN-title.md`)
+
+### Layer mapping
+
+| Concern | File |
+|---------|------|
+| Types | `src/app/data/types.ts` |
+| Validation | `server/schemas.ts` |
+| DB schema | `server/db/schema.ts` |
+| API route | `server/routes/<domain>.ts` |
+| HTTP client | `src/app/data/api.service.ts` |
+| Global state | `src/app/data/app.store.ts` |
+| Screen | `src/app/screens/<feature>/` |
+| UI primitive | `src/app/ui/<category>/` |
+
 # Spec-Driven Development
 
 ## Overview

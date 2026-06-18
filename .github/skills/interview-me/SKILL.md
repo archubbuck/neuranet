@@ -5,6 +5,25 @@ description: Extracts what the user actually wants instead of what they think th
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### Questions to clarify before starting work
+
+**For new features:**
+- Which screen does this belong to? (New `screens/<feature>/` folder or modify existing?)
+- Does the data come from a new API endpoint or existing store data?
+- Are there existing `ui/` primitives that cover the UI, or do I need a new one?
+- Does this need auth? (Public landing page or inside `AppShellComponent`?)
+
+**For backend changes:**
+- New entity? → Needs Drizzle schema in `server/db/schema.ts`, repo, route, zod schema
+- New external fetch? → Needs SSRF-safe allowlist + rate limiting
+- New mutation? → Needs zod schema + `db.transaction()` if multi-write
+
+**For bug fixes:**
+- Can I reproduce it with a test first? (Prove-It pattern)
+- Is it a frontend signal issue? (`TestBed.tick()` in zoneless mode)
+- Is it a backend validation gap? (Missing zod schema?)
 # Interview Me
 
 ## Overview

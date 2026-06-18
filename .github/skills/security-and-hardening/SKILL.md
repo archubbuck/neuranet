@@ -5,6 +5,42 @@ description: Hardens code against vulnerabilities. Use when handling user input,
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### Input validation
+- `server/schemas.ts` — every POST/PUT body gets a zod schema
+- Applied via `validateBody` middleware — handlers assume well-formed input
+- No manual `typeof` checks in route handlers
+- SuperRefine for cross-field validation (e.g. `sourceType === 'reddit'` requires `config.threadUrl`)
+
+### SSRF protection
+- `server/reddit-fetcher.ts` — external fetches use exact-match + subdomain
+  allowlist (`reddit.com` + `*.reddit.com`), never `endsWith`
+- Any new external fetcher must follow the same pattern
+
+### Authentication
+- `server/middleware/auth.ts` — `requireAuth` / `optionalAuth` middleware
+- Verifies session cookie via Better Auth / Neon Auth
+- Applied per-router, not globally (see `server/index.ts`)
+- Rate limiter and auth middleware applied per-router
+
+### Secrets management
+- All env reads through `server/env.ts` / `server/config.ts`
+- No `process.env` access outside those files
+- Centralised config in `config.ts`
+
+### Rate limiting
+- Global: express-rate-limit (1000/min) for local dev
+- Per-source fetch: env-tunable via `TOPIC_VIZ_*_RATE_MAX`
+- Upstash Redis rate limiter when configured (serverless-safe); falls back
+  to in-memory `express-rate-limit` for local dev
+
+### Error handling
+- Central `errorHandler` in `middleware/error.ts`
+- Never return `err.message` or stack details to clients
+- Log internally with pino logger
+- Status codes: 400 invalid input, 404 missing, 409 conflict, 429 rate limit, 500 generic
+
 # Security and Hardening
 
 ## Overview

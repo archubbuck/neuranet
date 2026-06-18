@@ -5,6 +5,25 @@ description: Manages deprecation and migration. Use when removing old systems, A
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### Past deprecations in this codebase
+
+| Change | Migration | Evidence |
+|--------|-----------|----------|
+| CSS custom properties → TailwindCSS v4 | Moved `:root` vars to `@theme` in `src/tailwind.css` | ADR-008 |
+| CSS `styles.css` → TailwindCSS `tailwind.css` | Replaced in `angular.json`, deleted old file | ADR-008 |
+| Workspace concept removed | `workspace_id` columns and `workspaces` table eliminated | `_stale-screens-backup/` |
+| Legacy `DocsApiService` methods | `legacyListDocs`/`legacyGetNetworkOverlay`/`legacyCreateDoc` removed | |
+| React prototype embed | Retired; source at `TopicNet Prototype (standalone).html` for reference | |
+| React/Prisma/Jest patterns in skills | Overridden by project-specific Codebase Patterns sections | `.github/instructions/` |
+
+### Deprecation strategy
+- Park stale-but-preservable code in `_stale-screens-backup/` (gitignored)
+- Document migrations in ADRs under `docs/adr/`
+- DB migrations: Drizzle-generated SQL in `server/migrations/postgres/`
+- Never remove a failing test — fix the test or the code
+
 # Deprecation and Migration
 
 ## Overview

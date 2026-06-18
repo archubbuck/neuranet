@@ -5,6 +5,31 @@ description: Optimizes agent context setup. Use when starting a new session, whe
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### Context entry points (in priority order)
+
+| File | What it provides |
+|------|------------------|
+| `CLAUDE.md` | Project overview, stack, commands, canonical source table |
+| `.github/copilot-instructions.md` | Essential inline rules + pointer table to all docs |
+| `.github/principles.md` | Shared principles across all layers |
+| `.github/instructions/frontend.instructions.md` | Angular 22 component recipe, styling, testing |
+| `.github/instructions/backend.instructions.md` | Express 5 + Drizzle layering, validation, security |
+| `.github/instructions/ui-primitives.instructions.md` | UI primitive design system rules |
+| `docs/adr/` | Architecture Decision Records for past decisions |
+
+### Agent customization files
+- `.github/agents/code-reviewer.md` — Review persona
+- `.github/agents/security-auditor.md` — Security review persona
+- `.github/agents/test-engineer.md` — Test strategy persona
+- `.github/skills/*/SKILL.md` — Step-by-step workflows (24 skills)
+
+### Key reminders for session start
+- Stack: Angular 22 (zoneless, signals, OnPush), Express 5, Drizzle, Postgres, TailwindCSS v4
+- Tests: Vitest (frontend + backend), no Jest/Karma
+- Package manager: pnpm 11 (not npm)
+
 # Context Engineering
 
 ## Overview

@@ -5,6 +5,41 @@ description: Breaks work into ordered tasks. Use when you have a spec or clear r
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### Project folder structure for slicing
+
+```
+server/
+  repositories/<domain>.repo.ts   → DB queries (Drizzle)
+  routes/<domain>.ts              → HTTP handlers
+  schemas.ts                      → Zod validation
+  middleware/                      → auth, error, validate, request-id
+  db/schema.ts                    → Drizzle table definitions
+
+src/app/
+  data/types.ts                   → Shared types
+  data/api.service.ts             → HTTP client
+  data/app.store.ts               → Global state (signals)
+  screens/<feature>/              → Routed feature component
+  ui/primitives/                  → Reusable presentational components
+```
+
+### Typical slice order for new features
+
+1. Types (`data/types.ts`) + zod schema (`server/schemas.ts`)
+2. Database schema + migration (`server/db/schema.ts`)
+3. Repository (`server/repositories/`) + route handler (`server/routes/`)
+4. Backend integration test (`server/index.test.ts`)
+5. ApiService method (`data/api.service.ts`)
+6. Store action + tests (`data/app.store.ts`, `data/app.store.spec.ts`)
+7. Screen component + spec (`screens/<feature>/`)
+
+### Layer boundaries (check before planning)
+- `ui/` primitives: presentational only (no data/screens/shell imports)
+- `screens/` get data through `AppStore`
+- Routes call repositories (never import Drizzle directly)
+
 # Planning and Task Breakdown
 
 ## Overview

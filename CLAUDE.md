@@ -30,30 +30,18 @@ pnpm db:migrate        # Run Drizzle migrations
 pnpm db:seed           # Seed demo data
 ```
 
-## Layer Boundaries (lint-enforced)
+## Conventions (canonical sources)
 
-```
-src/app/ui/**   → must NOT import from data/, screens/, shell/
-src/app/data/** → must NOT import from screens/, ui/, shell/
-```
+Read these before adding or modifying code — they define project-specific
+patterns that override generic framework defaults:
 
-Dependencies flow: `ui/` ← `screens/` ← `data/` ← `server/routes/` ← `server/repositories/`.
-
-## Key Conventions
-
-- **Components:** standalone, `ChangeDetectionStrategy.OnPush`, signal APIs
-  (`input()`, `output()`, `signal`, `computed`). No `@Input`/`@Output`.
-- **Styling:** TailwindCSS utility classes in templates. TypeScript-only
-  dynamic colors from `ui/tokens.ts`. No hardcoded hex values.
-- **Backend:** Zod schema for every POST/PUT body. Multi-write handlers wrap
-  in `db.transaction()`. Routes call repo methods — never import Drizzle directly.
-- **Security:** All env reads through `env.ts`/`config.ts`. External fetches
-  use SSRF-safe host allowlist (`reddit-fetcher.ts`). Auth via `requireAuth` middleware.
-- **Testing:** `TestBed.tick()` flushes signal effects in zoneless mode.
-  Backend tests use `app.listen(0)` + native `fetch()` (no supertest).
-  Tables truncated in FK-safe order in `beforeEach`.
-- **Routing:** Lazy `loadComponent` + `title`. Landing page renders outside
-  `AppShellComponent`; app features nest under the shell layout route.
+| Topic | Source |
+|-------|--------|
+| Component recipe, styling, routing, testing | `.github/instructions/frontend.instructions.md` |
+| Backend layering, validation, data integrity, security | `.github/instructions/backend.instructions.md` |
+| UI primitive rules (presentational, token-styled) | `.github/instructions/ui-primitives.instructions.md` |
+| Layer boundaries, PR gates, always/never | `.github/copilot-instructions.md` |
+| Five-axis review, TDD, increments | `.github/principles.md` |
 
 ## File Map
 
@@ -76,18 +64,6 @@ src/app/
   shell/           ← AppShellComponent (layout, sidebar, header)
   core/            ← auth guard, toast, viewport, format utilities
 ```
-
-## Always / Never
-
-| Rule | Scope |
-|------|-------|
-| Always | Run tests before commits. Validate user input with zod. |
-| Ask first | DB schema changes. New dependencies. |
-| Never | Commit secrets. Remove failing tests. Skip verification. |
-
-## PR Gates (CI-enforced)
-
-`lint → typecheck → tests → build`
 
 ## Token Optimization Constraints
 

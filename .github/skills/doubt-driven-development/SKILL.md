@@ -5,6 +5,30 @@ description: Subjects every non-trivial decision to a fresh-context adversarial 
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### When to apply doubt-driven review
+- DB schema changes (always ask first)
+- New dependencies (always ask first)
+- Auth/permission logic changes
+- External API integrations (SSRF risk)
+- Multi-write transactions (data integrity)
+
+### Concrete review triggers in this codebase
+
+| Concern | What to verify |
+|---------|----------------|
+| Zod schema missing | Every POST/PUT needs one in `server/schemas.ts` |
+| `process.env` in handler | Must read through `server/env.ts`/`server/config.ts` |
+| Missing `db.transaction()` | Multi-table writes must be transactional |
+| No `requireAuth` | Protected endpoints need auth middleware |
+| Direct Drizzle import | Routes must use repositories, not raw Drizzle |
+| Computed view-model missing | SVG/graph components should precompute in `computed()` |
+
+### Subagent delegation
+Use the `code-reviewer`, `security-auditor`, or `test-engineer` subagents for
+formal multi-axis review before merging high-stakes changes.
+
 # Doubt-Driven Development
 
 ## Overview

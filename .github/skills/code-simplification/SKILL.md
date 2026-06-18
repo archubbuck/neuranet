@@ -5,6 +5,39 @@ description: Simplifies code for clarity. Use when refactoring code for clarity 
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+### Components: use computed view-models not template methods
+```typescript
+// ✗ Bad: recomputes on every change detection cycle
+@for (node of store.nodes(); track node.id) {
+  <circle [attr.fill]="clusterColor(node.cluster)" />
+}
+
+// ✓ Good: precompute once via computed()
+readonly nodeVms = computed(() =>
+  this.store.nodes().map(n => ({ ...n, fill: this.clusterColor(n.cluster) }))
+);
+```
+
+### Repository pattern: no raw Drizzle in routes
+```typescript
+// ✗ Bad: route imports Drizzle directly
+import { db } from '../db';
+
+// ✓ Good: route calls repo method
+const cluster = await clustersRepo.getBySlug(slug);
+```
+
+### Signal APIs: no decorators in new code
+- Use `input()`, `output()`, `signal()`, `computed()`, `model()`
+- No `@Input()`, `@Output()`, `@HostBinding()` decorators
+
+### Styling: TailwindCSS not inline styles
+- Utility classes in templates (`text-fg-1`, `bg-amber`)
+- Dynamic colors from `ui/tokens.ts`, not raw hex
+- Component `styles` arrays: only `:host`, `@keyframes`, pseudo-elements
+
 # Code Simplification
 
 > Inspired by the [Claude Code Simplifier plugin](https://github.com/anthropics/claude-plugins-official/blob/main/plugins/code-simplifier/agents/code-simplifier.md). Adapted here as a model-agnostic, process-driven skill for any AI coding agent.
