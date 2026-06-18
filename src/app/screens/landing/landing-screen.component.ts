@@ -58,69 +58,92 @@ const MAX_SHRINK = 0.55;
   selector: 'app-landing-screen',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, RouterLink, IconComponent],
-  template: `<div class="page relative min-h-full overflow-hidden">
-    <div class="relative max-w-[1680px] mx-auto px-[clamp(20px,4vw,64px)]">
-      <header class="flex items-center justify-between pt-10">
+  template: `<div class="page relative min-h-full overflow-x-hidden overflow-y-auto">
+    <div class="relative max-w-[1680px] mx-auto px-6 sm:px-8 lg:px-16">
+      <header class="flex items-center justify-between pt-8 lg:pt-10 pb-4">
         <div class="flex items-center gap-3">
           <span
             class="w-8 h-8 grid place-items-center rounded-md bg-bg-elevated border border-border-accent shadow-[0_0_6px_rgba(251,191,36,0.4)] text-amber"
             ><app-icon name="network" [size]="18"
           /></span>
-          <span class="text-[22px] font-semibold tracking-tight text-fg-1">Neuranet</span>
+          <span class="text-[20px] sm:text-[22px] font-semibold tracking-tight text-fg-1"
+            >Neuranet</span
+          >
         </div>
-        <nav class="flex items-center gap-7">
+        <button
+          class="lg:hidden w-8 h-8 grid place-items-center text-fg-2 hover:text-fg-1 transition-colors"
+          aria-label="Toggle navigation"
+          (click)="mobileNavOpen.set(!mobileNavOpen())"
+        >
+          <app-icon [name]="mobileNavOpen() ? 'x' : 'menu'" [size]="20" />
+        </button>
+        <nav
+          class="flex items-center gap-7"
+          [class.max-lg:hidden]="!mobileNavOpen()"
+          [class]="
+            mobileNavOpen()
+              ? 'max-lg:flex max-lg:flex-col max-lg:absolute max-lg:top-16 max-lg:inset-x-0 max-lg:bg-bg-surface max-lg:border-b max-lg:border-border-subtle max-lg:p-6 max-lg:gap-4 max-lg:z-50'
+              : ''
+          "
+        >
           <a
             class="text-sm font-medium text-fg-2 no-underline hover:text-fg-1 transition-colors duration-200"
             href="#product"
+            (click)="mobileNavOpen.set(false)"
             >Product</a
           >
           <a
             class="text-sm font-medium text-fg-2 no-underline hover:text-fg-1 transition-colors duration-200"
             href="#how"
+            (click)="mobileNavOpen.set(false)"
             >How it works</a
           >
           <a
             class="text-sm font-medium text-fg-2 no-underline hover:text-fg-1 transition-colors duration-200"
             href="#compare"
+            (click)="mobileNavOpen.set(false)"
             >Compare</a
           >
           <a
             class="text-sm font-medium text-fg-2 no-underline hover:text-fg-1 transition-colors duration-200"
             href="#roadmap"
+            (click)="mobileNavOpen.set(false)"
             >Roadmap</a
           >
           <a
             class="text-sm font-medium text-fg-2 no-underline hover:text-fg-1 transition-colors duration-200"
             routerLink="/login"
+            (click)="mobileNavOpen.set(false)"
             >Sign In</a
           >
         </nav>
       </header>
 
       <main
-        class="grid gap-[clamp(40px,5vw,96px)] items-center py-[clamp(48px,5vw,72px)_clamp(56px,5.5vw,80px)]"
-        style="grid-template-columns: minmax(0, 640px) minmax(0, 1fr);"
+        class="grid grid-cols-1 lg:grid-cols-[minmax(0,640px)_minmax(0,1fr)] gap-10 lg:gap-[clamp(40px,5vw,96px)] items-center py-12 sm:py-[clamp(48px,5vw,72px)_clamp(56px,5.5vw,80px)]"
       >
         <section class="max-w-[680px]">
           <h1
-            class="text-[clamp(42px,5.2vw,78px)] leading-[1.04] font-bold tracking-tight text-fg-1 mt-0"
+            class="text-balance text-[clamp(36px,4.5vw,78px)] sm:text-[clamp(42px,5.2vw,78px)] leading-[1.04] font-bold tracking-tight text-fg-1 mt-0"
           >
             Map the network inside your research
           </h1>
-          <p class="mt-7 max-w-[560px] text-[19px] leading-relaxed tracking-tight text-fg-2">
+          <p
+            class="mt-6 sm:mt-7 max-w-[560px] text-[17px] sm:text-[19px] leading-relaxed tracking-tight text-fg-2"
+          >
             Neuranet ingests Reddit, LinkedIn, the web, PDFs, and raw text — then surfaces topics,
             clusters, connections, and sentiment as an explorable network.
           </p>
-          <ul class="list-none p-0 mt-8 flex flex-col gap-3">
-            <li class="flex items-center gap-2.5 text-[15px] text-fg-2">
+          <ul class="list-none p-0 mt-8 flex flex-col gap-4">
+            <li class="flex items-center gap-3 text-[16px] text-fg-1">
               <app-icon name="circle-check" [size]="20" class="text-amber shrink-0" />Turn raw
               sources into structured topic maps
             </li>
-            <li class="flex items-center gap-2.5 text-[15px] text-fg-2">
+            <li class="flex items-center gap-3 text-[16px] text-fg-1">
               <app-icon name="circle-check" [size]="20" class="text-amber shrink-0" />Trace
               connections across communities and documents
             </li>
-            <li class="flex items-center gap-2.5 text-[15px] text-fg-2">
+            <li class="flex items-center gap-3 text-[16px] text-fg-1">
               <app-icon name="circle-check" [size]="20" class="text-amber shrink-0" />Track
               sentiment as it shifts, scored in real time
             </li>
@@ -128,7 +151,7 @@ const MAX_SHRINK = 0.55;
 
           @if (!submitted()) {
             <form
-              class="flex gap-3 mt-8 flex-wrap sm:flex-nowrap"
+              class="flex gap-3 mt-8 flex-col sm:flex-row max-w-[560px]"
               (submit)="$event.preventDefault(); onSubmit()"
               novalidate
             >
@@ -137,13 +160,13 @@ const MAX_SHRINK = 0.55;
                 required
                 placeholder="Enter your email"
                 aria-label="Email address"
-                class="h-12 px-4 text-sm bg-bg-elevated border border-border-def text-fg-1 outline-none w-full sm:w-[260px] placeholder:text-fg-4 focus:border-transparent focus:shadow-[0_0_0_2px_rgba(251,191,36,0.6)] transition-[border-color,box-shadow] duration-200"
+                class="h-[52px] px-[18px] rounded-md text-[16px] bg-bg-elevated border border-border-def text-fg-1 outline-none w-full sm:max-w-[260px] placeholder:text-fg-4 focus:border-border-accent focus:shadow-[0_0_0_3px_rgba(251,191,36,0.15)] transition-all duration-200"
                 [ngModel]="email()"
                 (ngModelChange)="email.set($event)"
                 name="email"
               />
               <button
-                class="h-12 px-5 bg-amber text-fg-on-accent font-semibold text-sm flex items-center gap-2 cursor-pointer border-none hover:bg-amber-hover active:scale-95 shadow-[0_0_6px_rgba(251,191,36,0.4)] hover:shadow-[0_0_12px_rgba(251,191,36,0.3),0_0_40px_rgba(251,191,36,0.1)] transition-[background,box-shadow,transform] duration-200"
+                class="h-[52px] px-6 rounded-md bg-amber text-fg-on-accent font-semibold text-[15px] inline-flex items-center justify-center gap-2 cursor-pointer border-none hover:bg-amber-hover active:scale-[0.97] shadow-[0_0_6px_rgba(251,191,36,0.4)] hover:shadow-[0_0_12px_rgba(251,191,36,0.3),0_0_40px_rgba(251,191,36,0.1)] transition-all duration-200"
                 type="submit"
               >
                 <span>Join the waitlist</span>
@@ -159,13 +182,18 @@ const MAX_SHRINK = 0.55;
               You're on the list — we'll be in touch.
             </p>
           }
-          <p class="text-xs text-fg-3 mt-4">
+          <p class="text-[14px] text-fg-2 mt-4">
             Built for researchers, analysts, and knowledge workers.
           </p>
         </section>
 
-        <div class="relative pointer-events-none" aria-hidden="true">
-          <svg class="hero-svg" viewBox="0 0 760 520" fill="none">
+        <div class="relative pointer-events-none hidden lg:block" aria-hidden="true">
+          <svg
+            class="hero-svg w-full h-auto"
+            viewBox="0 0 760 520"
+            fill="none"
+            [style.opacity]="'0.75'"
+          >
             <g>
               <line class="stroke-white/24 stroke-[1.5]" x1="620" y1="96" x2="700" y2="180" />
               <line class="stroke-white/24 stroke-[1.5]" x1="620" y1="96" x2="520" y2="60" />
@@ -213,32 +241,30 @@ const MAX_SHRINK = 0.55;
         </div>
       </main>
 
-      <section class="border-y border-border-subtle py-6">
-        <div
-          class="max-w-[1680px] mx-auto px-[clamp(20px,4vw,64px)] grid grid-cols-2 md:grid-cols-4 gap-6"
-        >
-          <div class="flex flex-col gap-1">
-            <span class="text-[28px] font-bold font-mono text-fg-1">12.4M</span>
-            <span class="text-[12.5px] text-fg-3">nodes mapped</span>
+      <section class="border-y border-border-subtle py-6 bg-bg-surface/40">
+        <div class="max-w-[1680px] mx-auto px-6 sm:px-8 lg:px-16 grid grid-cols-2 md:grid-cols-4">
+          <div class="flex items-baseline gap-3 py-[26px] px-7 md:border-r border-border-subtle">
+            <span class="text-[26px] font-bold font-mono text-fg-1">12.4M</span>
+            <span class="text-[13px] text-fg-2 tracking-[0.03em]">nodes mapped</span>
           </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-[28px] font-bold font-mono text-fg-1">48,212</span>
-            <span class="text-[12.5px] text-fg-3">sources connected</span>
+          <div class="flex items-baseline gap-3 py-[26px] px-7 md:border-r border-border-subtle">
+            <span class="text-[26px] font-bold font-mono text-fg-1">48,212</span>
+            <span class="text-[13px] text-fg-2 tracking-[0.03em]">sources connected</span>
           </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-[28px] font-bold font-mono text-fg-1">1,380</span>
-            <span class="text-[12.5px] text-fg-3">active workspaces</span>
+          <div class="flex items-baseline gap-3 py-[26px] px-7 md:border-r border-border-subtle">
+            <span class="text-[26px] font-bold font-mono text-fg-1">1,380</span>
+            <span class="text-[13px] text-fg-2 tracking-[0.03em]">active workspaces</span>
           </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-[28px] font-bold font-mono text-fg-1">4 min</span>
-            <span class="text-[12.5px] text-fg-3">median time to first map</span>
+          <div class="flex items-baseline gap-3 py-[26px] px-7">
+            <span class="text-[26px] font-bold font-mono text-fg-1">4 min</span>
+            <span class="text-[13px] text-fg-2 tracking-[0.03em]">median time to first map</span>
           </div>
         </div>
       </section>
 
-      <section class="py-[clamp(56px,5vw,96px)]">
+      <section class="pt-[clamp(64px,6vw,96px)] pb-[clamp(48px,4.5vw,72px)]">
         <div
-          class="max-w-[880px] mx-auto px-[clamp(20px,4vw,64px)] grid grid-cols-1 lg:grid-cols-2 gap-[clamp(32px,3vw,48px)] items-start"
+          class="max-w-[880px] mx-auto px-6 sm:px-8 lg:px-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-[clamp(32px,3vw,48px)] items-start"
         >
           <h2
             class="text-[clamp(30px,2.8vw,42px)] leading-tight font-bold tracking-tight text-fg-1 mb-0"
@@ -262,22 +288,26 @@ const MAX_SHRINK = 0.55;
         </div>
       </section>
 
-      <section class="border-t border-border-subtle py-[clamp(56px,5.5vw,80px)]">
-        <h2 class="text-[clamp(30px,2.8vw,42px)] font-bold tracking-tight max-w-[800px] text-fg-1">
+      <section class="border-t border-border-subtle py-16 sm:py-[clamp(56px,5.5vw,80px)]">
+        <h2
+          class="text-[clamp(28px,2.8vw,42px)] sm:text-[clamp(30px,2.8vw,42px)] font-bold tracking-tight max-w-[800px] text-fg-1"
+        >
           Every kind of source. One network.
         </h2>
-        <p class="mt-[14px] text-[16px] leading-relaxed text-fg-2 max-w-[62ch]">
+        <p class="mt-[14px] text-[15px] sm:text-[16px] leading-relaxed text-fg-2 max-w-[62ch]">
           Connect live feeds or drop in files — everything lands in the same graph, linked and
           scored the moment it arrives.
         </p>
-        <div class="mt-9 grid grid-cols-1 lg:grid-cols-2 gap-14">
+        <div class="mt-9 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14">
           <div>
             <h3 class="text-[13px] font-medium tracking-[0.03em] text-fg-2 pb-[14px]">
               Live feeds
             </h3>
-            <div class="flex gap-[14px] items-start py-[18px] border-t border-border-subtle">
+            <div
+              class="flex gap-[14px] items-start py-[18px] border-t border-border-subtle hover:bg-bg-hover/30 transition-colors duration-200 -mx-2 px-2 rounded-md group"
+            >
               <span
-                class="w-8 h-8 shrink-0 grid place-items-center rounded-sm bg-bg-elevated border border-border-subtle text-fg-2"
+                class="w-8 h-8 shrink-0 grid place-items-center rounded-sm bg-bg-elevated border border-border-subtle text-fg-2 group-hover:border-border-accent group-hover:text-amber transition-colors duration-200"
                 ><app-icon name="message-square" [size]="16"
               /></span>
               <div class="flex-1 min-w-0">
@@ -294,9 +324,11 @@ const MAX_SHRINK = 0.55;
                 </div>
               </div>
             </div>
-            <div class="flex gap-[14px] items-start py-[18px] border-t border-border-subtle">
+            <div
+              class="flex gap-[14px] items-start py-[18px] border-t border-border-subtle hover:bg-bg-hover/30 transition-colors duration-200 -mx-2 px-2 rounded-md group"
+            >
               <span
-                class="w-8 h-8 shrink-0 grid place-items-center rounded-sm bg-bg-elevated border border-border-subtle text-fg-2"
+                class="w-8 h-8 shrink-0 grid place-items-center rounded-sm bg-bg-elevated border border-border-subtle text-fg-2 group-hover:border-border-accent group-hover:text-amber transition-colors duration-200"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -330,9 +362,11 @@ const MAX_SHRINK = 0.55;
                 </div>
               </div>
             </div>
-            <div class="flex gap-[14px] items-start py-[18px] border-t border-border-subtle">
+            <div
+              class="flex gap-[14px] items-start py-[18px] border-t border-border-subtle hover:bg-bg-hover/30 transition-colors duration-200 -mx-2 px-2 rounded-md group"
+            >
               <span
-                class="w-8 h-8 shrink-0 grid place-items-center rounded-sm bg-bg-elevated border border-border-subtle text-fg-2"
+                class="w-8 h-8 shrink-0 grid place-items-center rounded-sm bg-bg-elevated border border-border-subtle text-fg-2 group-hover:border-border-accent group-hover:text-amber transition-colors duration-200"
                 ><app-icon name="globe" [size]="16"
               /></span>
               <div class="flex-1 min-w-0">
@@ -354,9 +388,11 @@ const MAX_SHRINK = 0.55;
             <h3 class="text-[13px] font-medium tracking-[0.03em] text-fg-2 pb-[14px]">
               Files &amp; text
             </h3>
-            <div class="flex gap-[14px] items-start py-[18px] border-t border-border-subtle">
+            <div
+              class="flex gap-[14px] items-start py-[18px] border-t border-border-subtle hover:bg-bg-hover/30 transition-colors duration-200 -mx-2 px-2 rounded-md group"
+            >
               <span
-                class="w-8 h-8 shrink-0 grid place-items-center rounded-sm bg-bg-elevated border border-border-subtle text-fg-2"
+                class="w-8 h-8 shrink-0 grid place-items-center rounded-sm bg-bg-elevated border border-border-subtle text-fg-2 group-hover:border-border-accent group-hover:text-amber transition-colors duration-200"
                 ><app-icon name="file-text" [size]="16"
               /></span>
               <div class="flex-1 min-w-0">
@@ -372,9 +408,11 @@ const MAX_SHRINK = 0.55;
                 </div>
               </div>
             </div>
-            <div class="flex gap-[14px] items-start py-[18px] border-t border-border-subtle">
+            <div
+              class="flex gap-[14px] items-start py-[18px] border-t border-border-subtle hover:bg-bg-hover/30 transition-colors duration-200 -mx-2 px-2 rounded-md group"
+            >
               <span
-                class="w-8 h-8 shrink-0 grid place-items-center rounded-sm bg-bg-elevated border border-border-subtle text-fg-2"
+                class="w-8 h-8 shrink-0 grid place-items-center rounded-sm bg-bg-elevated border border-border-subtle text-fg-2 group-hover:border-border-accent group-hover:text-amber transition-colors duration-200"
                 ><app-icon name="file" [size]="16"
               /></span>
               <div class="flex-1 min-w-0">
@@ -391,9 +429,11 @@ const MAX_SHRINK = 0.55;
                 </div>
               </div>
             </div>
-            <div class="flex gap-[14px] items-start py-[18px] border-t border-border-subtle">
+            <div
+              class="flex gap-[14px] items-start py-[18px] border-t border-border-subtle hover:bg-bg-hover/30 transition-colors duration-200 -mx-2 px-2 rounded-md group"
+            >
               <span
-                class="w-8 h-8 shrink-0 grid place-items-center rounded-sm bg-bg-elevated border border-border-subtle text-fg-2"
+                class="w-8 h-8 shrink-0 grid place-items-center rounded-sm bg-bg-elevated border border-border-subtle text-fg-2 group-hover:border-border-accent group-hover:text-amber transition-colors duration-200"
                 ><app-icon name="type" [size]="16"
               /></span>
               <div class="flex-1 min-w-0">
@@ -427,7 +467,7 @@ const MAX_SHRINK = 0.55;
           One workspace for sources, clusters, and sentiment.
         </h2>
         <section
-          class="bg-bg-surface border border-border-def rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.6),0_2px_8px_rgba(0,0,0,0.4)] grid grid-cols-1 lg:grid-cols-[200px_1fr] overflow-hidden min-h-0 max-w-[1240px] mx-auto mt-10"
+          class="bg-bg-surface border border-border-def rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.6),0_2px_8px_rgba(0,0,0,0.4)] grid grid-cols-1 lg:grid-cols-[200px_1fr] overflow-hidden lg:min-h-[620px] max-w-[1240px] mx-auto mt-10"
           aria-label="Neuranet product preview"
         >
           <aside
@@ -679,20 +719,20 @@ const MAX_SHRINK = 0.55;
       </section>
 
       <section
-        class="border-t border-border-subtle py-[clamp(48px,5vw,72px)_clamp(56px,5.5vw,80px)]"
+        class="border-t border-border-subtle py-16 sm:py-[clamp(48px,5vw,72px)_clamp(56px,5.5vw,80px)]"
         id="how"
       >
         <div class="font-mono text-[13px] font-medium tracking-[0.08em] text-amber">
           How it works
         </div>
         <h2
-          class="mt-[14px] text-[clamp(30px,2.8vw,42px)] font-bold tracking-tight max-w-[760px] text-fg-1"
+          class="mt-[14px] text-[clamp(28px,2.8vw,42px)] sm:text-[clamp(30px,2.8vw,42px)] font-bold tracking-tight max-w-[760px] text-fg-1"
         >
           From raw noise to a navigable network.
         </h2>
 
         <div
-          class="how-stagewrap relative mt-8 overflow-hidden"
+          class="how-stagewrap relative mt-8 overflow-hidden rounded-xl bg-bg-surface/60 border border-border-subtle"
           #stageWrap
           [style.height.px]="stageHeight()"
         >
@@ -861,27 +901,33 @@ const MAX_SHRINK = 0.55;
           </div>
         </div>
 
-        <div class="mt-9 grid grid-cols-1 md:grid-cols-3 gap-12">
-          <div>
+        <div class="mt-9 grid grid-cols-1 sm:grid-cols-3 gap-12">
+          <div
+            class="p-5 rounded-lg bg-bg-surface/50 border border-border-subtle hover:border-border-def transition-colors duration-200"
+          >
             <div class="font-mono text-[13px] font-medium tracking-[0.08em] text-fg-3">01</div>
             <div class="w-7 h-0.5 bg-amber shadow-[0_0_6px_rgba(251,191,36,0.4)] my-2.5"></div>
-            <h3 class="text-[18px] font-semibold tracking-tight text-fg-1">Connect sources</h3>
+            <h3 class="text-[17px] font-semibold tracking-tight text-fg-1">Connect sources</h3>
             <p class="mt-1.5 text-[13px] leading-relaxed text-fg-2">
               Reddit, web, and PDFs &mdash; ingested continuously.
             </p>
           </div>
-          <div>
+          <div
+            class="p-5 rounded-lg bg-bg-surface/50 border border-border-subtle hover:border-border-def transition-colors duration-200"
+          >
             <div class="font-mono text-[13px] font-medium tracking-[0.08em] text-fg-3">02</div>
             <div class="w-7 h-0.5 bg-amber shadow-[0_0_6px_rgba(251,191,36,0.4)] my-2.5"></div>
-            <h3 class="text-[18px] font-semibold tracking-tight text-fg-1">Structure emerges</h3>
+            <h3 class="text-[17px] font-semibold tracking-tight text-fg-1">Structure emerges</h3>
             <p class="mt-1.5 text-[13px] leading-relaxed text-fg-2">
               Clusters, connections, and sentiment &mdash; no manual tagging.
             </p>
           </div>
-          <div>
+          <div
+            class="p-5 rounded-lg bg-bg-surface/50 border border-border-subtle hover:border-border-def transition-colors duration-200"
+          >
             <div class="font-mono text-[13px] font-medium tracking-[0.08em] text-fg-3">03</div>
             <div class="w-7 h-0.5 bg-amber shadow-[0_0_6px_rgba(251,191,36,0.4)] my-2.5"></div>
-            <h3 class="text-[18px] font-semibold tracking-tight text-fg-1">Answers, quantified</h3>
+            <h3 class="text-[17px] font-semibold tracking-tight text-fg-1">Answers, quantified</h3>
             <p class="mt-1.5 text-[13px] leading-relaxed text-fg-2">
               Semantic queries return numbers, not guesses.
             </p>
@@ -890,17 +936,19 @@ const MAX_SHRINK = 0.55;
       </section>
 
       <section
-        class="border-t border-border-subtle py-[clamp(56px,5.5vw,80px)_clamp(64px,6vw,96px)]"
+        class="border-t border-border-subtle py-16 sm:py-[clamp(56px,5.5vw,80px)_clamp(64px,6vw,96px)]"
         id="compare"
       >
-        <h2 class="text-[clamp(30px,2.8vw,42px)] font-bold tracking-tight max-w-[800px] text-fg-1">
+        <h2
+          class="text-[clamp(28px,2.8vw,42px)] sm:text-[clamp(30px,2.8vw,42px)] font-bold tracking-tight max-w-[800px] text-fg-1"
+        >
           Notes hold what you saved. Neuranet shows what it means.
         </h2>
-        <p class="mt-[14px] text-[16px] leading-relaxed text-fg-2 max-w-[62ch]">
+        <p class="mt-[14px] text-[15px] sm:text-[16px] leading-relaxed text-fg-2 max-w-[62ch]">
           Notion, Obsidian, and Roam are built to store pages. Neuranet is built to reveal the
           network across them.
         </p>
-        <table class="w-full border-collapse mt-11">
+        <table class="w-full border-collapse mt-11 overflow-x-auto block lg:table">
           <thead>
             <tr>
               <th
@@ -1025,11 +1073,16 @@ const MAX_SHRINK = 0.55;
         </table>
       </section>
 
-      <section class="border-t border-border-subtle py-[clamp(56px,5.5vw,80px)]" id="roadmap">
-        <h2 class="text-[clamp(30px,2.8vw,42px)] font-bold tracking-tight max-w-[800px] text-fg-1">
+      <section
+        class="border-t border-border-subtle py-16 sm:py-[clamp(56px,5.5vw,80px)]"
+        id="roadmap"
+      >
+        <h2
+          class="text-[clamp(28px,2.8vw,42px)] sm:text-[clamp(30px,2.8vw,42px)] font-bold tracking-tight max-w-[800px] text-fg-1"
+        >
           What's shipping next.
         </h2>
-        <p class="mt-[14px] text-[16px] leading-relaxed text-fg-2 max-w-[62ch]">
+        <p class="mt-[14px] text-[15px] sm:text-[16px] leading-relaxed text-fg-2 max-w-[62ch]">
           Sequenced by quarter; dates firm up as early access expands.
         </p>
         <div class="mt-9">
@@ -1326,9 +1379,34 @@ const MAX_SHRINK = 0.55;
       max-width: 360px;
     }
 
+    @media (max-width: 1280px) {
+      .hero-svg {
+        max-height: 420px;
+      }
+    }
+
     @media (max-width: 1024px) {
+      .how-stagewrap {
+        display: none;
+      }
       .how-stack {
         display: block;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .page::before {
+        top: -320px;
+        height: 700px;
+      }
+      .how-answer {
+        position: static;
+        width: auto;
+        max-width: 360px;
+      }
+      .how-stack .how-answer {
+        position: static;
+        width: auto;
       }
     }
   `,
@@ -1338,6 +1416,7 @@ export class LandingScreenComponent {
 
   protected readonly email = signal('');
   protected readonly submitted = signal(false);
+  protected readonly mobileNavOpen = signal(false);
 
   protected readonly nodes = HERO_NODES;
   protected readonly hoveredIndex = signal<number | null>(null);
