@@ -12,6 +12,119 @@ description: Builds production-quality UIs. Use when building or modifying user-
 > Where this skill's general advice conflicts with project instructions, the
 > instructions take precedence.
 
+## Codebase Patterns
+
+Every component in this project follows a strict recipe. Use these concrete
+patterns instead of the generic examples below when they differ.
+
+### Component recipe (non-negotiable)
+
+```typescript
+// src/app/screens/network/network-graph.component.ts — canonical pattern
+@Component({
+  selector: 'app-network-graph',
+  standalone: true,                              // ← standalone
+  changeDetection: ChangeDetectionStrategy.OnPush, // ← OnPush
+  imports: [/* … */],
+  template: `<!-- TailwindCSS v4 utility classes -->`,
+  styles: [`/* :host, @keyframes, pseudo-elements only */`],
+})
+export class NetworkGraphComponent {
+  // Signals only — no @Input/@Output decorators
+  readonly store = inject(AppStore);  // data from store, never injected in ui/ primitives
+
+  // Computed view-models prevent per-template recomputation:
+  readonly nodeVms = computed(() => this.store.nodes().map(n => ({
+    ...n,
+    fill: this.clusterFill(n.cluster),
+    // precompute all per-node presentation values here
+  })));
+}
+```
+
+### Styling: TailwindCSS v4 + tokens
+
+- **Templates:** Tailwind utility classes (`text-fg-1`, `bg-amber`,
+  `border-border-def`, `font-display`). Theme defined in `src/tailwind.css`.
+- **Dynamic TS colors:** import from `src/app/ui/tokens.ts`:
+  ```typescript
+  import { C, CLUSTER_COLORS, FONT, BREAKPOINTS } from '../../ui/tokens';
+  // C.amber, C.fg1, C.borderDef, CLUSTER_COLORS.cyan, FONT.mono, BREAKPOINTS.md
+  ```
+- No hardcoded hex values in new components.
+
+### UI primitives (`src/app/ui/`)
+
+Primitives are presentational only — no `AppStore`, `ApiService`, or `Router`
+injection (lint-enforced):
+
+```
+src/app/ui/
+  primitives/     ← button, tabs, search-input, page-header, checkbox, status-badge
+  overlays/       ← modal, popover, toast
+  charts/         ← donut, hbar-list, sent-bars, stat-card
+  tokens.ts       ← C, CLUSTER_COLORS, CLUSTER_LABELS, FONT, MONO, RADII, BREAKPOINTS
+  icons.ts        ← Lucide-style SVG path map
+  table-sort.ts   ← sort utility
+```
+
+### State management hierarchy
+
+```
+Component signal / model()   → local UI state (tooltip open, input value)
+AppStore (providedIn: 'root') → global data (sources, network, docs, selection)
+  ↳ inject(AppStore) in screens and shell
+  ↳ NEVER inject AppStore in ui/ primitives
+Router query params            → filters, search query (shareable state)
+localStorage (via effect)      → persisted preferences (collapsed sidebar)
+```
+
+### Container/presentational pattern (project-specific)
+
+The shell component (`src/app/shell/`) acts as the main container, screens are
+feature-level containers, and `ui/` components are pure presentational:
+
+```
+AppShellComponent (src/app/shell/)
+  ├── injects AppStore, Router
+  ├── layout chrome (sidebar, header)
+  └── <router-outlet />
+        └── NetworkScreenComponent (src/app/screens/network/)
+              ├── injects AppStore (reads nodes/edges/clusters signals)
+              ├── <app-network-graph />  ← ui/ presentational
+              └── <app-detail-panel />  ← ui/ presentational
+```
+
+### Routing conventions
+
+```typescript
+// src/app/app.routes.ts — canonical route pattern
+export const routes: Routes = [
+  { path: '', component: LandingScreenComponent },  // no shell
+  {
+    path: '',
+    component: AppShellComponent,                   // shell layout
+    canActivate: [authGuard],
+    children: [
+      { path: 'network', loadComponent: () => import('./screens/network/network-screen.component'), title: 'Network' },
+      { path: 'sources', loadComponent: () => import('./screens/sources/sources-screen.component'), title: 'Sources' },
+      // …
+    ],
+  },
+];
+```
+
+New screens: feature folder `screens/<feature>/`, lazy `loadComponent`,
+`title` property. Navigation via `Router` / `routerLink`.
+
+### Accessibility (project-specific rules)
+
+- Interactive non-button elements: `role="button"`, `tabindex="0"`,
+  keyboard handlers (Enter/Space), `aria-label`.
+- Output names: `closed` (modal/popover), `toggled` (checkbox), `resetView`
+  (zoom-controls). Never shadow native DOM event names.
+- Icon-only buttons: always `aria-label`.
+
 # Frontend UI Engineering
 
 ## Overview

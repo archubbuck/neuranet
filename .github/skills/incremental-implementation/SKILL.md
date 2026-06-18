@@ -5,6 +5,78 @@ description: Delivers changes incrementally. Use when implementing any feature o
 
 > **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
 
+## Codebase Patterns
+
+This project's layered architecture defines clear slice boundaries. Every
+feature touches at most four layers:
+
+```
+server/routes/<domain>.ts       ← one router per domain (sources, network, search, …)
+server/repositories/<domain>.repo.ts  ← Drizzle queries encapsulated here
+server/schemas.ts               ← zod validation schemas (every POST/PUT)
+src/app/data/api.service.ts     ← typed HTTP client (one method per endpoint)
+src/app/data/app.store.ts       ← signals-based store (actions mutate via API)
+src/app/screens/<feature>/       ← routed component folder
+src/app/ui/                      ← presentational primitives (no data imports)
+```
+
+### Vertical slice example: adding a "rename cluster" feature
+
+```
+Slice 1: server/repositories/clusters.repo.ts — add update() method
+    → pnpm test:server (backend tests pass)
+
+Slice 2: server/schemas.ts — add updateCluster zod schema
+         server/routes/clusters.ts — add PUT /api/clusters/:slug handler
+    → pnpm test:server (API endpoint works)
+
+Slice 3: src/app/data/api.service.ts — add updateCluster() method
+         src/app/data/app.store.ts — add renameCluster() action
+    → pnpm test (store action works)
+
+Slice 4: src/app/screens/manage/ — wire inline-edit label to renameCluster()
+    → pnpm test && pnpm start (end-to-end works)
+```
+
+Each slice leaves the build green and all existing tests passing.
+
+### Contract-first: types in `src/app/data/types.ts`
+
+When backend and frontend develop in parallel, start with the shared types:
+
+```typescript
+// src/app/data/types.ts — canonical shared types
+export interface Cluster {
+  readonly id: string;
+  readonly label: string;
+  readonly color: string;
+}
+
+export interface NetworkPayload {
+  readonly derivedClusters: readonly Cluster[];
+  readonly derivedNodes: readonly Node[];
+  readonly derivedEdges: readonly Edge[];
+}
+```
+
+Backend implements against these shapes; frontend mocks with fixture data from
+`src/app/screens/spec-helpers.ts` (`FIXTURE_CLUSTERS`, `FIXTURE_NODES`, …).
+
+### Key paths for scoping increments
+
+| What | Where |
+|------|-------|
+| API route | `server/routes/<domain>.ts` |
+| Validation | `server/schemas.ts` |
+| DB queries | `server/repositories/<domain>.repo.ts` |
+| DB schema | `server/db/schema.ts` |
+| HTTP client | `src/app/data/api.service.ts` |
+| Store actions | `src/app/data/app.store.ts` |
+| Screen component | `src/app/screens/<feature>/` |
+| UI primitive | `src/app/ui/primitives/` or `src/app/ui/overlays/` |
+| Design tokens | `src/app/ui/tokens.ts` |
+| Test helpers | `src/app/screens/spec-helpers.ts` |
+
 # Incremental Implementation
 
 ## Overview

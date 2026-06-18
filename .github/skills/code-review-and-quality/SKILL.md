@@ -10,6 +10,73 @@ description: Conducts multi-axis code review. Use before merging any change. Use
 > conducting a review — change sizing, descriptions, review workflow, and
 > common rationalizations.
 
+## Codebase Patterns
+
+Apply each review axis to project-specific rules. These are the concrete
+patterns to check beyond the generic framework-agnostic advice below.
+
+### Correctness: project-specific checks
+
+- **Frontend:** Components use signal APIs (`input()`, `output()`, `signal`,
+  `computed`) — no `@Input`/`@Output` decorators. Zoneless mode requires
+  `ChangeDetectionStrategy.OnPush` on every component.
+- **Backend:** Every POST/PUT body has a zod schema in `server/schemas.ts`
+  applied via `validateBody` middleware. Handlers assume parsed input — no
+  manual `typeof` checks.
+- **Data integrity:** Multi-write handlers wrap in `db.transaction()` (see
+  `server/repositories/clusters.repo.ts` → `deleteCascade()` for the pattern).
+
+### Architecture: layer boundaries (lint-enforced)
+
+These import restrictions are enforced by `eslint.config.js` via
+`no-restricted-imports`:
+
+- `src/app/ui/**` → must NOT import from `data/`, `screens/`, `shell/`
+- `src/app/data/**` → must NOT import from `screens/`, `ui/`, `shell/`
+- `src/app/screens/**` → may import from `data/`, `ui/`, `core/`
+
+Review check: does every new import respect these boundaries?
+
+### Security: project-specific checks
+
+- `server/reddit-fetcher.ts` — external fetches use allowlist (exact-match +
+  subdomain check, never `endsWith`). Review any new external fetcher for SSRF.
+- Authenticated endpoints must use `requireAuth` middleware from
+  `server/middleware/auth.ts`.
+- Secrets: no `process.env` reads outside `server/env.ts` / `server/config.ts`.
+  Config is centralised through `config.ts`.
+
+### Performance: project-specific checks
+
+- Network graph (`src/app/screens/network/network-graph.component.ts`):
+  `nodeVms`/`edgeVms` computed view-models prevent per-template method calls.
+  Review any new SVG component for the same pattern.
+- `@for` tracks a stable identity (never `$index` on dynamic lists).
+- Heavy subtrees wrapped in `@defer` with placeholders.
+
+### Review checklist (project-specific)
+
+```markdown
+## Review: [change title]
+
+### Correctness
+- [ ] Signal APIs used (no @Input/@Output decorators in new code)
+- [ ] zod schema exists for every POST/PUT body
+- [ ] Multi-write ops wrapped in db.transaction()
+
+### Architecture
+- [ ] Layer boundaries respected (ui/ ↛ data/, data/ ↛ screens/)
+- [ ] Repositories encapsulate all Drizzle queries (routes never import Drizzle directly)
+
+### Security
+- [ ] No new process.env reads outside config.ts
+- [ ] New external fetcher uses SSRF-safe host allowlist
+
+### Performance
+- [ ] No template method calls that recompute per CD cycle
+- [ ] @for tracks stable identity
+```
+
 # Code Review and Quality
 
 ## Overview
