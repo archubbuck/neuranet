@@ -20,7 +20,8 @@ Specialized personas for review workflows — invoke via subagent or slash comma
 | `security-auditor` | Vulnerability detection, OWASP-style audit |
 | `test-engineer` | Test strategy, coverage analysis, Prove-It pattern |
 
-Skills provide step-by-step workflows:
-`code-review-and-quality`, `test-driven-development`, `incremental-implementation`,
-`code-simplification`, `debugging-and-error-recovery`, and others in
-`.github/skills/`.
+Skills provide step-by-step workflows — **lazy-load only the 1-2 skills
+relevant to your current task** (never load all 24). Discover via
+`.github/SKILLS_INDEX.md`: `code-review-and-quality`, `test-driven-development`,
+`incremental-implementation`, `code-simplification`, `debugging-and-error-recovery`,
+and others in `.github/skills/`.

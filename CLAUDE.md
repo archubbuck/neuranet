@@ -42,6 +42,7 @@ patterns that override generic framework defaults:
 | UI primitive rules (presentational, token-styled) | `.github/instructions/ui-primitives.instructions.md` |
 | Layer boundaries, PR gates, always/never | `.github/copilot-instructions.md` |
 | Five-axis review, TDD, increments | `.github/principles.md` |
+| Skill discovery (lazy-load 1-2 per task) | `.github/SKILLS_INDEX.md` |
 
 ## File Map
 
