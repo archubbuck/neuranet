@@ -3,12 +3,9 @@ name: planning-and-task-breakdown
 description: Breaks work into ordered tasks. Use when you have a spec or clear requirements and need to break work into implementable tasks. Use when a task feels too large to start, when you need to estimate scope, or when parallel work is possible.
 ---
 
-> **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
-
-## Codebase Patterns
-> Project conventions live in `.github/instructions/`. See
-> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
-> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
+> **Project note:** Generic examples are framework-agnostic. This project uses
+> Angular 22 + Drizzle + Vitest + pnpm — see [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping)
+> for framework translations. Conventions live in `.github/instructions/`.
 
 # Planning and Task Breakdown
 

@@ -3,12 +3,9 @@ name: interview-me
 description: Extracts what the user actually wants instead of what they think they should want. Achieves this through one-question-at-a-time interview until ~95% confidence about the underlying intent. Use when an ask is underspecified ("build me X" without "for whom" or "why now"), when the user explicitly invokes ("interview me", "grill me", "are we sure?", "stress-test my thinking"), or when you catch yourself silently filling in ambiguous requirements before any plan, spec, or code exists.
 ---
 
-> **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
-
-## Codebase Patterns
-> Project conventions live in `.github/instructions/`. See
-> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
-> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
+> **Project note:** Generic examples are framework-agnostic. This project uses
+> Angular 22 + Drizzle + Vitest + pnpm — see [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping)
+> for framework translations. Conventions live in `.github/instructions/`.
 
 # Interview Me
 

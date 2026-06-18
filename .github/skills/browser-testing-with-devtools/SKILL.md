@@ -3,12 +3,9 @@ name: browser-testing-with-devtools
 description: Tests in real browsers via Chrome DevTools MCP. Use when building or debugging anything that runs in a browser. Use when you need to inspect the DOM, capture console errors, analyze network requests, profile performance, or verify visual output with real runtime data. Requires the chrome-devtools MCP server to be configured.
 ---
 
-> **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
-
-## Codebase Patterns
-> Project conventions live in `.github/instructions/`. See
-> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
-> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
+> **Project note:** Generic examples are framework-agnostic. This project uses
+> Angular 22 + Drizzle + Vitest + pnpm — see [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping)
+> for framework translations. Conventions live in `.github/instructions/`.
 
 # Browser Testing with DevTools
 

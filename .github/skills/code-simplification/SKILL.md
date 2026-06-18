@@ -3,12 +3,9 @@ name: code-simplification
 description: Simplifies code for clarity. Use when refactoring code for clarity without changing behavior. Use when code works but is harder to read, maintain, or extend than it should be. Use when reviewing code that has accumulated unnecessary complexity.
 ---
 
-> **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
-
-## Codebase Patterns
-> Project conventions live in `.github/instructions/`. See
-> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
-> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
+> **Project note:** Generic examples are framework-agnostic. This project uses
+> Angular 22 + Drizzle + Vitest + pnpm — see [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping)
+> for framework translations. Conventions live in `.github/instructions/`.
 
 # Code Simplification
 

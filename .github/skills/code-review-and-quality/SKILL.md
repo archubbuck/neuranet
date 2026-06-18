@@ -8,12 +8,8 @@ description: Conducts multi-axis code review. Use before merging any change. Use
 > [`code-reviewer` agent](../../agents/code-reviewer.md) provides the output
 > template and severity categorization. This skill covers the **process** of
 > conducting a review — change sizing, descriptions, review workflow, and
-> common rationalizations.
-
-## Codebase Patterns
-> Project conventions live in `.github/instructions/`. See
-> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
-> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
+> common rationalizations. See [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping)
+> for framework translations (Prisma→Drizzle, React→Angular, etc.).
 
 # Code Review and Quality
 

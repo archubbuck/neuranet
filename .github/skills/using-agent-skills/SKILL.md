@@ -3,13 +3,10 @@ name: using-agent-skills
 description: Discovers and invokes agent skills. Use when starting a session or when you need to discover which skill applies to the current task. This is the meta-skill that governs how all other skills are discovered and invoked.
 ---
 
-> **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
-
-## Codebase Patterns
-> Project conventions live in `.github/instructions/`. See
-> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
-> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
-> For skill→task mappings, see [SKILLS_INDEX.md](../SKILLS_INDEX.md).
+> **Project note:** Generic examples are framework-agnostic. This project uses
+> Angular 22 + Drizzle + Vitest + pnpm — see [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping)
+> for framework translations and skill→task mappings. Conventions live in
+> `.github/instructions/`.
 
 # Using Agent Skills
 

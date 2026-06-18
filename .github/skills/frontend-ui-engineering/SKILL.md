@@ -10,12 +10,8 @@ description: Builds production-quality UIs. Use when building or modifying user-
 > UI primitive rules are in
 > [`instructions/ui-primitives.instructions.md`](../../instructions/ui-primitives.instructions.md).
 > Where this skill's general advice conflicts with project instructions, the
-> instructions take precedence.
-
-## Codebase Patterns
-> Project conventions live in `.github/instructions/`. See
-> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
-> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
+> instructions take precedence. See [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping)
+> for framework translations (Prisma→Drizzle, React→Angular, etc.).
 
 # Frontend UI Engineering
 

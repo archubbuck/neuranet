@@ -3,12 +3,9 @@ name: context-engineering
 description: Optimizes agent context setup. Use when starting a new session, when agent output quality degrades, when switching between tasks, or when you need to configure rules files and context for a project.
 ---
 
-> **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
-
-## Codebase Patterns
-> Project conventions live in `.github/instructions/`. See
-> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
-> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
+> **Project note:** Generic examples are framework-agnostic. This project uses
+> Angular 22 + Drizzle + Vitest + pnpm — see [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping)
+> for framework translations. Conventions live in `.github/instructions/`.
 
 # Context Engineering
 
@@ -47,36 +44,37 @@ Structure context from most persistent to most transient:
 Create a rules file that persists across sessions. This is the highest-leverage context you can provide.
 
 **CLAUDE.md** (for Claude Code):
+> **Illustrative example** — this is a template, not the project's actual stack.
+> For the real project config, see the project's [`CLAUDE.md`](../../CLAUDE.md).
+
 ```markdown
 # Project: [Name]
 
 ## Tech Stack
-- React 18, TypeScript 5, Vite, Tailwind CSS 4
-- Node.js 22, Express, PostgreSQL, Prisma
+- Angular 22 (zoneless, signals, OnPush), TypeScript, TailwindCSS v4
+- Express 5, Drizzle ORM, PostgreSQL
 
 ## Commands
-- Build: `npm run build`
-- Test: `npm test`
-- Lint: `npm run lint --fix`
-- Dev: `npm run dev`
-- Type check: `npx tsc --noEmit`
+- Build: `pnpm build`
+- Test: `pnpm test` / `pnpm test:server`
+- Lint: `pnpm lint`
+- Dev: `pnpm start`
+- Type check: `pnpm typecheck`
 
 ## Code Conventions
-- Functional components with hooks (no class components)
-- Named exports (no default exports)
-- colocate tests next to source: `Button.tsx` → `Button.test.tsx`
-- Use `cn()` utility for conditional classNames
-- Error boundaries at route level
+- Standalone components, signal APIs (no decorators)
+- One router per domain in server/routes/
+- Repositories encapsulate all Drizzle queries
 
 ## Boundaries
 - Never commit .env files or secrets
-- Never add dependencies without checking bundle size impact
-- Ask before modifying database schema
+- Ask before modifying database schema or adding dependencies
 - Always run tests before committing
-
-## Patterns
-[One short example of a well-written component in your style]
 ```
+
+> **Note:** The above is a simplified illustration. The project's actual
+> [`CLAUDE.md`](../../CLAUDE.md) and [`.github/copilot-instructions.md`](../../.github/copilot-instructions.md)
+> are the authoritative context files.
 
 **Equivalent files for other tools:**
 - `.cursorrules` or `.cursor/rules/*.md` (Cursor)
