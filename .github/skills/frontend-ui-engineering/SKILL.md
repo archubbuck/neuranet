@@ -3,7 +3,14 @@ name: frontend-ui-engineering
 description: Builds production-quality UIs. Use when building or modifying user-facing interfaces. Use when creating components, implementing layouts, managing state, or when the output needs to look and feel production-quality rather than AI-generated.
 ---
 
-> **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
+> **Project-specific note:** This skill uses Angular 22 examples. The project's
+> canonical frontend conventions — component recipe, performance rules, layering,
+> styling, routing, accessibility, and testing — are defined in
+> [`instructions/frontend.instructions.md`](../../instructions/frontend.instructions.md).
+> UI primitive rules are in
+> [`instructions/ui-primitives.instructions.md`](../../instructions/ui-primitives.instructions.md).
+> Where this skill's general advice conflicts with project instructions, the
+> instructions take precedence.
 
 # Frontend UI Engineering
 
@@ -26,77 +33,116 @@ Build production-quality user interfaces that are accessible, performant, and vi
 Colocate everything related to a component:
 
 ```
-src/components/
-  TaskList/
-    TaskList.tsx          # Component implementation
-    TaskList.test.tsx     # Tests
-    TaskList.stories.tsx  # Storybook stories (if using)
-    use-task-list.ts      # Custom hook (if complex state)
-    types.ts              # Component-specific types (if needed)
+src/app/ui/
+  task-item/
+    task-item.component.ts       # Component implementation
+    task-item.component.spec.ts  # Tests
+    task-item.component.html     # Template (if inline grows too large)
 ```
+
+Project-specific component conventions are defined in
+[`instructions/frontend.instructions.md`](../../instructions/frontend.instructions.md).
+Every component is standalone, uses `OnPush` change detection, and signal APIs
+(`input()`, `output()`, `model()`, `signal`, `computed`).
 
 ### Component Patterns
 
 **Prefer composition over configuration:**
 
-```tsx
-// Good: Composable
-<Card>
-  <CardHeader>
-    <CardTitle>Tasks</CardTitle>
-  </CardHeader>
-  <CardBody>
-    <TaskList tasks={tasks} />
-  </CardBody>
-</Card>
-
-// Avoid: Over-configured
-<Card
-  title="Tasks"
-  headerVariant="large"
-  bodyPadding="md"
-  content={<TaskList tasks={tasks} />}
-/>
+```angular-ts
+// Good: Composable (Angular template)
+<app-card>
+  <app-card-header>
+    <app-card-title>Tasks</app-card-title>
+  </app-card-header>
+  <app-card-body>
+    <app-task-list [tasks]="tasks()" />
+  </app-card-body>
+</app-card>
 ```
 
 **Keep components focused:**
 
-```tsx
-// Good: Does one thing
-export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
-  return (
-    <li className="flex items-center gap-3 p-3">
-      <Checkbox checked={task.done} onChange={() => onToggle(task.id)} />
-      <span className={task.done ? 'line-through text-muted' : ''}>{task.title}</span>
-      <Button variant="ghost" size="sm" onClick={() => onDelete(task.id)}>
-        <TrashIcon />
-      </Button>
+```typescript
+// Good: Does one thing — standalone, signals, OnPush
+@Component({
+  selector: 'app-task-item',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CheckboxComponent, ButtonComponent],
+  template: `
+    <li class="flex items-center gap-3 p-3">
+      <app-checkbox
+        [checked]="task().done"
+        (change)="toggle.emit(task().id)" />
+      <span
+        [class.line-through]="task().done"
+        [class.text-muted]="task().done">{{ task().title }}</span>
+      <app-button variant="ghost" size="sm" (click)="delete.emit(task().id)"
+        ariaLabel="Delete task">
+        <app-icon name="trash" />
+      </app-button>
     </li>
-  );
+  `,
+})
+export class TaskItemComponent {
+  task = input.required<Task>();
+  toggle = output<string>();
+  delete = output<string>();
 }
 ```
 
 **Separate data fetching from presentation:**
 
-```tsx
-// Container: handles data
-export function TaskListContainer() {
-  const { tasks, isLoading, error } = useTasks();
-
-  if (isLoading) return <TaskListSkeleton />;
-  if (error) return <ErrorState message="Failed to load tasks" retry={refetch} />;
-  if (tasks.length === 0) return <EmptyState message="No tasks yet" />;
-
-  return <TaskList tasks={tasks} />;
+```typescript
+// Container: handles data from the store
+@Component({
+  selector: 'app-task-list-container',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TaskListComponent, TaskListSkeletonComponent, ErrorStateComponent, EmptyStateComponent],
+  template: `
+    @if (store.loading()) {
+      <app-task-list-skeleton />
+    } @else if (store.error()) {
+      <app-error-state
+        message="Failed to load tasks"
+        (retry)="store.refresh()" />
+    } @else if (store.tasks().length === 0) {
+      <app-empty-state message="No tasks yet" />
+    } @else {
+      <app-task-list [tasks]="store.tasks()" />
+    }
+  `,
+})
+export class TaskListContainerComponent {
+  store = inject(AppStore);
 }
 
-// Presentation: handles rendering
-export function TaskList({ tasks }: { tasks: Task[] }) {
-  return (
-    <ul role="list" className="divide-y">
-      {tasks.map(task => <TaskItem key={task.id} task={task} />)}
+// Presentation: handles rendering only
+@Component({
+  selector: 'app-task-list',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TaskItemComponent],
+  template: `
+    <ul role="list" class="divide-y">
+      @for (task of tasks(); track task.id) {
+        <app-task-item
+          [task]="task"
+          (toggle)="onToggle($event)"
+          (delete)="onDelete($event)" />
+      }
     </ul>
-  );
+  `,
+})
+export class TaskListComponent {
+  tasks = input.required<Task[]>();
+  toggle = output<string>();
+  delete = output<string>();
+
+  onToggle(id: string) { this.toggle.emit(id); }
+  onDelete(id: string) { this.delete.emit(id); }
 }
 ```
 
@@ -105,15 +151,22 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
 **Choose the simplest approach that works:**
 
 ```
-Local state (useState)           → Component-specific UI state
-Lifted state                     → Shared between 2-3 sibling components
-Context                          → Theme, auth, locale (read-heavy, write-rare)
-URL state (searchParams)         → Filters, pagination, shareable UI state
-Server state (React Query, SWR)  → Remote data with caching
-Global store (Zustand, Redux)    → Complex client state shared app-wide
+Component signal / model()       → Component-specific UI state
+Service with signals              → Shared between sibling components (providedIn)
+AppStore                          → Global app state, remote data, caching
+Router query params               → Filters, pagination, shareable UI state
+LocalStorage signal wrapper       → Persisted preferences
 ```
 
-**Avoid prop drilling deeper than 3 levels.** If you're passing props through components that don't use them, introduce context or restructure the component tree.
+Project-specific layering rules are in
+[`instructions/frontend.instructions.md`](../../instructions/frontend.instructions.md).
+Components get data through `AppStore`; only `data/api.service.ts` talks HTTP.
+Screens never inject `ApiService` directly unless the data is screen-local and
+read-only.
+
+**Avoid prop drilling deeper than 3 levels.** If you're passing inputs through
+components that don't use them, introduce a shared service or restructure the
+component tree.
 
 ## Design System Adherence
 
@@ -166,91 +219,95 @@ Don't skip heading levels. Don't use heading styles for non-heading content.
 
 ## Accessibility (WCAG 2.1 AA)
 
-Every component must meet these standards:
+Every component must meet these standards. Project-specific rules are in
+[`instructions/frontend.instructions.md`](../../instructions/frontend.instructions.md).
 
 ### Keyboard Navigation
 
-```tsx
-// Every interactive element must be keyboard accessible
-<button onClick={handleClick}>Click me</button>        // ✓ Focusable by default
-<div onClick={handleClick}>Click me</div>               // ✗ Not focusable
-<div role="button" tabIndex={0} onClick={handleClick}    // ✓ But prefer <button>
-     onKeyDown={e => {
-       if (e.key === 'Enter') handleClick();
-       if (e.key === ' ') e.preventDefault();
-     }}
-     onKeyUp={e => {
-       if (e.key === ' ') handleClick();
-     }}>
+```angular-html
+<!-- Every interactive element must be keyboard accessible -->
+<button (click)="handleClick()">Click me</button>                    <!-- ✓ Focusable by default -->
+<div (click)="handleClick()">Click me</div>                          <!-- ✗ Not focusable -->
+<div role="button" tabindex="0" (click)="handleClick()"              <!-- ✓ But prefer <button> -->
+     (keydown.enter)="handleClick()"
+     (keydown)="onSpaceKey($event)">
   Click me
 </div>
 ```
 
 ### ARIA Labels
 
-```tsx
-// Label interactive elements that lack visible text
-<button aria-label="Close dialog"><XIcon /></button>
+```angular-html
+<!-- Label interactive elements that lack visible text -->
+<button aria-label="Close dialog"><app-icon name="x" /></button>
 
-// Label form inputs
-<label htmlFor="email">Email</label>
+<!-- Label form inputs -->
+<label for="email">Email</label>
 <input id="email" type="email" />
 
-// Or use aria-label when no visible label exists
+<!-- Or use aria-label when no visible label exists -->
 <input aria-label="Search tasks" type="search" />
 ```
 
 ### Focus Management
 
-```tsx
+```typescript
 // Move focus when content changes
-function Dialog({ isOpen, onClose }: DialogProps) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (isOpen) closeRef.current?.focus();
-  }, [isOpen]);
-
-  // Trap focus inside dialog when open
-  return (
-    <dialog open={isOpen}>
-      <button ref={closeRef} onClick={onClose}>Close</button>
-      {/* dialog content */}
+@Component({
+  selector: 'app-dialog',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <dialog [open]="isOpen()">
+      <button #closeBtn (click)="close.emit()">Close</button>
+      <!-- dialog content -->
     </dialog>
-  );
+  `,
+})
+export class DialogComponent {
+  isOpen = input.required<boolean>();
+  close = output();
+  closeBtn = viewChild.required<ElementRef<HTMLButtonElement>>('closeBtn');
+
+  constructor() {
+    effect(() => {
+      if (this.isOpen()) {
+        this.closeBtn().nativeElement.focus();
+      }
+    });
+  }
 }
 ```
 
 ### Meaningful Empty and Error States
 
-```tsx
-// Don't show blank screens
-function TaskList({ tasks }: { tasks: Task[] }) {
-  if (tasks.length === 0) {
-    return (
-      <div role="status" className="text-center py-12">
-        <TasksEmptyIcon className="mx-auto h-12 w-12 text-muted" />
-        <h3 className="mt-2 text-sm font-medium">No tasks</h3>
-        <p className="mt-1 text-sm text-muted">Get started by creating a new task.</p>
-        <Button className="mt-4" onClick={onCreateTask}>Create Task</Button>
-      </div>
-    );
-  }
-
-  return <ul role="list">...</ul>;
+```angular-html
+<!-- Don't show blank screens; always handle every state -->
+@if (tasks().length === 0) {
+  <div role="status" class="text-center py-12">
+    <app-icon name="tasks-empty" class="mx-auto h-12 w-12 text-muted" />
+    <h3 class="mt-2 text-sm font-medium">No tasks</h3>
+    <p class="mt-1 text-sm text-muted">Get started by creating a new task.</p>
+    <app-button class="mt-4" (click)="createTask()">Create Task</app-button>
+  </div>
+} @else {
+  <ul role="list">...</ul>
 }
 ```
 
 ## Responsive Design
 
-Design for mobile first, then expand:
+Design for mobile first, then expand. This project uses TailwindCSS v4
+(`src/tailwind.css`) with a `@theme` block — see
+[`instructions/frontend.instructions.md`](../../instructions/frontend.instructions.md)
+for the design token mapping.
 
-```tsx
-// Tailwind: mobile-first responsive
-<div className="
-  grid grid-cols-1      /* Mobile: single column */
-  sm:grid-cols-2        /* Small: 2 columns */
-  lg:grid-cols-3        /* Large: 3 columns */
+```angular-html
+<!-- Tailwind: mobile-first responsive -->
+<div class="
+  grid grid-cols-1      <!-- Mobile: single column -->
+  sm:grid-cols-2        <!-- Small: 2 columns -->
+  lg:grid-cols-3        <!-- Large: 3 columns -->
   gap-4
 ">
 ```
@@ -259,44 +316,57 @@ Test at these breakpoints: 320px, 768px, 1024px, 1440px.
 
 ## Loading and Transitions
 
-```tsx
+```typescript
 // Skeleton loading (not spinners for content)
-function TaskListSkeleton() {
-  return (
-    <div className="space-y-3" aria-busy="true" aria-label="Loading tasks">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-12 bg-muted animate-pulse rounded" />
-      ))}
+@Component({
+  selector: 'app-task-list-skeleton',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div class="space-y-3" aria-busy="true" aria-label="Loading tasks">
+      @for (i of skeletonCount(); track i) {
+        <div class="h-12 bg-muted animate-pulse rounded"></div>
+      }
     </div>
-  );
+  `,
+})
+export class TaskListSkeletonComponent {
+  skeletonCount = signal([0, 1, 2]);
 }
 
-// Optimistic updates for perceived speed
-function useToggleTask() {
-  const queryClient = useQueryClient();
+// Optimistic updates for perceived speed — mutate the store signal directly,
+// then revert on API error
+@Component({ /* ... */ })
+export class TaskToggleComponent {
+  store = inject(AppStore);
+  api = inject(ApiService);
 
-  return useMutation({
-    mutationFn: toggleTask,
-    onMutate: async (taskId) => {
-      await queryClient.cancelQueries({ queryKey: ['tasks'] });
-      const previous = queryClient.getQueryData(['tasks']);
-
-      queryClient.setQueryData(['tasks'], (old: Task[]) =>
-        old.map(t => t.id === taskId ? { ...t, done: !t.done } : t)
-      );
-
-      return { previous };
-    },
-    onError: (_err, _taskId, context) => {
-      queryClient.setQueryData(['tasks'], context?.previous);
-    },
-  });
+  async toggleTask(id: string): Promise<void> {
+    const previous = this.store.tasks();
+    // Optimistic update
+    this.store.tasks.set(
+      previous.map(t => t.id === id ? { ...t, done: !t.done } : t)
+    );
+    try {
+      await this.api.toggleTask(id).toPromise();
+    } catch {
+      // Revert on failure
+      this.store.tasks.set(previous);
+    }
+  }
 }
 ```
 
+For performance rules specific to this project (computed view-models, `@for`
+tracking, `@defer`), see
+[`instructions/frontend.instructions.md`](../../instructions/frontend.instructions.md).
+
 ## See Also
 
-For detailed accessibility requirements and testing tools, see `references/accessibility-checklist.md`.
+- [`instructions/frontend.instructions.md`](../../instructions/frontend.instructions.md) — Canonical Angular 22 conventions (component recipe, performance, layering, styling, routing, testing)
+- [`instructions/ui-primitives.instructions.md`](../../instructions/ui-primitives.instructions.md) — Design system and token-styled primitives
+- [`principles.md`](../../principles.md) — Shared coding principles (TDD, boundaries, PR gates)
+- `references/accessibility-checklist.md` — Detailed accessibility requirements and testing tools
 
 ## Common Rationalizations
 

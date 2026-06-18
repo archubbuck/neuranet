@@ -3,7 +3,12 @@ name: code-review-and-quality
 description: Conducts multi-axis code review. Use before merging any change. Use when reviewing code written by yourself, another agent, or a human. Use when you need to assess code quality across multiple dimensions before it enters the main branch.
 ---
 
-> **Project-specific note:** The examples and patterns in this skill are illustrative and framework-agnostic. This project follows specific conventions defined in [`.github/instructions/`](../../instructions/) — frontend: Angular 22 + TailwindCSS v4, backend: Express 5 + Drizzle ORM + Postgres, UI: token-styled primitives. Where generic examples below conflict with project-specific instructions, the instructions take precedence.
+> **Project-specific note:** The five-axis review framework is defined in
+> [`principles.md`](../../principles.md#code-review--five-axes). The
+> [`code-reviewer` agent](../../agents/code-reviewer.md) provides the output
+> template and severity categorization. This skill covers the **process** of
+> conducting a review — change sizing, descriptions, review workflow, and
+> common rationalizations.
 
 # Code Review and Quality
 
@@ -23,64 +28,42 @@ Multi-dimensional code review with quality gates. Every change gets reviewed bef
 
 ## The Five-Axis Review
 
-Every review evaluates code across these dimensions:
+Every review evaluates code across the five axes defined in the
+[shared principles](../../principles.md#code-review--five-axes). The
+[`code-reviewer` agent](../../agents/code-reviewer.md) provides the persona-level
+output template and severity categorization for formal reviews.
+
+The axes in brief:
 
 ### 1. Correctness
-
-Does the code do what it claims to do?
-
-- Does it match the spec or task requirements?
-- Are edge cases handled (null, empty, boundary values)?
-- Are error paths handled (not just the happy path)?
-- Does it pass all tests? Are the tests actually testing the right things?
-- Are there off-by-one errors, race conditions, or state inconsistencies?
+Does the code do what it claims to do? Match the spec, handle edge cases (null,
+empty, boundary values), cover error paths (not just the happy path). Tests must
+prove behavior — not just line coverage. Watch for off-by-one errors, race
+conditions, and state inconsistencies.
 
 ### 2. Readability & Simplicity
-
-Can another engineer (or agent) understand this code without the author explaining it?
-
-- Are names descriptive and consistent with project conventions? (No `temp`, `data`, `result` without context)
-- Is the control flow straightforward (avoid nested ternaries, deep callbacks)?
-- Is the code organized logically (related code grouped, clear module boundaries)?
-- Are there any "clever" tricks that should be simplified?
-- **Could this be done in fewer lines?** (1000 lines where 100 suffice is a failure)
-- **Are abstractions earning their complexity?** (Don't generalize until the third use case)
-- Would comments help clarify non-obvious intent? (But don't comment obvious code.)
-- Are there dead code artifacts: no-op variables (`_unused`), backwards-compat shims, or `// removed` comments?
+Can another engineer (or agent) understand this without the author explaining it?
+Descriptive names, straightforward control flow, logical organization. Avoid
+clever tricks; don't generalize until the third use case. Remove dead code
+(no-op variables, backwards-compat shims, commented-out blocks).
 
 ### 3. Architecture
-
-Does the change fit the system's design?
-
-- Does it follow existing patterns or introduce a new one? If new, is it justified?
-- Does it maintain clean module boundaries?
-- Is there code duplication that should be shared?
-- Are dependencies flowing in the right direction (no circular dependencies)?
-- Is the abstraction level appropriate (not over-engineered, not too coupled)?
+Does the change fit the system's design? Follow existing patterns or justify new
+ones. Maintain clean module boundaries; avoid circular dependencies. Appropriate
+abstraction level — not over-engineered, not too coupled. Dependencies flow in
+the right direction.
 
 ### 4. Security
-
-For detailed security guidance, see `security-and-hardening`. Does the change introduce vulnerabilities?
-
-- Is user input validated and sanitized?
-- Are secrets kept out of code, logs, and version control?
-- Is authentication/authorization checked where needed?
-- Are SQL queries parameterized (no string concatenation)?
-- Are outputs encoded to prevent XSS?
-- Are dependencies from trusted sources with no known vulnerabilities?
-- Is data from external sources (APIs, logs, user content, config files) treated as untrusted?
-- Are external data flows validated at system boundaries before use in logic or rendering?
+Input validated at boundaries, secrets out of code/logs/version control, auth
+checked where needed, queries parameterized, output encoded. Treat all external
+data (APIs, logs, user content, config files) as untrusted. For detailed
+guidance, see [`skills/security-and-hardening/SKILL.md`](../security-and-hardening/SKILL.md).
 
 ### 5. Performance
-
-For detailed profiling and optimization, see `performance-optimization`. Does the change introduce performance problems?
-
-- Any N+1 query patterns?
-- Any unbounded loops or unconstrained data fetching?
-- Any synchronous operations that should be async?
-- Any unnecessary re-renders in UI components?
-- Any missing pagination on list endpoints?
-- Any large objects created in hot paths?
+No N+1 query patterns, unbounded loops, unconstrained data fetching, or missing
+pagination. No unnecessary re-renders in UI components. No large objects created
+in hot paths. For profiling and optimization, see
+[`skills/performance-optimization/SKILL.md`](../performance-optimization/SKILL.md).
 
 ## Change Sizing
 
@@ -314,8 +297,12 @@ Part of code review is dependency review:
 ```
 ## See Also
 
-- For detailed security review guidance, see `references/security-checklist.md`
-- For performance review checks, see `references/performance-checklist.md`
+- [`principles.md`](../../principles.md) — Shared coding principles and five-axis summary
+- [`agents/code-reviewer.md`](../../agents/code-reviewer.md) — Reviewer persona with output template
+- [`skills/security-and-hardening/SKILL.md`](../security-and-hardening/SKILL.md) — Detailed security review guidance
+- [`skills/performance-optimization/SKILL.md`](../performance-optimization/SKILL.md) — Performance review checks
+- `references/security-checklist.md` — Security review checklist
+- `references/performance-checklist.md` — Performance review checklist
 
 ## Common Rationalizations
 
