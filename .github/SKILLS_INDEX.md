@@ -1,8 +1,8 @@
 # Skills Index
 
-> **Lazy-load only:** Skills are 200-400 lines each. Load only the 1-2 skills
-> relevant to your current task — never preload all 24. Use this index to discover
-> which skill applies, then read only that skill's file.
+> **Lazy-load:** Skills are 200-400 lines each. Use this index to discover
+> which skill(s) apply to your task, then load only those — never preload all 24.
+> Prefer the fewest skills needed, but use as many as the task genuinely requires.
 
 Prioritized guide for which skills to load into limited context windows.
 Skills are invoked via subagent, slash command, or direct reference.
