@@ -6,40 +6,9 @@ description: Structures git workflow practices. Use when making any code change.
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
-
-### Branch strategy
-- Main branch: `master`
-- Feature branches: `feat/<short-description>`
-- Fix branches: `fix/<short-description>`
-
-### Commit conventions
-- Use imperative mood: "Add", "Fix", "Remove", "Refactor", "Docs"
-- Prefix with scope when relevant: `docs:`, `feat:`, `fix:`, `refactor:`
-- Descriptive body when context isn't obvious from the diff
-- Never: "Fix bug", "Add patch", "WIP"
-
-### CI-enforced quality gates
-```
-lint → typecheck → tests → build
-```
-- All checks run via `pnpm` scripts
-- PRs must pass all gates before merge
-
-### Package manager
-- pnpm 11 (pinned via `packageManager` in `package.json`)
-- `pnpm-workspace.yaml` for monorepo config
-- `allowBuilds:` in workspace config for native deps (`@parcel/watcher`, `better-sqlite3`, `esbuild`)
-
-### Key commands
-```bash
-pnpm test            # Frontend tests
-pnpm test:server     # Backend tests
-pnpm lint            # ESLint
-pnpm typecheck       # tsc --noEmit
-pnpm build           # Production build
-pnpm db:migrate      # Run migrations
-pnpm db:seed         # Seed data
-```
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
 # Git Workflow and Versioning
 
@@ -281,7 +250,7 @@ Automate this with git hooks:
 
 ## Handling Generated Files
 
-- **Commit generated files** only if the project expects them (e.g., `package-lock.json`, Prisma migrations)
+- **Commit generated files** only if the project expects them (e.g., `package-lock.json`, Drizzle migrations)
 - **Don't commit** build output (`dist/`, `.next/`), environment files (`.env`), or IDE config (`.vscode/settings.json` unless shared)
 - **Have a `.gitignore`** that covers: `node_modules/`, `dist/`, `.env`, `.env.local`, `*.pem`
 

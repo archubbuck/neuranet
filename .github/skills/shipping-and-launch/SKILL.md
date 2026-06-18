@@ -6,34 +6,9 @@ description: Prepares production launches. Use when preparing to deploy to produ
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
-
-### Deployment stack
-- **Hosting:** Vercel (Frontend + API as serverless functions)
-- **Database:** Neon Postgres (serverless, branching per preview)
-- **Auth:** Neon Auth (Better Auth, managed OAuth)
-- **Deployment:** `vercel.json` config at repo root
-- See `docs/adr/007-vercel-neon-deployment.md` for full architecture
-
-### Pre-launch checklist
-
-- [ ] `pnpm lint` — no ESLint errors (layer boundaries included)
-- [ ] `pnpm typecheck` — no type errors
-- [ ] `pnpm test` — all frontend tests pass
-- [ ] `pnpm test:server` — all backend tests pass
-- [ ] `pnpm build` — production build succeeds
-- [ ] DB migrations applied (via `pnpm db:migrate`)
-- [ ] CORS origin matches production domain
-- [ ] Rate limits tuned for production traffic
-- [ ] Auth: Neon Auth configured with production OAuth credentials
-
-### Preview environments
-- PR deployments auto-create Neon branches via `dev-bootstrap.mjs`
-- `preview-teardown.yml` cleans up Neon branches on PR close
-- `vercel.json` deploys both `src/` (Angular) and `api/` (Express serverless)
-
-### Rollback strategy
-- Vercel: promote previous production deployment
-- Database: Neon point-in-time restore or branch revert
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
 # Shipping and Launch
 
@@ -287,7 +262,7 @@ Every deployment needs a rollback plan before it happens:
 3. Communicate: notify team of rollback
 
 ### Database Considerations
-- Migration [X] has a rollback: `npx prisma migrate rollback`
+- Migration [X] has a rollback: revert via Neon branch or point-in-time restore
 - Data inserted by new feature: [preserved / cleaned up]
 
 ### Time to Rollback

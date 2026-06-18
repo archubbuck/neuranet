@@ -6,24 +6,10 @@ description: Extracts what the user actually wants instead of what they think th
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
-### Questions to clarify before starting work
-
-**For new features:**
-- Which screen does this belong to? (New `screens/<feature>/` folder or modify existing?)
-- Does the data come from a new API endpoint or existing store data?
-- Are there existing `ui/` primitives that cover the UI, or do I need a new one?
-- Does this need auth? (Public landing page or inside `AppShellComponent`?)
-
-**For backend changes:**
-- New entity? → Needs Drizzle schema in `server/db/schema.ts`, repo, route, zod schema
-- New external fetch? → Needs SSRF-safe allowlist + rate limiting
-- New mutation? → Needs zod schema + `db.transaction()` if multi-write
-
-**For bug fixes:**
-- Can I reproduce it with a test first? (Prove-It pattern)
-- Is it a frontend signal issue? (`TestBed.tick()` in zoneless mode)
-- Is it a backend validation gap? (Missing zod schema?)
 # Interview Me
 
 ## Overview

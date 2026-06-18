@@ -6,42 +6,9 @@ description: Records decisions and documentation. Use when making architectural 
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
-
-### ADR location and naming
-- All ADRs at `docs/adr/NNN-title.md` (zero-padded, kebab-case)
-- Current ADRs: 001–008 covering layout, layering, endpoints, UI primitives,
-  zoneless/signals, Drizzle ORM, Vercel/Neon deployment, TailwindCSS migration
-
-### When to write an ADR
-- Architectural decisions that affect multiple layers
-- Technology choices (framework, library, database)
-- Migration strategies that span multiple PRs
-- Any decision a future engineer would need to understand
-
-### ADR format (per `docs/adr/` examples)
-```markdown
-# ADR-NNN: Title
-
-**Status:** proposed | accepted | deprecated | superseded
-**Date:** YYYY-MM-DD
-
-## Context
-[Why this decision is needed]
-
-## Decision
-[What was decided]
-
-## Consequences
-[Trade-offs, migration cost, follow-up work]
-```
-
-### Canonical documentation sources
-| Topic | File |
-|-------|------|
-| Component recipe, styling | `frontend.instructions.md` |
-| Backend layering, validation | `backend.instructions.md` |
-| UI primitive rules | `ui-primitives.instructions.md` |
-| Shared principles | `principles.md` |
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
 # Documentation and ADRs
 
@@ -94,7 +61,7 @@ We need a primary database for the task management application. Key requirements
 - Managed hosting available (for small team, limited ops capacity)
 
 ## Decision
-Use PostgreSQL with Prisma ORM.
+Use PostgreSQL with Drizzle ORM.
 
 ## Alternatives Considered
 
@@ -114,7 +81,7 @@ Use PostgreSQL with Prisma ORM.
 - Rejected: PostgreSQL is the better fit for our feature requirements
 
 ## Consequences
-- Prisma provides type-safe database access and migration management
+- Drizzle provides type-safe database access with SQL-like DX and migration management
 - We can use PostgreSQL's full-text search instead of adding Elasticsearch
 - Team needs PostgreSQL knowledge (standard skill, low risk)
 - Hosting on managed service (Supabase, Neon, or RDS)

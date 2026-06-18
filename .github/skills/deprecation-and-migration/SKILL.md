@@ -6,23 +6,9 @@ description: Manages deprecation and migration. Use when removing old systems, A
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
-
-### Past deprecations in this codebase
-
-| Change | Migration | Evidence |
-|--------|-----------|----------|
-| CSS custom properties → TailwindCSS v4 | Moved `:root` vars to `@theme` in `src/tailwind.css` | ADR-008 |
-| CSS `styles.css` → TailwindCSS `tailwind.css` | Replaced in `angular.json`, deleted old file | ADR-008 |
-| Workspace concept removed | `workspace_id` columns and `workspaces` table eliminated | `_stale-screens-backup/` |
-| Legacy `DocsApiService` methods | `legacyListDocs`/`legacyGetNetworkOverlay`/`legacyCreateDoc` removed | |
-| React prototype embed | Retired; source at `TopicNet Prototype (standalone).html` for reference | |
-| React/Prisma/Jest patterns in skills | Overridden by project-specific Codebase Patterns sections | `.github/instructions/` |
-
-### Deprecation strategy
-- Park stale-but-preservable code in `_stale-screens-backup/` (gitignored)
-- Document migrations in ADRs under `docs/adr/`
-- DB migrations: Drizzle-generated SQL in `server/migrations/postgres/`
-- Never remove a failing test — fix the test or the code
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
 # Deprecation and Migration
 

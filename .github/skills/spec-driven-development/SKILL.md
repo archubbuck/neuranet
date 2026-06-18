@@ -6,53 +6,9 @@ description: Creates specs before coding. Use when starting a new project, featu
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
-
-### Spec format for new features
-
-**API contract first:**
-```typescript
-// src/app/data/types.ts
-export interface NewFeaturePayload {
-  readonly id: string;
-  readonly label: string;
-}
-```
-
-**Zod schema:**
-```typescript
-// server/schemas.ts
-export const createNewFeature = z.object({
-  label: z.string().trim().min(1),
-});
-```
-
-**Endpoint:**
-```
-POST /api/new-feature
-GET  /api/new-feature
-```
-
-### Before writing code, document:
-
-- [ ] Types defined in `data/types.ts`
-- [ ] Zod schema in `server/schemas.ts` (if mutating)
-- [ ] Which `ui/` primitives are reused vs new
-- [ ] Store action or screen-local state?
-- [ ] Auth required? (public route or inside `AppShellComponent`?)
-- [ ] ADR needed? (Architecture decisions → `docs/adr/NNN-title.md`)
-
-### Layer mapping
-
-| Concern | File |
-|---------|------|
-| Types | `src/app/data/types.ts` |
-| Validation | `server/schemas.ts` |
-| DB schema | `server/db/schema.ts` |
-| API route | `server/routes/<domain>.ts` |
-| HTTP client | `src/app/data/api.service.ts` |
-| Global state | `src/app/data/app.store.ts` |
-| Screen | `src/app/screens/<feature>/` |
-| UI primitive | `src/app/ui/<category>/` |
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
 # Spec-Driven Development
 
@@ -92,7 +48,7 @@ Start with a high-level vision. Ask the human clarifying questions until require
 ASSUMPTIONS I'M MAKING:
 1. This is a web application (not native mobile)
 2. Authentication uses session-based cookies (not JWT)
-3. The database is PostgreSQL (based on existing Prisma schema)
+3. The database is PostgreSQL (Drizzle ORM, schema in `server/db/schema.ts`)
 4. We're targeting modern browsers only (no IE11)
 → Correct me now or I'll proceed with these.
 ```

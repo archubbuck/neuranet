@@ -6,25 +6,9 @@ description: Refines raw ideas into sharp, actionable concepts through structure
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
-
-### Refining a feature idea into a spec
-
-1. **Document the problem** — what user need does this address?
-2. **Sketch the API contract** — types in `src/app/data/types.ts`, endpoint
-   shape, zod schema in `server/schemas.ts`
-3. **Sketch the UI** — which `ui/` primitives exist (button, modal, tabs,
-   search-input)? Which need extending vs creating?
-4. **Identify the layers** — `server/repositories/` → `server/routes/` →
-   `src/app/data/api.service.ts` → `src/app/data/app.store.ts` →
-   `src/app/screens/<feature>/`
-5. **Record in an ADR** if architectural — use `docs/adr/NNN-title.md` format
-
-### Questions to stress-test
-- Does this respect layer boundaries? (`ui/` ↛ `data/`)
-- Does every POST/PUT have a zod schema?
-- Does multi-write logic need `db.transaction()`?
-- Are there existing `ui/` primitives I can reuse?
-- Does this add a new dependency? (Must ask first.)
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
 # Idea Refine
 

@@ -6,28 +6,9 @@ description: Subjects every non-trivial decision to a fresh-context adversarial 
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
-
-### When to apply doubt-driven review
-- DB schema changes (always ask first)
-- New dependencies (always ask first)
-- Auth/permission logic changes
-- External API integrations (SSRF risk)
-- Multi-write transactions (data integrity)
-
-### Concrete review triggers in this codebase
-
-| Concern | What to verify |
-|---------|----------------|
-| Zod schema missing | Every POST/PUT needs one in `server/schemas.ts` |
-| `process.env` in handler | Must read through `server/env.ts`/`server/config.ts` |
-| Missing `db.transaction()` | Multi-table writes must be transactional |
-| No `requireAuth` | Protected endpoints need auth middleware |
-| Direct Drizzle import | Routes must use repositories, not raw Drizzle |
-| Computed view-model missing | SVG/graph components should precompute in `computed()` |
-
-### Subagent delegation
-Use the `code-reviewer`, `security-auditor`, or `test-engineer` subagents for
-formal multi-axis review before merging high-stakes changes.
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
 # Doubt-Driven Development
 

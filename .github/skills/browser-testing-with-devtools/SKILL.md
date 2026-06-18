@@ -6,27 +6,9 @@ description: Tests in real browsers via Chrome DevTools MCP. Use when building o
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
-
-### Running the app
-- `pnpm start` (Angular dev server + API proxy) or `pnpm start:api` (API only)
-- Angular dev server defaults to `http://localhost:4200`
-
-### What to inspect
-- **Network graph** (`src/app/screens/network/network-graph.component.ts`):
-  SVG with pan/zoom/select. Inspect SVG elements, viewBox, computed transforms.
-- **Console:** The API proxy logs requests; check for CORS, 404s, or failed
-  `/api/*` calls. Zero console errors at runtime.
-- **Auth flow:** Login/signup redirects to Neon Auth; inspect the auth cookie
-  (`better-auth.session_token`) and redirect chain.
-- **@defer blocks:** Verify heavy subtrees (network graph) render with their
-  placeholder visible before loading completes.
-
-### Interaction patterns
-- SVG nodes: `role="button"`, `tabindex="0"`, Enter/Space to select
-- Click on node → slides detail panel open (`detailView` signal)
-- Mouse wheel → zoom (clamped 0.5–2.4), drag → pan
-- If Playwright `click_element` times out on stability checks, use
-  `page.evaluate(() => el.dispatchEvent(new MouseEvent('click', {bubbles: true})))`
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
 # Browser Testing with DevTools
 

@@ -6,24 +6,9 @@ description: Grounds every implementation decision in official documentation. Us
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
-
-### Canonical documentation for this stack
-
-| Technology | Source | Notes |
-|------------|--------|-------|
-| Angular 22 | [angular.dev](https://angular.dev) | Signal components, zoneless, standalone |
-| Drizzle ORM | [orm.drizzle.team](https://orm.drizzle.team) | Postgres dialect, `pgTable`, `relations` |
-| TailwindCSS v4 | [tailwindcss.com](https://tailwindcss.com) | CSS-first config via `@theme`, no `tailwind.config.js` |
-| Express 5 | [expressjs.com](https://expressjs.com) | Async error handling, route patterns |
-| Vitest | [vitest.dev](https://vitest.dev) | Test runner (both frontend + backend) |
-| Better Auth | [better-auth.com](https://better-auth.com) | Auth library used via Neon Auth |
-| Neon Auth | [neon.tech/docs](https://neon.tech/docs/guides/neon-auth) | Managed auth with Better Auth integration |
-
-### Project-specific overrides
-- The instructions in `.github/instructions/` define project-specific patterns
-  that may differ from framework defaults
-- Read `frontend.instructions.md` before consulting generic Angular docs
-- Read `backend.instructions.md` before consulting generic Express docs
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
 # Source-Driven Development
 

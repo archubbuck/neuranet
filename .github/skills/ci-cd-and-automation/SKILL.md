@@ -6,31 +6,9 @@ description: Automates CI/CD pipeline setup. Use when setting up or modifying bu
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
-
-### PR gates (`.github/workflows/ci.yml`)
-
-Every PR must pass these gates in order:
-```
-lint → typecheck → tests → build
-```
-- `pnpm lint` — ESLint (includes layer boundary rules via no-restricted-imports)
-- `pnpm typecheck` — TypeScript (`tsc --noEmit`)
-- `pnpm test` — Frontend Vitest suite
-- `pnpm test:server` — Backend Vitest suite (`pool:forks`, isolate each file)
-- `pnpm build` — Production build (Angular + API)
-
-### Local dev database
-- `docker compose up -d` for Postgres 16 (same image as CI). No manual Neon setup.
-- CI uses a Postgres 16 service container — ephemeral, no setup.
-- Production/Preview: Neon HTTP driver via `DB_DRIVER=neon-http`.
-
-### Preview environments
-- Neon branch created per PR via `dev-bootstrap.mjs`
-- Preview teardown (`preview-teardown.yml`) deletes Neon branches when PRs close
-
-### Migration gate (CI)
-- A consolidated `migration-gate` job applies migrations to a fresh PG,
-  smoke-tests the schema, and verifies no unexpected diff
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
 # CI/CD and Automation
 
@@ -154,7 +132,7 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - name: Run migrations
-        run: npx prisma migrate deploy
+        run: pnpm db:migrate
         env:
           DATABASE_URL: postgresql://ci_user:${{ secrets.CI_DB_PASSWORD }}@localhost:5432/testdb
       - name: Integration tests

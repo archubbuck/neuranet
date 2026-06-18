@@ -6,40 +6,9 @@ description: Hardens code against vulnerabilities. Use when handling user input,
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
-
-### Input validation
-- `server/schemas.ts` — every POST/PUT body gets a zod schema
-- Applied via `validateBody` middleware — handlers assume well-formed input
-- No manual `typeof` checks in route handlers
-- SuperRefine for cross-field validation (e.g. `sourceType === 'reddit'` requires `config.threadUrl`)
-
-### SSRF protection
-- `server/reddit-fetcher.ts` — external fetches use exact-match + subdomain
-  allowlist (`reddit.com` + `*.reddit.com`), never `endsWith`
-- Any new external fetcher must follow the same pattern
-
-### Authentication
-- `server/middleware/auth.ts` — `requireAuth` / `optionalAuth` middleware
-- Verifies session cookie via Better Auth / Neon Auth
-- Applied per-router, not globally (see `server/index.ts`)
-- Rate limiter and auth middleware applied per-router
-
-### Secrets management
-- All env reads through `server/env.ts` / `server/config.ts`
-- No `process.env` access outside those files
-- Centralised config in `config.ts`
-
-### Rate limiting
-- Global: express-rate-limit (1000/min) for local dev
-- Per-source fetch: env-tunable via `TOPIC_VIZ_*_RATE_MAX`
-- Upstash Redis rate limiter when configured (serverless-safe); falls back
-  to in-memory `express-rate-limit` for local dev
-
-### Error handling
-- Central `errorHandler` in `middleware/error.ts`
-- Never return `err.message` or stack details to clients
-- Log internally with pino logger
-- Status codes: 400 invalid input, 404 missing, 409 conflict, 429 rate limit, 500 generic
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
 # Security and Hardening
 
@@ -101,7 +70,7 @@ const query = `SELECT * FROM users WHERE id = '${userId}'`;
 const user = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
 
 // GOOD: ORM with parameterized input
-const user = await prisma.user.findUnique({ where: { id: userId } });
+const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
 ```
 
 ### 2. Broken Authentication

@@ -6,30 +6,9 @@ description: Guides stable API and interface design. Use when designing APIs, mo
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
-
-### Shared types
-- Domain types defined in `src/app/data/types.ts` — one `interface` per entity
-  (`Cluster`, `Node`, `Edge`, `Doc`, `DataSource`, `NetworkPayload`, …)
-- Backend mirrors these shapes; no separate API type layer
-
-### API surface (backend → frontend)
-- One `ApiService` method per endpoint in `src/app/data/api.service.ts`
-  (e.g. `listSources()`, `createSource()`, `getNetwork()`, `search(q)`)
-- Routes in `server/routes/<domain>.ts` — one router per domain
-- Every POST/PUT body validated via zod schema in `server/schemas.ts`
-
-### Endpoint conventions
-- `GET /api/<resource>` — list
-- `POST /api/<resource>` — create (body validated)
-- `PUT /api/<resource>/:slug` — update (partial patch)
-- `DELETE /api/<resource>/:slug` — delete
-- `POST /api/<resource>/<action>` — sub-resource actions (bulk-delete, dissolve, fetch)
-
-### Interface design rules
-- `ui/` primitives define their own local types for inputs, not domain shapes
-  (see `BadgeStatus` in `status-badge.component.ts`)
-- Outputs: `closed` (modal/popover), `toggled` (checkbox), `resetView` (zoom)
-  — never shadow native DOM event names
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
 # API and Interface Design
 

@@ -6,99 +6,9 @@ description: Guides systematic root-cause debugging. Use when tests fail, builds
 > **Project note:** Generic examples are framework-agnostic. For project-specific patterns see `## Codebase Patterns` below.
 
 ## Codebase Patterns
-
-These project-specific failure modes and debugging techniques supplement the
-generic triage checklist below.
-
-### Frontend: zoneless signal debugging
-
-Angular 22 zoneless mode means signal effects don't flush until change
-detection runs. Common pitfalls:
-
-```typescript
-// BUG: signal write in test, but computed doesn't update
-store.selectNode('n1');
-expect(store.selectedNodeId()).toBe('n1'); // ✓ signal reads immediately
-expect(fixture.componentInstance.someComputed()).toBe(...); // ✗ may be stale
-
-// FIX: flush effects with TestBed.tick() (NOT await Promise.resolve())
-store.selectNode('n1');
-TestBed.tick();  // ← flushes signal effects in zoneless mode
-expect(fixture.componentInstance.someComputed()).toBe(...); // ✓ now fresh
-```
-
-### Frontend: ngModel + signals in tests
-
-`ngModel` two-way binding to signals works in browser but is async in tests.
-To verify form seeding, assert the signal directly:
-
-```typescript
-// Instead of reading input.value (which may not have propagated):
-expect((fixture.componentInstance as any).name()).toBe('expected');
-```
-
-### Frontend: search debounce + race protection
-
-`src/app/screens/search/` uses a 220ms `setTimeout` debounce with a
-`currentRequestId` counter. In tests:
-
-```typescript
-vi.useFakeTimers();
-// ... trigger search input change ...
-vi.advanceTimersByTime(250);
-vi.useRealTimers();
-await Promise.resolve(); // let microtasks flush
-// THEN expectOne() on HttpTestingController
-```
-
-### Backend: test isolation via table truncation
-
-Backend tests are isolated by truncating all tables in `beforeEach`. FK order
-matters:
-
-```typescript
-beforeEach(async () => {
-  // MUST delete in FK-safe order: children before parents
-  await drizzle.delete(s.docNodeLinks);
-  await drizzle.delete(s.nodeLinks);
-  await drizzle.delete(s.derivedNodes);
-  await drizzle.delete(s.derivedClusters);
-  await drizzle.delete(s.docs);
-  await drizzle.delete(s.dataSources);
-});
-```
-
-### Backend: mock external fetchers with vi.mock()
-
-```typescript
-// server/index.test.ts
-vi.mock('./reddit-fetcher', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('./reddit-fetcher')>();
-  return { ...mod, fetchThread: vi.fn(mod.fetchThread) };
-});
-```
-
-### Common project-specific failures
-
-| Symptom | Likely cause | Check |
-|---------|-------------|-------|
-| "No tests found" | Missing spec file or glob mismatch | Verify `**/*.spec.ts` pattern exists |
-| Test passes in isolation, fails in suite | Leaked state between tests | Check `beforeEach` cleanup, localStorage reset |
-| `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` | Missing `app.set('trust proxy', 1)` | Check `server/index.ts` |
-| API 403 on authenticated endpoints | Session cookie not sent | Verify `credentials: true` in CORS + fetch |
-| Build fails with old import paths | Stale files in `_stale-screens-backup/` | These are gitignored and safe to ignore |
-| ngModel form not seeding in test | Async binding propagation | Assert the signal, not `input.value` |
-| Upload form clears but nothing happens | API unreachable | Check `pnpm start:api` is running, proxy config |
-
-### Project test commands
-
-```bash
-pnpm test              # Frontend tests (Vitest via @angular/build)
-pnpm test:server       # Backend tests (Vitest, pool:forks, server/vitest.config.mjs)
-pnpm lint              # ESLint (frontend + server + scripts)
-pnpm start             # Full dev (Angular + API proxy)
-pnpm start:api         # API server only
-```
+> Project conventions live in `.github/instructions/`. See
+> [SKILLS_INDEX.md](../SKILLS_INDEX.md#framework-mapping) for framework
+> translations (Prisma→Drizzle, React→Angular, Jest→Vitest, etc.).
 
 # Debugging and Error Recovery
 
@@ -172,13 +82,13 @@ Cannot reproduce on demand:
 For test failures:
 ```bash
 # Run the specific failing test
-npm test -- --grep "test name"
+pnpm test -- --grep "test name"
 
 # Run with verbose output
-npm test -- --verbose
+pnpm test -- --verbose
 
 # Run in isolation (rules out test pollution)
-npm test -- --testPathPattern="specific-file" --runInBand
+pnpm test -- --testPathPattern="specific-file" --runInBand
 ```
 
 ### Step 2: Localize
@@ -202,7 +112,7 @@ git bisect start
 git bisect bad                    # Current commit is broken
 git bisect good <known-good-sha> # This commit worked
 # Git will checkout midpoint commits; run your test at each
-git bisect run npm test -- --grep "failing test"
+git bisect run pnpm test -- --grep "failing test"
 ```
 
 ### Step 3: Reduce
@@ -254,16 +164,16 @@ After fixing, verify the complete scenario:
 
 ```bash
 # Run the specific test
-npm test -- --grep "specific test"
+pnpm test -- --grep "specific test"
 
 # Run the full test suite (check for regressions)
-npm test
+pnpm test
 
 # Build the project (check for type/compilation errors)
-npm run build
+pnpm build
 
 # Manual spot check if applicable
-npm run dev  # Verify in browser
+pnpm start  # Verify in browser
 ```
 
 ## Error-Specific Patterns
@@ -289,7 +199,7 @@ Build fails:
 ├── Type error → Read the error, check the types at the cited location
 ├── Import error → Check the module exists, exports match, paths are correct
 ├── Config error → Check build config files for syntax/schema issues
-├── Dependency error → Check package.json, run npm install
+├── Dependency error → Check package.json, run pnpm install
 └── Environment error → Check Node version, OS compatibility
 ```
 
