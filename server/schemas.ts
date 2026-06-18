@@ -22,6 +22,13 @@ export const createSource = z
         message: 'config.threadUrl is required for reddit sources',
       });
     }
+    if (val.sourceType === 'web' && !val.config['url']) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['config', 'url'],
+        message: 'config.url is required for web sources',
+      });
+    }
   });
 
 export const createDoc = z.object({
@@ -73,4 +80,24 @@ export const dissolveClusters = z.object({
 
 export const joinWaitlist = z.object({
   email: trimmedString.email('invalid email address'),
+});
+
+/**
+ * Email/password sign-in schema. The frontend login form posts email +
+ * password; the backend delegates to Better Auth's `signInEmail` API.
+ */
+export const signInEmail = z.object({
+  email: trimmedString.email('invalid email address'),
+  password: z.string().min(1, 'password is required'),
+});
+
+/**
+ * Email/password sign-up schema. Registers a new user with Better Auth.
+ * Passwords are hashed server-side by Better Auth; the client never sees
+ * the raw hash.
+ */
+export const signUpEmail = z.object({
+  email: trimmedString.email('invalid email address'),
+  password: z.string().min(8, 'password must be at least 8 characters'),
+  name: trimmedString.min(1, 'name is required'),
 });

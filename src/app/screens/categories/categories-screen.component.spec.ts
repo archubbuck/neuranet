@@ -33,12 +33,20 @@ describe('CategoriesScreenComponent', () => {
   it('filters categories by search', () => {
     const fixture = TestBed.createComponent(CategoriesScreenComponent);
     fixture.detectChanges();
+
+    // Open filter modal and type search query
+    const cmp = fixture.componentInstance as any;
+    cmp.showFilterModal.set(true);
+    fixture.detectChanges();
+
     const input = (fixture.nativeElement as HTMLElement).querySelector(
-      '.search-input',
+      'app-modal input.field-input',
     ) as HTMLInputElement;
+    expect(input).toBeTruthy();
     input.value = 'Climate';
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
+
     const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.tr');
     expect(rows.length).toBe(1);
     expect(rows[0].textContent).toContain('Climate');
@@ -47,8 +55,10 @@ describe('CategoriesScreenComponent', () => {
   it('shows the New Category modal on button click', () => {
     const fixture = TestBed.createComponent(CategoriesScreenComponent);
     fixture.detectChanges();
+    // The header now has two buttons: Filter (secondary) and + (primary).
+    // Target the primary variant.
     const btn = (fixture.nativeElement as HTMLElement).querySelector(
-      'app-page-header app-button button',
+      'app-page-header .header-actions app-button .btn.primary',
     ) as HTMLButtonElement;
     btn.click();
     fixture.detectChanges();

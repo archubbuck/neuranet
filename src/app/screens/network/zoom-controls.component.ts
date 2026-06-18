@@ -2,9 +2,9 @@ import { ChangeDetectionStrategy, Component, output } from '@angular/core';
 import { IconComponent } from '../../ui/primitives/icon.component';
 
 /**
- * Floating bottom-right zoom controls. Emits intent outputs; the parent
- * `NetworkScreenComponent` is responsible for routing them to
- * `NetworkGraphComponent.zoom()` / `resetView()`.
+ * Floating bottom-right zoom + spacing controls. Emits intent outputs;
+ * the parent `NetworkScreenComponent` is responsible for routing them to
+ * `NetworkGraphComponent.zoom()` / `adjustSpacing()` / `resetView()`.
  */
 @Component({
   selector: 'app-zoom-controls',
@@ -18,6 +18,14 @@ import { IconComponent } from '../../ui/primitives/icon.component';
       <div class="sep"></div>
       <button type="button" title="Zoom out" (click)="zoomOut.emit()">
         <app-icon name="minus" [size]="15" />
+      </button>
+      <div class="sep"></div>
+      <button type="button" title="Spread nodes apart" (click)="spreadOut.emit()">
+        <app-icon name="arrow-right" [size]="15" />
+      </button>
+      <div class="sep"></div>
+      <button type="button" title="Bring nodes closer" (click)="tightenUp.emit()">
+        <app-icon name="arrow-left" [size]="15" />
       </button>
       <div class="sep"></div>
       <button type="button" title="Reset view" (click)="resetView.emit()">
@@ -70,5 +78,7 @@ import { IconComponent } from '../../ui/primitives/icon.component';
 export class ZoomControlsComponent {
   readonly zoomIn = output<void>();
   readonly zoomOut = output<void>();
+  readonly spreadOut = output<void>();
+  readonly tightenUp = output<void>();
   readonly resetView = output<void>();
 }

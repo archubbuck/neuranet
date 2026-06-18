@@ -1,19 +1,14 @@
 /**
  * Integration tests for the Express API. Requires a running Postgres
  * instance specified by POSTGRES_URL. In CI this is provided by the
- * postgres service container; for local dev set POSTGRES_URL or run
- * `vercel env pull .env.local`.
+ * postgres service container; for local dev run `docker compose up -d`
+ * or set POSTGRES_URL in .env.local.
+ *
+ * To run a subset: `pnpm vitest run --config server/vitest.config.mjs server/index.test.ts -t "pattern"`
  */
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { and, eq, sql, or } from 'drizzle-orm';
-
-// ESM hoists static imports above module code. Use vi.hoisted() to set
-// the env var before any module in the import chain reads it.
-vi.hoisted(() => {
-  process.env.POSTGRES_URL =
-    process.env['POSTGRES_URL'] || 'postgres://postgres:postgres@localhost:5432/neuranet_test';
-});
 
 import { app } from './index';
 import { drizzle } from './db';
@@ -58,7 +53,7 @@ async function request(
   method: string,
   pathname: string,
   body?: unknown,
-): Promise<{ status: number; body: any }> {
+): Promise<{ status: number; body: any; headers: Headers }> {
   const url = baseUrl + pathname;
   const init: RequestInit = { method, headers: {} };
   if (body !== undefined) {
@@ -68,7 +63,7 @@ async function request(
   const res = await fetch(url, init);
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
-  return { status: res.status, body: data };
+  return { status: res.status, body: data, headers: res.headers };
 }
 
 describe('health endpoints', () => {
@@ -893,5 +888,143 @@ describe('rate limiting', () => {
       last = await request('POST', '/api/sources/999999/fetch');
     }
     expect(last!.status).toBe(429);
+  });
+});
+
+// ── Auth endpoints ─────────────────────────────────────────────────────
+// The auth module proxies to the Neon Auth managed service. We mock it
+// for unit tests; integration tests against a real Neon Auth instance
+// would require NEON_AUTH_SERVICE_URL to be set.
+
+vi.mock('./auth.js', () => {
+  const mockUser = { id: 'user-1', email: 'test@example.com', name: 'Test User', image: null };
+  const mockResponse = (status: number, extraHeaders?: Record<string, string>) => {
+    const headers = new Headers();
+    headers.set('Set-Cookie', 'session=mock-session; Path=/; HttpOnly');
+    if (extraHeaders) {
+      for (const [k, v] of Object.entries(extraHeaders)) {
+        headers.set(k, v);
+      }
+    }
+    return new Response(JSON.stringify({ user: mockUser }), {
+      status,
+      headers,
+    });
+  };
+  /** Response with multiple Set-Cookie headers. */
+  const mockMultiCookieResponse = (status: number) => {
+    const headers = new Headers();
+    headers.append('Set-Cookie', 'session=mock-session; Path=/; HttpOnly');
+    headers.append('Set-Cookie', 'csrf=mock-csrf; Path=/; SameSite=Lax');
+    return new Response(JSON.stringify({ user: mockUser }), { status, headers });
+  };
+  return {
+    getSession: vi.fn().mockResolvedValue(null),
+    toHeadersInit: (_headers: Record<string, string | string[] | undefined>) => ({}),
+    proxyToNeonAuth: vi.fn().mockImplementation((_method: string, path: string) => {
+      if (path === '/sign-up/email') return Promise.resolve(mockMultiCookieResponse(201));
+      return Promise.resolve(mockResponse(200));
+    }),
+  };
+});
+
+describe('POST /api/auth/sign-in/email', () => {
+  it('rejects an invalid email with 400', async () => {
+    const res = await request('POST', '/api/auth/sign-in/email', {
+      email: 'not-an-email',
+      password: 'secret',
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects a missing password with 400', async () => {
+    const res = await request('POST', '/api/auth/sign-in/email', {
+      email: 'test@example.com',
+      password: '',
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('accepts valid credentials and returns a user', async () => {
+    const res = await request('POST', '/api/auth/sign-in/email', {
+      email: 'test@example.com',
+      password: 'secret123',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      id: 'user-1',
+      email: 'test@example.com',
+      name: 'Test User',
+    });
+  });
+});
+
+describe('POST /api/auth/sign-up/email', () => {
+  it('rejects a password shorter than 8 chars with 400', async () => {
+    const res = await request('POST', '/api/auth/sign-up/email', {
+      email: 'test@example.com',
+      password: 'short',
+      name: 'Test',
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects an empty name with 400', async () => {
+    const res = await request('POST', '/api/auth/sign-up/email', {
+      email: 'test@example.com',
+      password: 'longenough',
+      name: '',
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('creates a new user and returns the profile', async () => {
+    const res = await request('POST', '/api/auth/sign-up/email', {
+      email: 'new@example.com',
+      password: 'securepass',
+      name: 'New User',
+    });
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({
+      id: 'user-1',
+      email: 'test@example.com',
+      name: 'Test User',
+    });
+  });
+
+  it('forwards all Set-Cookie headers — multiple cookies survive', async () => {
+    const res = await request('POST', '/api/auth/sign-up/email', {
+      email: 'new@example.com',
+      password: 'securepass',
+      name: 'New User',
+    });
+    expect(res.status).toBe(201);
+    // The mock returns two Set-Cookie headers; both must be forwarded.
+    const cookies = res.headers.getSetCookie();
+    expect(cookies.length).toBe(2);
+    expect(cookies[0]).toContain('session=mock-session');
+    expect(cookies[1]).toContain('csrf=mock-csrf');
+  });
+});
+
+describe('GET /api/auth/providers', () => {
+  it('returns an array of available OAuth providers', async () => {
+    // The list depends on which OAuth env vars are set. At minimum
+    // it must be a valid JSON array.
+    const res = await request('GET', '/api/auth/providers');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    for (const p of res.body) {
+      expect(p).toHaveProperty('id');
+      expect(p).toHaveProperty('label');
+    }
+  });
+});
+
+describe('GET /api/auth/me', () => {
+  it('returns 401 when no session is present', async () => {
+    const res = await request('GET', '/api/auth/me');
+    expect(res.status).toBe(401);
+    expect(res.body).toMatchObject({ message: 'not authenticated' });
   });
 });

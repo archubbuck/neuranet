@@ -147,6 +147,21 @@ export interface Toast {
   readonly message: string;
 }
 
+// ───────────────────────────── Auth ─────────────────────────────
+
+export interface AuthUser {
+  readonly id: string;
+  readonly email: string;
+  readonly name: string;
+  readonly image?: string;
+}
+
+export interface AuthState {
+  readonly user: AuthUser | null;
+  readonly isAuthenticated: boolean;
+  readonly isLoading: boolean;
+}
+
 export interface Job {
   readonly id: string;
   readonly sourceType: SourceType;

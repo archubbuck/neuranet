@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { AppStore } from '../data/app.store';
 import { ViewportService } from '../core/viewport.service';
-import { ToastService } from '../core/toast.service';
 import { SidebarComponent } from './sidebar.component';
 import { MobileNavComponent } from './mobile-nav.component';
 import { ToastComponent } from '../ui/overlays/toast.component';
@@ -64,14 +62,4 @@ import { ToastComponent } from '../ui/overlays/toast.component';
 export class AppShellComponent {
   private readonly viewport = inject(ViewportService);
   protected readonly isMobile = computed(() => this.viewport.state().isMobile);
-
-  constructor() {
-    // Bootstrap the global dataset once the shell mounts. The shell still
-    // renders if the backend is unavailable, but the failure is surfaced
-    // to the user instead of being silently swallowed.
-    const toast = inject(ToastService);
-    void inject(AppStore)
-      .loadAll()
-      .catch(() => toast.show('Failed to load data. Is the API running?', 'error'));
-  }
 }

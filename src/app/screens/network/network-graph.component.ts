@@ -213,6 +213,10 @@ export class NetworkGraphComponent {
   private readonly _view = signal<ViewTransform>({ scale: 1, x: 0, y: 0 });
   readonly view = this._view.asReadonly();
 
+  /** User-adjustable node spacing (0–100).  Maps to minGap 2–42. */
+  private readonly _spacing = signal<number>(50);
+  readonly spacing = this._spacing.asReadonly();
+
   protected readonly hover = signal<string | null>(null);
   protected readonly dragging = signal<boolean>(false);
   private dragOrigin: { x: number; y: number; ox: number; oy: number } | null = null;
@@ -225,7 +229,11 @@ export class NetworkGraphComponent {
   protected readonly visibleIds = this.store.visibleNodeIds;
   protected readonly clusters = this.store.clusters;
 
-  protected readonly nodes = computed(() => layoutNodes(this.store.nodes(), this.store.clusters()));
+  protected readonly nodes = computed(() => {
+    // Map spacing (0–100) → minGap (2–42)
+    const gap = 2 + (this._spacing() / 100) * 40;
+    return layoutNodes(this.store.nodes(), this.store.clusters(), gap);
+  });
   protected readonly edges = computed(() => layoutEdges(this.store.edges(), this.nodes()));
   private readonly adjacency = computed(() => buildAdjacency(this.store.edges()));
   private readonly clusterColorMap = computed<Map<string, string>>(() => {
@@ -296,7 +304,7 @@ export class NetworkGraphComponent {
     return `translate(${v.x} ${v.y}) scale(${v.scale}) translate(${tx} ${ty})`;
   });
 
-  // ── public zoom api (called by sibling overlays) ───────────────────
+  // ── public zoom / spacing api (called by sibling overlays) ─────────
 
   zoom(factor: number): void {
     this._view.update((v) => ({
@@ -305,8 +313,14 @@ export class NetworkGraphComponent {
     }));
   }
 
+  /** Adjust node spacing by `delta` (clamped to 0–100). */
+  adjustSpacing(delta: number): void {
+    this._spacing.update((s) => clamp(s + delta, 0, 100));
+  }
+
   resetView(): void {
     this._view.set({ scale: 1, x: 0, y: 0 });
+    this._spacing.set(50);
     this.store.selectNode(null);
   }
 

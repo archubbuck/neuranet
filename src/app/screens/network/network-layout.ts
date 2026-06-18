@@ -33,17 +33,36 @@ export const VIEW_HEIGHT = 560;
 const CX = VIEW_WIDTH / 2;
 const CY = VIEW_HEIGHT / 2;
 const CLUSTER_RING_RADIUS = 200;
-const NODE_RING_BASE = 70;
-const NODE_RING_STEP = 30;
+const NODE_RING_BASE = 80;
+const NODE_RING_STEP = 50;
+
+/** Default gap between adjacent nodes on a ring (pixels). */
+export const DEFAULT_MIN_NODE_GAP = 12;
+
+/**
+ * Minimum ring radius needed so that nodes placed evenly around the
+ * circumference do not overlap.  Each node contributes its diameter plus
+ * a gap; the sum is the minimum circumference.
+ */
+function minRingRadius(nodes: readonly Node[], gap: number): number {
+  if (nodes.length === 0) return 0;
+  const totalArc = nodes.reduce((sum, n) => sum + 2 * n.r + gap, 0);
+  return totalArc / (2 * Math.PI);
+}
 
 /**
  * Compute a deterministic radial layout for the given nodes + clusters.
+ *
+ * @param minGap - minimum pixel gap between adjacent nodes on the same
+ *   ring.  Larger values spread nodes farther apart.  Defaults to
+ *   {@link DEFAULT_MIN_NODE_GAP}.
  *
  * Honours pre-supplied `cx`/`cy` (some seed datasets ship coordinates).
  */
 export function layoutNodes(
   nodes: readonly Node[],
   clusters: readonly Cluster[],
+  minGap: number = DEFAULT_MIN_NODE_GAP,
 ): readonly PositionedNode[] {
   if (nodes.length === 0) return [];
 
@@ -86,16 +105,26 @@ export function layoutNodes(
       });
     });
 
-    // Ring others: split by depth, each depth gets its own ring radius.
+    // Ring others: split by depth, each depth gets its own ring radius
+    // computed dynamically so nodes never overlap regardless of count.
     const byDepth = new Map<number, Node[]>();
     for (const n of others) {
       const list = byDepth.get(n.depth) ?? [];
       list.push(n);
       byDepth.set(n.depth, list);
     }
-    for (const [depth, ring] of byDepth) {
-      const radius = NODE_RING_BASE + Math.max(0, depth - 1) * NODE_RING_STEP;
-      const step = (2 * Math.PI) / Math.max(1, ring.length);
+    const depths = [...byDepth.keys()].sort((a, b) => a - b);
+    let prevRadius = 0;
+    let prevMaxR = 0;
+    for (const depth of depths) {
+      const ring = byDepth.get(depth)!;
+      const needed = minRingRadius(ring, minGap);
+      const baseRadius = NODE_RING_BASE + Math.max(0, depth - 1) * NODE_RING_STEP;
+      const maxR = ring.reduce((m, n) => Math.max(m, n.r), 0);
+      // Ensure enough clearance from the previous ring.
+      const fromPrev = prevRadius + prevMaxR + maxR + minGap;
+      const radius = Math.max(baseRadius, needed, fromPrev);
+      const step = (2 * Math.PI) / ring.length;
       ring.forEach((n, i) => {
         const a = i * step;
         out.push({
@@ -104,6 +133,8 @@ export function layoutNodes(
           cy: n.cy ?? centre.y + Math.sin(a) * radius,
         });
       });
+      prevRadius = radius;
+      prevMaxR = maxR;
     }
   }
   return out;

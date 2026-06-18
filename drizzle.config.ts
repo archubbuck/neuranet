@@ -1,5 +1,12 @@
 import { defineConfig } from 'drizzle-kit';
 
+// Load .env.local if present (local dev). Silently skip on Vercel.
+try {
+  process.loadEnvFile('.env.local');
+} catch {
+  /* optional */
+}
+
 export default defineConfig({
   schema: './server/db/schema.ts',
   out: './server/migrations/postgres',

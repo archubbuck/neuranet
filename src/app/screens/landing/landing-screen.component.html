@@ -10,7 +10,7 @@
         <a class="navlink" href="#how">How it works</a>
         <a class="navlink" href="#compare">Compare</a>
         <a class="navlink" href="#roadmap">Roadmap</a>
-        <a class="btn-primary btn-nav" href="#cta">Join the waitlist</a>
+        <a class="navlink" routerLink="/login">Sign In</a>
       </nav>
     </header>
 
@@ -94,26 +94,16 @@
             <line class="graph-edge" x1="500" y1="400" x2="580" y2="360" />
             <line class="graph-edge" x1="500" y1="400" x2="620" y2="470" />
           </g>
-          <circle class="node-cyan" cx="620" cy="96" r="17" />
-          <circle class="node-violet" cx="700" cy="180" r="13" />
-          <circle class="node-emerald" cx="520" cy="60" r="11" />
-          <circle class="node-rose" cx="560" cy="200" r="14" />
-          <circle class="node-sky" cx="688" cy="300" r="11" />
-          <circle class="node-orange" cx="400" cy="110" r="10" />
-          <circle class="node-lime" cx="460" cy="272" r="10" />
-          <circle class="node-violet" cx="580" cy="360" r="8" />
-          <circle class="node-emerald" cx="300" cy="70" r="7" />
-          <circle class="node-cyan" cx="360" cy="330" r="7" />
-          <circle class="node-rose" cx="740" cy="80" r="10" />
-          <circle class="node-lime" cx="720" cy="250" r="8" />
-          <circle class="node-pink" cx="420" cy="30" r="9" />
-          <circle class="node-pink" cx="240" cy="140" r="8" />
-          <circle class="node-sky" cx="180" cy="60" r="6" />
-          <circle class="node-violet" cx="100" cy="120" r="5" />
-          <circle class="node-rose" cx="300" cy="220" r="7" />
-          <circle class="node-emerald" cx="660" cy="420" r="10" />
-          <circle class="node-cyan" cx="500" cy="400" r="8" />
-          <circle class="node-orange" cx="620" cy="470" r="7" />
+          @for (node of nodes; track node.cx + ',' + node.cy; let i = $index) {
+            <circle
+              [class]="node.cls"
+              [attr.cx]="node.cx"
+              [attr.cy]="node.cy"
+              [attr.r]="nodeRadii()[i]"
+              (mouseenter)="hoveredIndex.set(i)"
+              (mouseleave)="hoveredIndex.set(null)"
+            />
+          }
         </svg>
       </div>
     </main>
@@ -121,9 +111,13 @@
     <section class="stats">
       <div class="stats-in">
         <div class="stat"><span class="v">12.4M</span><span class="l">nodes mapped</span></div>
-        <div class="stat"><span class="v">48,212</span><span class="l">sources connected</span></div>
+        <div class="stat">
+          <span class="v">48,212</span><span class="l">sources connected</span>
+        </div>
         <div class="stat"><span class="v">1,380</span><span class="l">active workspaces</span></div>
-        <div class="stat"><span class="v">4 min</span><span class="l">median time to first map</span></div>
+        <div class="stat">
+          <span class="v">4 min</span><span class="l">median time to first map</span>
+        </div>
       </div>
     </section>
 
@@ -156,21 +150,37 @@
           <div class="src-row">
             <span class="src-ico"><app-icon name="message-square" [size]="16" /></span>
             <div class="src-body">
-              <div class="t1">Reddit communities<span class="datum">r/energy · 12,402 posts</span></div>
+              <div class="t1">
+                Reddit communities<span class="datum">r/energy · 12,402 posts</span>
+              </div>
               <div class="t2">Subreddits, threads, and comments — streamed as they post.</div>
             </div>
           </div>
           <div class="src-row">
             <span class="src-ico">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="16" height="16">
-                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                width="16"
+                height="16"
+              >
+                <path
+                  d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"
+                />
                 <rect width="4" height="12" x="2" y="9" />
                 <circle cx="4" cy="4" r="2" />
               </svg>
             </span>
             <div class="src-body">
               <div class="t1">LinkedIn posts<span class="datum">3,120 posts tracked</span></div>
-              <div class="t2">Public posts and articles from the people and companies you follow.</div>
+              <div class="t2">
+                Public posts and articles from the people and companies you follow.
+              </div>
             </div>
           </div>
           <div class="src-row">
@@ -193,7 +203,9 @@
           <div class="src-row">
             <span class="src-ico"><app-icon name="file" [size]="16" /></span>
             <div class="src-body">
-              <div class="t1">Text &amp; Markdown files<span class="datum">.txt · .md · .csv</span></div>
+              <div class="t1">
+                Text &amp; Markdown files<span class="datum">.txt · .md · .csv</span>
+              </div>
               <div class="t2">Notes and exports from any tool, dropped in as-is.</div>
             </div>
           </div>
@@ -217,9 +229,7 @@
             <span class="brand-mark"><app-icon name="network" [size]="14" /></span>
             <span class="brand-name">Neuranet</span>
           </div>
-          <div class="nav-item active">
-            <app-icon name="network" [size]="16" />Network explorer
-          </div>
+          <div class="nav-item active"><app-icon name="network" [size]="16" />Network explorer</div>
           <div class="nav-item"><app-icon name="circle-dot" [size]="16" />Topics</div>
           <div class="nav-item"><app-icon name="database" [size]="16" />Sources</div>
           <div class="nav-item"><app-icon name="search" [size]="16" />Search</div>
@@ -233,7 +243,9 @@
               <h2>Climate research workspace</h2>
               <p>Mapping 12,847 nodes across 6 clusters · last ingested 4 min ago</p>
             </div>
-            <button class="btn-mock" type="button"><app-icon name="plus" [size]="14" />Run query</button>
+            <button class="btn-mock" type="button">
+              <app-icon name="plus" [size]="14" />Run query
+            </button>
           </div>
 
           <div class="mock-grid">
@@ -337,9 +349,7 @@
 
             <div class="card card-insight">
               <div class="card-label">Insights</div>
-              <p class="body">
-                Carbon pricing discussion is trending positive across 3 clusters.
-              </p>
+              <p class="body">Carbon pricing discussion is trending positive across 3 clusters.</p>
               <div class="spark-wrap">
                 <svg
                   viewBox="0 0 220 64"
@@ -610,7 +620,9 @@
           <span class="rm-q">Q3 2026</span>
           <div>
             <h3>Alerts &amp; digests</h3>
-            <p class="rm-desc">Threshold alerts when sentiment moves; weekly cluster digests by email.</p>
+            <p class="rm-desc">
+              Threshold alerts when sentiment moves; weekly cluster digests by email.
+            </p>
           </div>
           <span class="rm-status now">in development</span>
         </div>
@@ -618,7 +630,9 @@
           <span class="rm-q">Q3 2026</span>
           <div>
             <h3>Team workspaces</h3>
-            <p class="rm-desc">Shared graphs, annotations, and saved queries for research groups.</p>
+            <p class="rm-desc">
+              Shared graphs, annotations, and saved queries for research groups.
+            </p>
           </div>
           <span class="rm-status now">in development</span>
         </div>
@@ -626,7 +640,9 @@
           <span class="rm-q">Q4 2026</span>
           <div>
             <h3>API &amp; export</h3>
-            <p class="rm-desc">Query the graph programmatically; export GraphML, CSV, and embeddings.</p>
+            <p class="rm-desc">
+              Query the graph programmatically; export GraphML, CSV, and embeddings.
+            </p>
           </div>
           <span class="rm-status">planned</span>
         </div>
@@ -642,42 +658,11 @@
           <span class="rm-q">2027</span>
           <div>
             <h3>Connector SDK</h3>
-            <p class="rm-desc">Build private connectors for internal wikis, data rooms, and archives.</p>
+            <p class="rm-desc">
+              Build private connectors for internal wikis, data rooms, and archives.
+            </p>
           </div>
           <span class="rm-status">exploring</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="ctaband" id="cta">
-      <div class="ctaband-in">
-        <div>
-          <h2>Be first to map your field.</h2>
-          <p class="sub2">Early access opens in waves through 2026.</p>
-        </div>
-        <div>
-          @if (!finalSubmitted()) {
-            <form class="cta-row ctaband-form" (submit)="$event.preventDefault(); onFinalSubmit()" novalidate>
-              <input
-                type="email"
-                required
-                placeholder="Enter your email"
-                aria-label="Email address"
-                [ngModel]="email2()"
-                (ngModelChange)="email2.set($event)"
-                name="email2"
-              />
-              <button class="btn-primary" type="submit">
-                <span>Join the waitlist</span>
-                <app-icon name="arrow-right" [size]="16" />
-              </button>
-            </form>
-          } @else {
-            <p class="cta-confirm cta-confirm-final" role="status">
-              <span class="ico"><app-icon name="check" [size]="18" /></span>
-              You're on the list — we'll be in touch.
-            </p>
-          }
         </div>
       </div>
     </section>

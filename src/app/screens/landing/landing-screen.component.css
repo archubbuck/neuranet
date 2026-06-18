@@ -172,6 +172,11 @@
   stroke: rgba(255, 255, 255, 0.24);
   stroke-width: 1.5;
 }
+.hero-visual circle {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: r 0.3s ease;
+}
 
 .hero h1 {
   margin-top: 0;
@@ -297,10 +302,6 @@
   box-shadow: var(--nn-glow-amber-sm);
   color: var(--nn-fg-accent);
 }
-.cta-confirm-final {
-  margin-top: 0;
-}
-
 /* ── Stats strip ─────────────────────────────────── */
 .stats {
   border-top: 1px solid var(--nn-border-subtle);
@@ -315,11 +316,11 @@
   align-items: baseline;
   gap: 12px;
   padding: 26px 28px;
-  border-left: 1px solid var(--nn-border-subtle);
+  border-right: 1px solid var(--nn-border-subtle);
 }
-.stat:first-child {
-  border-left: none;
-  padding-left: 0;
+.stat:last-child {
+  border-right: none;
+  padding-right: 0;
 }
 .stat .v {
   font-family: var(--nn-font-mono);
@@ -352,12 +353,13 @@
 
 /* ── Problem ─────────────────────────────────────── */
 .problem {
-  padding: clamp(64px, 6vw, 96px) 0;
+  padding: clamp(64px, 6vw, 96px) 0 clamp(48px, 4.5vw, 72px);
 }
 .problem-in {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 64px;
+  gap: clamp(32px, 3vw, 48px);
+  align-items: start;
 }
 .problem h2 {
   font-size: clamp(30px, 2.8vw, 42px);
@@ -372,11 +374,10 @@
 }
 .problem-copy {
   border-left: 1px solid var(--nn-border-default);
-  padding-left: 48px;
+  padding-left: clamp(24px, 2.5vw, 48px);
   display: flex;
   flex-direction: column;
   gap: 18px;
-  justify-content: center;
 }
 .problem-copy p {
   font-size: 16px;
@@ -1029,31 +1030,6 @@
   box-shadow: var(--nn-glow-amber-sm);
 }
 
-/* ── Final CTA band ──────────────────────────────── */
-.ctaband {
-  border-top: 1px solid var(--nn-border-subtle);
-  padding: clamp(56px, 5.5vw, 72px) 0 clamp(64px, 6vw, 88px);
-}
-.ctaband-in {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
-  gap: 64px;
-  align-items: center;
-}
-.ctaband h2 {
-  font-size: clamp(28px, 2.6vw, 38px);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-.ctaband .sub2 {
-  margin-top: 12px;
-  font-size: 16px;
-  color: var(--nn-fg-2);
-}
-.ctaband .cta-row {
-  margin-top: 0;
-}
-
 /* ── Footer ──────────────────────────────────────── */
 .footer {
   border-top: 1px solid var(--nn-border-subtle);
@@ -1139,10 +1115,6 @@
   .src-group:last-child {
     border-left: none;
     padding-left: 0;
-  }
-  .ctaband-in {
-    grid-template-columns: 1fr;
-    gap: 28px;
   }
 }
 

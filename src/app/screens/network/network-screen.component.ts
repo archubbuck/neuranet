@@ -47,6 +47,8 @@ import { ZoomControlsComponent } from './zoom-controls.component';
           <app-zoom-controls
             (zoomIn)="graph.zoom(1.2)"
             (zoomOut)="graph.zoom(0.83)"
+            (spreadOut)="graph.adjustSpacing(10)"
+            (tightenUp)="graph.adjustSpacing(-10)"
             (resetView)="graph.resetView()"
           />
         } @placeholder {

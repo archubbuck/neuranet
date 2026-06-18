@@ -28,6 +28,7 @@ import clustersRouter from './routes/clusters.js';
 import nodesRouter from './routes/nodes.js';
 import docsRouter from './routes/docs.js';
 import waitlistRouter from './routes/waitlist.js';
+import authRouter from './routes/auth.js';
 
 export const app = express();
 
@@ -116,12 +117,17 @@ app.use('/api', clustersRouter);
 app.use('/api', nodesRouter);
 app.use('/api', docsRouter);
 app.use('/api', waitlistRouter);
+// Auth router mounted at two paths:
+//   /api/auth  — for tests and direct Express access
+//   /          — for proxy-rewritten requests (proxy strips /api/auth)
+app.use('/api/auth', authRouter);
+app.use('/', authRouter);
 
 // ── Startup warnings ───────────────────────────────────────────────
 // Warn at startup if Resend is not configured (emails will silently
 // skip in production).  Not fatal — the app works without email.
 if (!config.resendApiKey && config.nodeEnv !== 'test') {
-  logger.warn('RESEND_API_KEY not set — transactional email is disabled');
+  logger.info('RESEND_API_KEY not set — transactional email is disabled');
 }
 
 // Central error handler — must be registered after all routes.

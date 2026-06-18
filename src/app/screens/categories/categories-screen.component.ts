@@ -20,8 +20,8 @@ import { DonutChartComponent, type DonutSegment } from '../../ui/charts/donut-ch
 import { SentBarsComponent, type SentBarRow } from '../../ui/charts/sent-bars.component';
 import { StatCardComponent } from '../../ui/charts/stat-card.component';
 import { PageHeaderComponent } from '../../ui/primitives/page-header.component';
-import { SearchInputComponent } from '../../ui/primitives/search-input.component';
 import { TabsComponent } from '../../ui/primitives/tabs.component';
+import { ModalComponent } from '../../ui/overlays/modal.component';
 import { ButtonComponent } from '../../ui/primitives/button.component';
 import { NewCategoryModalComponent } from './new-category-modal.component';
 import { SplitCategoryModalComponent } from './split-category-modal.component';
@@ -147,8 +147,8 @@ interface CatRow {
     SentBarsComponent,
     StatCardComponent,
     PageHeaderComponent,
-    SearchInputComponent,
     TabsComponent,
+    ModalComponent,
     ButtonComponent,
     NewCategoryModalComponent,
     SplitCategoryModalComponent,
@@ -161,7 +161,10 @@ interface CatRow {
           heading="Manage categories"
           subtitle="Rename, recolor, merge, split or dissolve categories; changes restyle the network instantly."
         >
-          <app-search-input [(value)]="filter" placeholder="Filter categories…" />
+          <app-button variant="secondary" (pressed)="openFilterModal()">
+            <app-icon name="filter" [size]="13" />
+            Filter
+          </app-button>
           <app-button variant="primary" (pressed)="openCreateModal()">
             <app-icon name="plus" [size]="14" />
           </app-button>
@@ -175,24 +178,6 @@ interface CatRow {
       @if (activeTab() === 'records') {
         <!-- Toolbar -->
         <div class="toolbar">
-          <div class="cat-filter-wrap">
-            <button
-              class="cat-filter-btn"
-              [class.active]="filterOpen() || columnFilterCount() > 0"
-              type="button"
-              (click)="filterOpen.set(!filterOpen())"
-            >
-              <app-icon
-                name="filter"
-                [size]="13"
-                [color]="columnFilterCount() > 0 ? '#FBBF24' : '#475569'"
-              />
-              <span>Filter</span>
-              @if (columnFilterCount() > 0) {
-                <span class="toolbar-badge">{{ columnFilterCount() }}</span>
-              }
-            </button>
-          </div>
           @if (sortedByCount() > 0) {
             <span class="toolbar-sort-badge"
               >Sorted by {{ sortedByCount() }} field{{ sortedByCount() === 1 ? '' : 's' }}</span
@@ -202,30 +187,6 @@ interface CatRow {
             >{{ visibleRows().length }} of {{ rows().length }} categories</span
           >
         </div>
-
-        <!-- Filter panel -->
-        @if (filterOpen()) {
-          <div class="filter-panel">
-            <div class="fp-head">Filter</div>
-            @for (col of ['label', 'nodeCount', 'docCount', 'avgSent']; track col) {
-              <div class="fp-row">
-                <span class="fp-col">{{ filterLabel(col) }}</span>
-                <input
-                  class="fp-input"
-                  type="text"
-                  [ngModel]="columnFilters()[col] ?? ''"
-                  (ngModelChange)="setColumnFilter(col, $event)"
-                  [placeholder]="'Filter ' + filterLabel(col) + '…'"
-                />
-                @if (hasColumnFilter(col)) {
-                  <button class="fp-clear" type="button" (click)="removeColumnFilter(col)">
-                    <app-icon name="x" [size]="12" color="#94a3b8" />
-                  </button>
-                }
-              </div>
-            }
-          </div>
-        }
 
         <!-- Table -->
         <div class="table-wrap">
@@ -502,6 +463,58 @@ interface CatRow {
       (closed)="creating.set(false)"
     />
 
+    <!-- ═══ Filter modal ═══ -->
+    <app-modal
+      [open]="showFilterModal()"
+      title="Filter categories"
+      (closed)="showFilterModal.set(false)"
+      [showFooter]="true"
+      [width]="440"
+    >
+      <div class="field">
+        <label class="field-label" for="filter-search">Search</label>
+        <input
+          id="filter-search"
+          class="field-input"
+          type="text"
+          [ngModel]="filter()"
+          (ngModelChange)="filter.set($event)"
+          placeholder="Filter by name or ID…"
+        />
+      </div>
+      @for (col of ['label', 'nodeCount', 'docCount', 'avgSent']; track col) {
+        <div class="field">
+          <label class="field-label" [for]="'filter-' + col">{{ filterLabel(col) }}</label>
+          <input
+            [id]="'filter-' + col"
+            class="field-input"
+            type="text"
+            [ngModel]="columnFilters()[col]"
+            (ngModelChange)="setColumnFilter(col, $event)"
+            [placeholder]="'Filter ' + filterLabel(col) + '…'"
+          />
+        </div>
+      }
+      <div footer style="display: flex; justify-content: space-between; width: 100%; gap: 8px">
+        <button
+          class="btn-secondary"
+          type="button"
+          style="min-width: 80px; padding: 9px 16px; font-size: 13px"
+          (click)="clearAllFilters()"
+        >
+          Reset
+        </button>
+        <button
+          class="btn-primary"
+          type="button"
+          style="min-width: 80px"
+          (click)="showFilterModal.set(false)"
+        >
+          Apply
+        </button>
+      </div>
+    </app-modal>
+
     <!-- ═══ Split Category modal ═══ -->
     <app-split-category-modal
       [cat]="splitCat()"
@@ -708,94 +721,6 @@ interface CatRow {
         background: rgba(251, 191, 36, 0.1);
         padding: 4px 9px;
         border: 1px solid rgba(251, 191, 36, 0.2);
-      }
-      .toolbar-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 16px;
-        height: 16px;
-        font-size: 10px;
-        font-weight: 700;
-        background: #fbbf24;
-        color: #090e1c;
-        padding: 0 4px;
-      }
-
-      /* ── filter popover style (shared with cat-filter) ── */
-      .cat-filter-wrap {
-        position: relative;
-      }
-      .cat-filter-btn {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 7px 12px;
-        border-radius: 0;
-        cursor: pointer;
-        font-family: 'Space Grotesk', system-ui, sans-serif;
-        font-size: 12.5px;
-        color: #94a3b8;
-        background: #0f1828;
-        border: 1px solid rgba(255, 255, 255, 0.09);
-      }
-      .cat-filter-btn:hover {
-        color: #f1f5f9;
-      }
-      .cat-filter-btn.active {
-        border-color: rgba(251, 191, 36, 0.35);
-      }
-
-      /* ── filter panel ── */
-      .filter-panel {
-        margin: 0 32px 10px;
-        border: 1px solid rgba(255, 255, 255, 0.09);
-        background: #0b1120;
-      }
-      .fp-head {
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: #475569;
-        padding: 10px 12px 6px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      }
-      .fp-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 12px;
-      }
-      .fp-col {
-        font-size: 12px;
-        color: #94a3b8;
-        width: 90px;
-        flex-shrink: 0;
-      }
-      .fp-input {
-        flex: 1;
-        max-width: 260px;
-        font:
-          400 12px 'Space Grotesk',
-          system-ui,
-          sans-serif;
-        color: #f1f5f9;
-        background: #0f1828;
-        border: 1px solid rgba(255, 255, 255, 0.09);
-        padding: 5px 8px;
-        outline: none;
-      }
-      .fp-input:focus {
-        border-color: rgba(251, 191, 36, 0.3);
-      }
-      .fp-clear {
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        padding: 2px;
-        display: flex;
-        align-items: center;
       }
 
       /* ── table ── */
@@ -1527,7 +1452,16 @@ export class CategoriesScreenComponent {
 
   // ── column filters ──
   protected readonly columnFilters = signal<ColumnFilters>({});
-  protected readonly filterOpen = signal(false);
+  protected readonly showFilterModal = signal(false);
+
+  protected openFilterModal(): void {
+    this.showFilterModal.set(true);
+  }
+
+  protected clearAllFilters(): void {
+    this.filter.set('');
+    this.columnFilters.set({});
+  }
 
   protected setColumnFilter(column: string, value: string): void {
     this.columnFilters.update((cur) => ({ ...cur, [column]: value }));

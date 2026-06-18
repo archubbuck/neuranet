@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AppStore } from '../data/app.store';
+import { AuthStore } from '../data/auth.store';
 import { IconComponent } from '../ui/primitives/icon.component';
+import { UserMenuComponent } from '../ui/primitives/user-menu.component';
 import type { IconName } from '../ui/icons';
 
 interface NavItem {
@@ -23,7 +25,7 @@ const NAV: readonly NavItem[] = [
 @Component({
   selector: 'app-sidebar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, RouterLink, RouterLinkActive],
+  imports: [IconComponent, RouterLink, RouterLinkActive, UserMenuComponent],
   host: { '[class.collapsed]': 'store.collapsed()' },
   template: `
     <aside>
@@ -37,10 +39,10 @@ const NAV: readonly NavItem[] = [
         <button
           class="header-btn"
           (click)="store.toggleCollapsed()"
-          aria-label="Collapse sidebar"
-          title="Collapse sidebar"
+          [attr.aria-label]="toggleBtn().ariaLabel"
+          [title]="toggleBtn().title"
         >
-          <app-icon name="sidebar" [size]="14" />
+          <app-icon [name]="toggleBtn().icon" [size]="14" />
         </button>
       </div>
 
@@ -60,15 +62,11 @@ const NAV: readonly NavItem[] = [
       </nav>
 
       <div class="footer">
-        <button class="footer-btn" aria-label="User profile" title="User profile">
-          <app-icon name="user" [size]="14" />
-        </button>
-        <button class="footer-btn username-btn" aria-label="User profile" title="demo_user">
-          <span>demo_user</span>
-        </button>
-        <a class="footer-btn" routerLink="/settings" aria-label="Settings" title="Settings">
-          <app-icon name="settings" [size]="14" />
-        </a>
+        <app-user-menu
+          [user]="authStore.user()"
+          [compact]="store.collapsed()"
+          (signOut)="onSignOut()"
+        />
       </div>
     </aside>
   `,
@@ -87,8 +85,8 @@ const NAV: readonly NavItem[] = [
       :host.collapsed {
         width: 56px;
       }
+      :host.collapsed .header-btn:first-child,
       :host.collapsed .header-title-btn,
-      :host.collapsed .username-btn,
       :host.collapsed .nav-item span {
         display: none;
       }
@@ -96,16 +94,12 @@ const NAV: readonly NavItem[] = [
         justify-content: center;
         padding: 10px 0;
       }
-      :host.collapsed .header-btn:last-child {
-        display: none;
-      }
-      :host.collapsed .header,
-      :host.collapsed .footer {
+      :host.collapsed .header {
         grid-template-columns: 1fr;
       }
-      :host.collapsed .footer-btn:last-child {
-        border-left: none;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      :host.collapsed .footer {
+        grid-template-columns: 1fr;
+        justify-items: center;
       }
       aside {
         display: flex;
@@ -202,4 +196,15 @@ const NAV: readonly NavItem[] = [
 export class SidebarComponent {
   protected readonly nav = NAV;
   protected readonly store = inject(AppStore);
+  protected readonly authStore = inject(AuthStore);
+
+  protected readonly toggleBtn = computed(() =>
+    this.store.collapsed()
+      ? { icon: 'arrow-right' as IconName, ariaLabel: 'Expand sidebar', title: 'Expand sidebar' }
+      : { icon: 'sidebar' as IconName, ariaLabel: 'Collapse sidebar', title: 'Collapse sidebar' },
+  );
+
+  protected async onSignOut(): Promise<void> {
+    await this.authStore.signOut();
+  }
 }

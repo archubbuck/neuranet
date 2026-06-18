@@ -1,17 +1,27 @@
 import type { Routes } from '@angular/router';
+import { authGuard } from './core/auth.guard';
 
 /**
- * App route map (flat, single-tenant), structured as layout routes:
+ * App route map — two-layer architecture:
  *
- *   - `/` renders the standalone landing experience with no app chrome
- *     and no data bootstrap.
- *   - Everything else renders inside `AppShellComponent` (sidebar +
- *     toast + responsive chrome), which kicks off `AppStore.loadAll()`
- *     when first instantiated.
+ * PUBLIC group (no shell, no auth):
+ *   `/`          Landing page
+ *   `/login`     Sign in
+ *   `/register`  Create account
+ *   `/roadmap`   Product roadmap
+ *   `/privacy`   Privacy policy
+ *   `/terms`     Terms of service
+ *
+ * PROTECTED group (AppShell wrapper + authGuard):
+ *   All app features — network, categories, topics, sources, search,
+ *   reports, settings — render inside `AppShellComponent` (sidebar +
+ *   toast + responsive chrome). The entire group is gated by
+ *   `canActivate: [authGuard]`.
  *
  * All screens are lazily loaded so the initial bundle stays minimal.
  */
 export const routes: Routes = [
+  // ── Public market pages (no shell, no auth) ────────────────────
   {
     path: '',
     pathMatch: 'full',
@@ -20,7 +30,40 @@ export const routes: Routes = [
       import('./screens/landing/landing-screen.component').then((m) => m.LandingScreenComponent),
   },
   {
+    path: 'login',
+    title: 'Login · Neuranet',
+    loadComponent: () =>
+      import('./screens/login/login-screen.component').then((m) => m.LoginScreenComponent),
+  },
+  {
+    path: 'register',
+    title: 'Create Account · Neuranet',
+    loadComponent: () =>
+      import('./screens/register/register-screen.component').then((m) => m.RegisterScreenComponent),
+  },
+  {
+    path: 'roadmap',
+    title: 'Roadmap · Neuranet',
+    loadComponent: () =>
+      import('./screens/roadmap/roadmap-screen.component').then((m) => m.RoadmapScreenComponent),
+  },
+  {
+    path: 'privacy',
+    title: 'Privacy · Neuranet',
+    loadComponent: () =>
+      import('./screens/privacy/privacy-screen.component').then((m) => m.PrivacyScreenComponent),
+  },
+  {
+    path: 'terms',
+    title: 'Terms · Neuranet',
+    loadComponent: () =>
+      import('./screens/terms/terms-screen.component').then((m) => m.TermsScreenComponent),
+  },
+
+  // ── Protected app pages (shell + auth guard) ───────────────────
+  {
     path: '',
+    canActivate: [authGuard],
     loadComponent: () => import('./shell/app-shell.component').then((m) => m.AppShellComponent),
     children: [
       {

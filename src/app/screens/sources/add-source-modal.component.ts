@@ -4,12 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AppStore } from '../../data/app.store';
 import { IconComponent } from '../../ui/primitives/icon.component';
+import type { SourceType } from '../../data/types';
 
 /**
- * Lightweight modal stub. Phase 2 only supports the Reddit source type — the
- * full multi-step Add-Source modal (web/PDF tabs, drag-drop, status pips)
- * ships in Phase 4. The simplified version here is enough to exercise the
- * end-to-end flow: create source → fetch → graph populated.
+ * Add-source modal. Supports Reddit threads and web article URLs.
+ * The full multi-step modal (PDF tabs, drag-drop, status pips) ships
+ * in Phase 4.
  *
  * Driven by a parent component via `open()`/`close()`. Not portal-rendered —
  * placed inline as a fixed-position overlay.
@@ -29,14 +29,29 @@ import { IconComponent } from '../../ui/primitives/icon.component';
             </button>
           </header>
 
-          <p class="hint">Phase 2 only supports Reddit threads. Web/PDF arrive in Phase 4.</p>
+          <!-- Type selector -->
+          <div class="type-tabs">
+            @for (t of sourceTypes; track t.key) {
+              <button
+                type="button"
+                class="type-tab"
+                [class.active]="sourceType() === t.key"
+                (click)="sourceType.set(t.key)"
+              >
+                <app-icon [name]="t.icon" [size]="14" />
+                <span>{{ t.label }}</span>
+              </button>
+            }
+          </div>
+
+          <p class="hint">{{ hintText() }}</p>
 
           <label class="field">
-            <span>Reddit thread URL</span>
+            <span>{{ fieldLabel() }}</span>
             <input
               type="url"
               [(ngModel)]="url"
-              placeholder="https://www.reddit.com/r/.../comments/..."
+              [placeholder]="fieldPlaceholder()"
               [disabled]="submitting()"
               (keydown.enter)="submit()"
             />
@@ -80,7 +95,7 @@ import { IconComponent } from '../../ui/primitives/icon.component';
         border: 1px solid var(--c-border-def);
         border-radius: 0;
         width: 100%;
-        max-width: 440px;
+        max-width: 460px;
         padding: 24px;
         box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
         display: flex;
@@ -109,6 +124,35 @@ import { IconComponent } from '../../ui/primitives/icon.component';
       .close:hover {
         color: var(--c-fg-1);
         background: rgba(255, 255, 255, 0.05);
+      }
+      .type-tabs {
+        display: flex;
+        gap: 6px;
+      }
+      .type-tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border: 1px solid var(--c-border-def);
+        border-radius: 0;
+        background: transparent;
+        color: var(--c-fg-3);
+        font-family: var(--font-display);
+        font-size: 12.5px;
+        cursor: pointer;
+        transition:
+          background 0.12s ease,
+          color 0.12s ease;
+      }
+      .type-tab:hover {
+        color: var(--c-fg-1);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .type-tab.active {
+        color: var(--c-amber);
+        border-color: var(--c-amber);
+        background: rgba(251, 191, 36, 0.06);
       }
       .hint {
         font-size: 12px;
@@ -193,14 +237,37 @@ export class AddSourceModalComponent {
   private readonly router = inject(Router);
 
   readonly visible = signal(false);
+  readonly sourceType = signal<SourceType>('reddit');
   readonly url = signal('');
   readonly submitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
+
+  readonly sourceTypes: { key: SourceType; label: string; icon: string }[] = [
+    { key: 'reddit', label: 'Reddit', icon: 'message-circle' },
+    { key: 'web', label: 'Web', icon: 'globe' },
+  ];
+
+  readonly hintText = computed(() =>
+    this.sourceType() === 'reddit'
+      ? 'Paste a Reddit thread URL. The thread title and top comments will be analyzed for topics.'
+      : 'Paste any article or web page URL. The page title and text will be analyzed for topics.',
+  );
+
+  readonly fieldLabel = computed(() =>
+    this.sourceType() === 'reddit' ? 'Reddit thread URL' : 'Web page URL',
+  );
+
+  readonly fieldPlaceholder = computed(() =>
+    this.sourceType() === 'reddit'
+      ? 'https://www.reddit.com/r/.../comments/...'
+      : 'https://example.com/article',
+  );
 
   readonly canSubmit = computed(() => !this.submitting() && this.url().trim().startsWith('http'));
 
   open(): void {
     this.url.set('');
+    this.sourceType.set('reddit');
     this.errorMessage.set(null);
     this.submitting.set(false);
     this.visible.set(true);
@@ -216,14 +283,16 @@ export class AddSourceModalComponent {
   }
 
   async submit(): Promise<void> {
-    const threadUrl = this.url().trim();
-    if (!threadUrl) return;
+    const url = this.url().trim();
+    if (!url) return;
     this.submitting.set(true);
     this.errorMessage.set(null);
     try {
+      const type = this.sourceType();
+      const config = type === 'reddit' ? { threadUrl: url } : { url };
       const source = await this.store.addSource({
-        sourceType: 'reddit',
-        config: { threadUrl },
+        sourceType: type,
+        config,
       });
       if (!source) {
         this.errorMessage.set('Could not save source. Try again.');

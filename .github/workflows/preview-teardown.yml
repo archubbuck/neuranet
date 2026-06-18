@@ -8,8 +8,41 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
-      - name: Preview environment cleaned up by Vercel
+      - name: Delete Neon branch for closed PR
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
         run: |
-          echo "Vercel automatically removes preview deployments when a PR is closed."
-          echo "Neon database branches are automatically cleaned up based on their TTL."
-          echo "No manual cleanup required."
+          if [ -z "$NEON_API_KEY" ] || [ -z "$NEON_PROJECT_ID" ]; then
+            echo "⚠️  NEON_API_KEY or NEON_PROJECT_ID not configured. Skipping branch deletion."
+            echo "   Add these as GitHub Actions secrets for automatic cleanup."
+            exit 0
+          fi
+
+          # Extract branch name from PR head ref (e.g., feat/my-thing).
+          BRANCH_NAME="${{ github.head_ref }}"
+          echo "🔍 Looking up Neon branch: $BRANCH_NAME"
+
+          # List branches and find the matching one.
+          BRANCHES=$(curl -s -H "Authorization: Bearer $NEON_API_KEY" \
+            "https://console.neon.tech/api/v2/projects/$NEON_PROJECT_ID/branches")
+
+          BRANCH_ID=$(echo "$BRANCHES" | jq -r \
+            ".branches[] | select(.name == \"$BRANCH_NAME\") | .id" 2>/dev/null || echo "")
+
+          if [ -z "$BRANCH_ID" ]; then
+            echo "ℹ️  No Neon branch found for '$BRANCH_NAME'. Nothing to delete."
+            exit 0
+          fi
+
+          echo "🗑️  Deleting Neon branch: $BRANCH_NAME (id: $BRANCH_ID)"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X DELETE \
+            -H "Authorization: Bearer $NEON_API_KEY" \
+            "https://console.neon.tech/api/v2/projects/$NEON_PROJECT_ID/branches/$BRANCH_ID")
+
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "204" ]; then
+            echo "✅ Neon branch '$BRANCH_NAME' deleted."
+          else
+            echo "⚠️  Unexpected response ($HTTP_CODE) when deleting branch."
+          fi

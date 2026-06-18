@@ -1,8 +1,19 @@
-{
-  "/api": {
+[
+  {
+    "context": ["/api/auth"],
     "target": "http://localhost:3000",
     "secure": false,
-    "changeOrigin": true,
+    "changeOrigin": false,
+    "logLevel": "info",
+    "pathRewrite": {
+      "^/api/auth": ""
+    }
+  },
+  {
+    "context": ["/api"],
+    "target": "http://localhost:3000",
+    "secure": false,
+    "changeOrigin": false,
     "logLevel": "info"
   }
-}
+]

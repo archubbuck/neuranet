@@ -6,6 +6,7 @@ import { rateLimit } from 'express-rate-limit';
 import { sourcesRepo } from '../db.js';
 import config from '../config.js';
 import { fetchThread } from '../reddit-fetcher.js';
+import { fetchWebPage } from '../web-fetcher.js';
 import * as schemas from '../schemas.js';
 import { validateBody } from '../middleware/validate.js';
 import { asyncHandler } from '../lib/async-handler.js';
@@ -97,58 +98,104 @@ router.post(
       res.status(404).json({ message: 'data source not found' });
       return;
     }
-    if (source.sourceType !== 'reddit') {
-      res.status(400).json({
-        message: `fetch not supported for source type: ${source.sourceType}`,
-      });
+    if (source.sourceType === 'reddit') {
+      await sourcesRepo.updateStatus(source.id, 'fetching');
+
+      try {
+        const sourceConfig = JSON.parse(source.configJson) as {
+          threadUrl: string;
+        };
+        const threadData = await fetchThread(sourceConfig.threadUrl);
+
+        const { nodeCount, edgeCount } = await sourcesRepo.deriveFromThread(
+          source.id,
+          threadData,
+          {
+            slugify,
+            titleCase,
+            colorFromSlug,
+            tokenize,
+            topKeywords,
+            scoreTopicMatch,
+          },
+          {
+            threadKeywordCount: config.derivation.threadKeywordCount,
+            commentKeywordCount: config.derivation.commentKeywordCount,
+            maxTopLevelComments: config.derivation.maxTopLevelComments,
+          },
+        );
+
+        const updated = await sourcesRepo.getById(source.id)!;
+        res.json({
+          source: {
+            id: updated.id,
+            source_type: updated.sourceType,
+            config: JSON.parse(updated.configJson),
+            config_json: updated.configJson,
+            status: updated.status,
+            status_message: updated.statusMessage,
+            created_at: updated.createdAt,
+          },
+          nodeCount,
+          edgeCount,
+        });
+      } catch (err) {
+        await sourcesRepo.updateStatus(source.id, 'error', (err as Error).message);
+        logger.error({ err, sourceId: source.id }, '[fetch] source failed');
+        res.status(500).json({ message: 'failed to fetch or derive from source' });
+      }
       return;
     }
 
-    await sourcesRepo.updateStatus(source.id, 'fetching');
+    if (source.sourceType === 'web') {
+      await sourcesRepo.updateStatus(source.id, 'fetching');
 
-    try {
-      const sourceConfig = JSON.parse(source.configJson) as {
-        threadUrl: string;
-      };
-      const threadData = await fetchThread(sourceConfig.threadUrl);
+      try {
+        const sourceConfig = JSON.parse(source.configJson) as {
+          url: string;
+        };
+        const pageData = await fetchWebPage(sourceConfig.url);
 
-      const { nodeCount, edgeCount } = await sourcesRepo.deriveFromThread(
-        source.id,
-        threadData,
-        {
-          slugify,
-          titleCase,
-          colorFromSlug,
-          tokenize,
-          topKeywords,
-          scoreTopicMatch,
-        },
-        {
-          threadKeywordCount: config.derivation.threadKeywordCount,
-          commentKeywordCount: config.derivation.commentKeywordCount,
-          maxTopLevelComments: config.derivation.maxTopLevelComments,
-        },
-      );
+        const { nodeCount, edgeCount } = await sourcesRepo.deriveFromWebPage(
+          source.id,
+          pageData,
+          {
+            slugify,
+            titleCase,
+            colorFromSlug,
+            tokenize,
+            topKeywords,
+          },
+          {
+            keywordCount: config.derivation.webKeywordCount,
+          },
+        );
 
-      const updated = await sourcesRepo.getById(source.id)!;
-      res.json({
-        source: {
-          id: updated.id,
-          source_type: updated.sourceType,
-          config: JSON.parse(updated.configJson),
-          config_json: updated.configJson,
-          status: updated.status,
-          status_message: updated.statusMessage,
-          created_at: updated.createdAt,
-        },
-        nodeCount,
-        edgeCount,
-      });
-    } catch (err) {
-      await sourcesRepo.updateStatus(source.id, 'error', (err as Error).message);
-      logger.error({ err, sourceId: source.id }, '[fetch] source failed');
-      res.status(500).json({ message: 'failed to fetch or derive from source' });
+        const updated = await sourcesRepo.getById(source.id)!;
+        res.json({
+          source: {
+            id: updated.id,
+            source_type: updated.sourceType,
+            config: JSON.parse(updated.configJson),
+            config_json: updated.configJson,
+            status: updated.status,
+            status_message: updated.statusMessage,
+            created_at: updated.createdAt,
+          },
+          nodeCount,
+          edgeCount,
+        });
+      } catch (err) {
+        await sourcesRepo.updateStatus(source.id, 'error', (err as Error).message);
+        logger.error({ err, sourceId: source.id }, '[fetch] source failed');
+        res.status(500).json({ message: 'failed to fetch or derive from source' });
+      }
+      return;
     }
+
+    res.status(400).json({
+      message: `fetch not supported for source type: ${source.sourceType}`,
+    });
   }),
 );
 

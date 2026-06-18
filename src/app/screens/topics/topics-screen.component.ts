@@ -171,7 +171,7 @@ interface TopicRow {
                 <input
                   class="fp-input"
                   type="text"
-                  [ngModel]="columnFilters()[col] ?? ''"
+                  [ngModel]="columnFilters()[col]"
                   (ngModelChange)="setColumnFilter(col, $event)"
                   [placeholder]="'Filter ' + filterLabel(col) + '…'"
                 />

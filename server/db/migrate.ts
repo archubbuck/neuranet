@@ -1,41 +1,21 @@
 /**
  * Standalone migration runner: applies all pending migrations to the
- * configured database. Detects dialect from POSTGRES_URL env var.
- * - POSTGRES_URL with neon.tech → Neon HTTP driver
- * - POSTGRES_URL without neon.tech → pg (node-postgres) for CI/local
- * Called via `pnpm db:migrate`.
+ * configured database. Uses the centralised env module for driver
+ * resolution. Called via `pnpm db:migrate`.
  */
-
-// Load .env.local if present (local dev). Silently skip on Vercel.
-try {
-  process.loadEnvFile('.env.local');
-} catch {
-  /* optional */
-}
 
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getPostgresUrl, getDbDriver } from '../env.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function isNeonUrl(url: string): boolean {
-  return url.includes('neon.tech');
-}
-
 async function main() {
-  const postgresUrl = process.env['POSTGRES_URL'];
-
-  if (!postgresUrl) {
-    throw new Error(
-      'POSTGRES_URL environment variable is required. ' +
-        'Run `vercel env pull .env.local` for local dev, ' +
-        'or set it to a local Postgres connection string.',
-    );
-  }
-
+  const postgresUrl = getPostgresUrl();
+  const driver = getDbDriver();
   const pgMigrationsDir = join(__dirname, '..', 'migrations', 'postgres');
 
-  if (isNeonUrl(postgresUrl)) {
+  if (driver === 'neon-http') {
     // Neon HTTP driver (serverless-safe).
     const { neon } = await import('@neondatabase/serverless');
     const { drizzle } = await import('drizzle-orm/neon-http');

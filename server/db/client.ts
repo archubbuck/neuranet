@@ -1,32 +1,21 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getPostgresUrl, getDbDriver } from '../env.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function isNeonUrl(url: string): boolean {
-  return url.includes('neon.tech');
-}
-
 /**
  * Creates the database connection dynamically based on environment.
- * - POSTGRES_URL with neon.tech → Neon HTTP driver (serverless-safe)
- * - POSTGRES_URL without neon.tech → pg (node-postgres) for CI/local PG
+ * - DB_DRIVER=neon-http (or POSTGRES_URL contains neon.tech) → Neon HTTP driver
+ * - DB_DRIVER=pg (default) → pg (node-postgres) for CI/local PG
  * - No POSTGRES_URL → throws with a helpful error message
  */
 async function createDb() {
-  const postgresUrl = process.env['POSTGRES_URL'];
-
-  if (!postgresUrl) {
-    throw new Error(
-      'POSTGRES_URL environment variable is required. ' +
-        'Run `vercel env pull .env.local` for local dev, ' +
-        'or set it to a local Postgres connection string (e.g. postgres://localhost:5432/neuranet_dev).',
-    );
-  }
-
+  const postgresUrl = getPostgresUrl();
+  const driver = getDbDriver();
   const pgMigrationsDir = join(__dirname, '..', 'migrations', 'postgres');
 
-  if (isNeonUrl(postgresUrl)) {
+  if (driver === 'neon-http') {
     // Neon serverless Postgres — HTTP driver (safe for Vercel serverless).
     const { createPostgresDriver, applyPostgresMigrations } = await import('./drivers/postgres.js');
     const { db } = createPostgresDriver(pgMigrationsDir);

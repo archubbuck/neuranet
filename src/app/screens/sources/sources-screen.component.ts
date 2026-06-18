@@ -238,7 +238,7 @@ const TYPE_ICON: Record<SourceType, string> = {
                 <input
                   class="fp-input"
                   type="text"
-                  [ngModel]="columnFilters()[col] ?? ''"
+                  [ngModel]="columnFilters()[col]"
                   (ngModelChange)="setColumnFilter(col, $event)"
                   [placeholder]="'Filter ' + filterLabel(col) + '…'"
                 />
