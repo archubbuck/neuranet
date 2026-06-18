@@ -93,44 +93,10 @@ Multi-dimensional code review with quality gates. Every change gets reviewed bef
 - When refactoring existing code
 - After any bug fix (review both the fix and the regression test)
 
-## The Five-Axis Review
-
-Every review evaluates code across the five axes defined in the
-[shared principles](../../principles.md#code-review--five-axes). The
-[`code-reviewer` agent](../../agents/code-reviewer.md) provides the persona-level
-output template and severity categorization for formal reviews.
-
-The axes in brief:
-
-### 1. Correctness
-Does the code do what it claims to do? Match the spec, handle edge cases (null,
-empty, boundary values), cover error paths (not just the happy path). Tests must
-prove behavior — not just line coverage. Watch for off-by-one errors, race
-conditions, and state inconsistencies.
-
-### 2. Readability & Simplicity
-Can another engineer (or agent) understand this without the author explaining it?
-Descriptive names, straightforward control flow, logical organization. Avoid
-clever tricks; don't generalize until the third use case. Remove dead code
-(no-op variables, backwards-compat shims, commented-out blocks).
-
-### 3. Architecture
-Does the change fit the system's design? Follow existing patterns or justify new
-ones. Maintain clean module boundaries; avoid circular dependencies. Appropriate
-abstraction level — not over-engineered, not too coupled. Dependencies flow in
-the right direction.
-
-### 4. Security
-Input validated at boundaries, secrets out of code/logs/version control, auth
-checked where needed, queries parameterized, output encoded. Treat all external
-data (APIs, logs, user content, config files) as untrusted. For detailed
-guidance, see [`skills/security-and-hardening/SKILL.md`](../security-and-hardening/SKILL.md).
-
-### 5. Performance
-No N+1 query patterns, unbounded loops, unconstrained data fetching, or missing
-pagination. No unnecessary re-renders in UI components. No large objects created
-in hot paths. For profiling and optimization, see
-[`skills/performance-optimization/SKILL.md`](../performance-optimization/SKILL.md).
+The five axes are defined in [`principles.md`](../../principles.md#code-review--five-axes).
+The [`code-reviewer` agent](../../agents/code-reviewer.md) provides the output
+template and severity categorization. This skill covers the **process** of
+conducting a review.
 
 ## Change Sizing
 
@@ -206,17 +172,9 @@ For each file changed:
 
 ### Step 4: Categorize Findings
 
-Label every comment with its severity so the author knows what's required vs optional:
-
-| Prefix | Meaning | Author Action |
-|--------|---------|---------------|
-| *(no prefix)* | Required change | Must address before merge |
-| **Critical:** | Blocks merge | Security vulnerability, data loss, broken functionality |
-| **Nit:** | Minor, optional | Author may ignore — formatting, style preferences |
-| **Optional:** / **Consider:** | Suggestion | Worth considering but not required |
-| **FYI** | Informational only | No action needed — context for future reference |
-
-This prevents authors from treating all feedback as mandatory and wasting time on optional suggestions.
+Use the severity prefixes defined in [`agents/code-reviewer.md`](../../agents/code-reviewer.md)
+(Critical, Important, Suggestion). This prevents authors from treating all feedback
+as mandatory.
 
 ### Step 5: Verify the Verification
 
