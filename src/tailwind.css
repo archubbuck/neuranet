@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@source "../src/**/*.{html,ts}";
 
 /* ── Design token theme ────────────────────────────────────────────
  * Mirrors the tokens in ui/tokens.ts so Tailwind utility classes
@@ -50,7 +51,6 @@
 
 * {
   margin: 0;
-  padding: 0;
 }
 
 html,

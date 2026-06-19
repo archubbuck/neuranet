@@ -114,8 +114,8 @@ const MAX_SHRINK = 0.55;
             class="text-sm font-medium text-fg-2 no-underline hover:text-fg-1 transition-colors duration-200"
             routerLink="/login"
             (click)="mobileNavOpen.set(false)"
-            >Sign In</a
-          >
+            >Sign In <app-icon name="arrow-right" [size]="14"
+          /></a>
         </nav>
       </header>
 
@@ -241,11 +241,11 @@ const MAX_SHRINK = 0.55;
         </div>
       </main>
 
-      <section class="border-y border-border-subtle py-6 bg-bg-surface/40">
+      <section class="border-y border-border-subtle py-10 bg-bg-surface/40">
         <div class="max-w-[1680px] mx-auto px-6 sm:px-8 lg:px-16 grid grid-cols-2 md:grid-cols-4">
           <div class="flex items-baseline gap-3 py-[26px] px-7 md:border-r border-border-subtle">
             <span class="text-[26px] font-bold font-mono text-fg-1">12.4M</span>
-            <span class="text-[13px] text-fg-2 tracking-[0.03em]">nodes mapped</span>
+            <span class="text-[13px] text-fg-2 tracking-[0.03em]">notes mapped</span>
           </div>
           <div class="flex items-baseline gap-3 py-[26px] px-7 md:border-r border-border-subtle">
             <span class="text-[26px] font-bold font-mono text-fg-1">48,212</span>
@@ -262,7 +262,7 @@ const MAX_SHRINK = 0.55;
         </div>
       </section>
 
-      <section class="pt-[clamp(64px,6vw,96px)] pb-[clamp(48px,4.5vw,72px)]">
+      <section class="py-[clamp(64px,6vw,96px)]">
         <div
           class="max-w-[880px] mx-auto px-6 sm:px-8 lg:px-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-[clamp(32px,3vw,48px)] items-start"
         >
@@ -454,10 +454,7 @@ const MAX_SHRINK = 0.55;
         </div>
       </section>
 
-      <section
-        class="border-t border-border-subtle py-[clamp(48px,5vw,72px)_clamp(64px,6vw,96px)]"
-        id="product"
-      >
+      <section class="border-t border-border-subtle py-[clamp(64px,6vw,96px)]" id="product">
         <div class="font-mono text-[13px] font-medium tracking-[0.08em] text-amber">
           Inside Neuranet
         </div>
@@ -1089,7 +1086,7 @@ const MAX_SHRINK = 0.55;
           <div
             class="grid grid-cols-[120px_1fr_auto] gap-8 items-baseline py-5 border-t border-border-subtle"
           >
-            <span class="font-mono text-[13px] text-fg-2 tracking-[0.03em]">Q3 2026</span>
+            <span class="font-mono text-[13px] text-fg-2 tracking-[0.03em]">Q2 2026</span>
             <div>
               <h3 class="text-[17px] font-semibold tracking-tight text-fg-1">
                 Alerts &amp; digests
@@ -1136,7 +1133,7 @@ const MAX_SHRINK = 0.55;
           <div
             class="grid grid-cols-[120px_1fr_auto] gap-8 items-baseline py-5 border-t border-border-subtle"
           >
-            <span class="font-mono text-[13px] text-fg-2 tracking-[0.03em]">Q4 2026</span>
+            <span class="font-mono text-[13px] text-fg-2 tracking-[0.03em]">S1 2026</span>
             <div>
               <h3 class="text-[17px] font-semibold tracking-tight text-fg-1">More live sources</h3>
               <p class="mt-1.5 text-[14px] leading-relaxed text-fg-2 max-w-[62ch]">
@@ -1168,9 +1165,9 @@ const MAX_SHRINK = 0.55;
 
       <footer class="border-t border-border-subtle">
         <div
-          class="py-5 pb-8 flex items-center justify-between gap-6 text-[13px] text-fg-3 flex-col items-start gap-4 sm:flex-row"
+          class="pt-10 pb-8 flex items-center justify-between gap-6 text-[13px] text-fg-3 flex-col items-start gap-4 sm:flex-row"
         >
-          <span>&copy; 2026 Neuranet</span>
+          <span>&copy; 2025 Neuranet</span>
           <a
             class="inline-flex items-center gap-2 text-fg-3 no-underline hover:text-fg-2 transition-colors duration-200"
             href="mailto:hello@neuranetai.app"
