@@ -179,4 +179,48 @@ export class NodesRepo {
       return node;
     });
   }
+
+  /**
+   * Returns a node with its full JSONB metadata, connected node count,
+   * and associated document count. Used by the inspector panel to show
+   * community reports and relationship context.
+   */
+  async getNodeWithMetadata(slug: string) {
+    const [row] = await this.db
+      .select({
+        slug: s.derivedNodes.slug,
+        label: s.derivedNodes.label,
+        description: s.derivedNodes.description,
+        clusterSlug: s.derivedNodes.clusterSlug,
+        radius: s.derivedNodes.radius,
+        importance: s.derivedNodes.importance,
+        depth: s.derivedNodes.depth,
+        isCentral: s.derivedNodes.isCentral,
+        sentiment: s.derivedNodes.sentiment,
+        metadata: s.derivedNodes.metadata,
+        createdAt: s.derivedNodes.createdAt,
+      })
+      .from(s.derivedNodes)
+      .where(eq(s.derivedNodes.slug, slug));
+
+    if (!row) return null;
+
+    const degResult = await this.db.execute(
+      sql`SELECT COUNT(*)::int AS count FROM node_links WHERE source_slug = ${slug} OR target_slug = ${slug}`,
+    );
+    const degRows = degResult.rows as { count: number }[];
+    const degree = degRows[0]?.count ?? 0;
+
+    const docResult = await this.db.execute(
+      sql`SELECT COUNT(*)::int AS count FROM doc_node_links WHERE node_slug = ${slug}`,
+    );
+    const docRows = docResult.rows as { count: number }[];
+    const docCount = docRows[0]?.count ?? 0;
+
+    return {
+      ...row,
+      degree: degree ?? 0,
+      docCount: docCount ?? 0,
+    };
+  }
 }

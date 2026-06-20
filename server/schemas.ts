@@ -101,3 +101,31 @@ export const signUpEmail = z.object({
   password: z.string().min(8, 'password must be at least 8 characters'),
   name: trimmedString.min(1, 'name is required'),
 });
+
+// ── Vector search ────────────────────────────────────────────────────
+
+export const vectorSearchQuery = z.object({
+  q: trimmedString.min(1, 'query is required'),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+});
+
+// ── AI chat & actions ────────────────────────────────────────────────
+
+export const aiChatBody = z.object({
+  nodeSlug: requiredSlug,
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: trimmedString.min(1),
+      }),
+    )
+    .min(1),
+  contextDepth: z.coerce.number().int().min(1).max(5).default(2),
+});
+
+export const aiActionBody = z.object({
+  nodeSlug: requiredSlug,
+  action: z.enum(['summarize', 'explain', 'best_practices', 'compare']),
+  targetSlug: requiredSlug.optional(),
+});

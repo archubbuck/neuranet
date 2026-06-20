@@ -1,4 +1,4 @@
-import { ilike, or } from 'drizzle-orm';
+import { ilike, or, sql } from 'drizzle-orm';
 import * as s from '../db/schema.js';
 import type { Dialect } from '../lib/sql-helpers.js';
 
@@ -94,5 +94,83 @@ export class SearchRepo {
 
     results.sort((a, b) => b.score - a.score);
     return results.slice(0, 25);
+  }
+
+  /**
+   * Cosine-similarity vector search across derived_nodes.
+   * Returns nodes ranked by semantic proximity to the query embedding,
+   * with a similarity score between 0 and 1.
+   */
+  async vectorSearch(embedding: number[], limit = 10): Promise<SearchResult[]> {
+    const vectorStr = `[${embedding.join(',')}]`;
+
+    const result = await this.db.execute(
+      sql`
+        SELECT
+          dn.slug,
+          dn.label,
+          dn.description,
+          dn.cluster_slug,
+          1.0 - (dn.embedding <=> ${sql.raw(vectorStr)}::vector) AS similarity
+        FROM derived_nodes dn
+        WHERE dn.embedding IS NOT NULL
+        ORDER BY dn.embedding <=> ${sql.raw(vectorStr)}::vector
+        LIMIT ${limit}
+      `,
+    );
+
+    const rows = result.rows as {
+      slug: string;
+      label: string;
+      description: string;
+      cluster_slug: string;
+      similarity: number;
+    }[];
+
+    return rows.map((r) => ({
+      type: 'node' as const,
+      id: r.slug,
+      label: r.label,
+      snippet: (r.description || '').slice(0, 200),
+      meta: `cluster: ${r.cluster_slug} · ${(r.similarity * 100).toFixed(0)}% match`,
+      score: r.similarity,
+    }));
+  }
+
+  /**
+   * Vector search across docs table by embedding similarity.
+   */
+  async vectorSearchDocs(embedding: number[], limit = 10): Promise<SearchResult[]> {
+    const vectorStr = `[${embedding.join(',')}]`;
+
+    const result = await this.db.execute(
+      sql`
+        SELECT
+          d.id,
+          d.title,
+          d.text,
+          1.0 - (d.embedding <=> ${sql.raw(vectorStr)}::vector) AS similarity
+        FROM docs d
+        WHERE d.embedding IS NOT NULL
+        ORDER BY d.embedding <=> ${sql.raw(vectorStr)}::vector
+        LIMIT ${limit}
+      `,
+    );
+
+    const rows = result.rows as {
+      id: number;
+      title: string;
+      text: string;
+      similarity: number;
+    }[];
+
+    return rows.map((r) => ({
+      type: 'doc' as const,
+      id: r.id,
+      label: r.title,
+      snippet: (r.text || '').slice(0, 200),
+      meta: `${r.text?.length || 0} chars · ${(r.similarity * 100).toFixed(0)}% match`,
+      score: r.similarity,
+    }));
   }
 }

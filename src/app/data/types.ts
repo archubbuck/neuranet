@@ -176,3 +176,40 @@ export interface Job {
 export interface JoinWaitlistResult {
   readonly ok: boolean;
 }
+
+// ──────────────────────── AI / GraphRAG ─────────────────────────────
+
+export type AiAction = 'summarize' | 'explain' | 'best_practices' | 'compare';
+
+export interface AiActionRequest {
+  readonly nodeSlug: string;
+  readonly action: AiAction;
+  readonly targetSlug?: string;
+}
+
+export interface AiActionResponse {
+  readonly action: AiAction;
+  readonly nodeSlug: string;
+  readonly result: string;
+}
+
+export interface NodeDetail {
+  readonly slug: string;
+  readonly label: string;
+  readonly description: string;
+  readonly clusterSlug: string;
+  readonly radius: number;
+  readonly importance: number;
+  readonly depth: number;
+  readonly isCentral: boolean;
+  readonly sentiment: number | null;
+  readonly metadata: Record<string, unknown>;
+  readonly degree: number;
+  readonly docCount: number;
+  readonly createdAt: string;
+}
+
+export interface ChatMessage {
+  readonly role: 'user' | 'assistant';
+  readonly content: string;
+}

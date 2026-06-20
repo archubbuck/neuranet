@@ -1,174 +1,45 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   HostListener,
-  computed,
+  NgZone,
+  afterNextRender,
   inject,
-  signal,
   viewChild,
 } from '@angular/core';
+import Graph from 'graphology';
+import Sigma from 'sigma';
 import { AppStore } from '../../data/app.store';
-import { C, FONT } from '../../ui/tokens';
-import {
-  VIEW_HEIGHT,
-  VIEW_WIDTH,
-  buildAdjacency,
-  layoutEdges,
-  layoutNodes,
-} from './network-layout';
+import { C } from '../../ui/tokens';
 
-interface ViewTransform {
-  readonly scale: number;
-  readonly x: number;
-  readonly y: number;
-}
+const MIN_CAMERA_RATIO = 0.15;
+const MAX_CAMERA_RATIO = 4.0;
+const ZOOM_IN_FACTOR = 1.15;
+const ZOOM_OUT_FACTOR = 0.87;
 
-const MIN_SCALE = 0.5;
-const MAX_SCALE = 2.4;
-const ZOOM_IN_FACTOR = 1.08;
-const ZOOM_OUT_FACTOR = 0.926;
+/** LOD thresholds — sigma renders labels when node size on screen >= this. */
+const LABEL_RENDERED_SIZE_THRESHOLD = 6;
 
 /**
- * Pan-/zoom-able SVG network graph. Reads from `AppStore` signals
- * and the API-computed layout helpers in `network-layout.ts`.
+ * WebGL network graph — sigma.js v3 + graphology.
+ *
+ * Replaces the previous SVG radial-layout renderer with a WebGL-accelerated
+ * force-directed graph. Initialized entirely inside `ngZone.runOutsideAngular()`
+ * so the rendering loop never triggers Angular change detection.
  *
  * Interactions:
- *   • mouse wheel — zoom (clamped to [0.5, 2.4])
+ *   • scroll — zoom (clamped)
  *   • drag — pan
- *   • single-finger touch — pan
- *   • two-finger pinch — zoom
- *   • click node — select (toggles `AppStore.selectNode`)
- *   • hover node — local highlight ring + neighbourhood emphasis
- *
- * Zoom controls and stats overlays are sibling components on the parent
- * `NetworkScreenComponent`; they call `zoom()` / `resetView()` directly via
- * a public API to avoid global window hooks.
+ *   • click node — select (re-enters Angular zone via ngZone.run)
+ *   • Escape — deselect
  */
 @Component({
   selector: 'app-network-graph',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div
-      class="canvas"
-      (wheel)="onWheel($event)"
-      (pointerdown)="onPointerDown($event)"
-      (pointermove)="onPointerMove($event)"
-      (pointerup)="onPointerUp($event)"
-      (pointercancel)="onPointerUp($event)"
-      (pointerleave)="onPointerUp($event)"
-      [style.cursor]="dragging() ? 'grabbing' : 'grab'"
-    >
-      <svg
-        #svg
-        width="100%"
-        height="100%"
-        [attr.viewBox]="'0 0 ' + VIEW_WIDTH + ' ' + VIEW_HEIGHT"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        <defs>
-          <pattern id="tn-grid" width="32" height="32" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="0.7" fill="rgba(255,255,255,0.045)" />
-          </pattern>
-          <radialGradient id="tn-vignette" cx="50%" cy="46%" r="65%">
-            <stop offset="60%" stop-color="transparent" />
-            <stop offset="100%" stop-color="rgba(6,9,15,0.55)" />
-          </radialGradient>
-        </defs>
-
-        <rect x="-2000" y="-2000" width="6000" height="6000" fill="url(#tn-grid)" />
-
-        <g [attr.transform]="layerTransform()">
-          @for (e of edgeVms(); track e.key) {
-            <line
-              [attr.x1]="e.x1"
-              [attr.y1]="e.y1"
-              [attr.x2]="e.x2"
-              [attr.y2]="e.y2"
-              [attr.stroke]="e.stroke"
-              [attr.stroke-width]="e.width"
-              [attr.opacity]="e.opacity"
-            />
-          }
-
-          @for (n of nodeVms(); track n.id) {
-            <g
-              class="node"
-              role="button"
-              tabindex="0"
-              [attr.aria-label]="'Topic: ' + n.label"
-              [attr.aria-pressed]="n.selected"
-              (click)="onNodeClick($event, n.id)"
-              (keydown.enter)="onNodeKeySelect($event, n.id)"
-              (keydown.space)="onNodeKeySelect($event, n.id)"
-              (pointerenter)="hover.set(n.id)"
-              (pointerleave)="hover.set(null)"
-              (focus)="hover.set(n.id)"
-              (blur)="hover.set(null)"
-              [style.opacity]="n.opacity"
-            >
-              @if (n.selected) {
-                <circle
-                  [attr.cx]="n.cx"
-                  [attr.cy]="n.cy"
-                  [attr.r]="n.r + 11"
-                  fill="none"
-                  [attr.stroke]="amber"
-                  stroke-width="1.5"
-                  stroke-dasharray="5 4"
-                  opacity="0.85"
-                />
-              }
-              <circle
-                [attr.cx]="n.cx"
-                [attr.cy]="n.cy"
-                [attr.r]="n.haloRadius"
-                [attr.fill]="n.color"
-                [attr.opacity]="n.haloOpacity"
-              />
-              <circle
-                [attr.cx]="n.cx"
-                [attr.cy]="n.cy"
-                [attr.r]="n.r"
-                [attr.fill]="n.color"
-                fill-opacity="0.92"
-                [attr.stroke]="n.color"
-                stroke-width="1.5"
-                stroke-opacity="0.5"
-              />
-              <circle
-                [attr.cx]="n.cx - n.r * 0.32"
-                [attr.cy]="n.cy - n.r * 0.32"
-                [attr.r]="n.r * 0.28"
-                fill="rgba(255,255,255,0.35)"
-              />
-              @if (n.showLabel) {
-                <text
-                  [attr.x]="n.cx"
-                  [attr.y]="n.cy + n.r + 13"
-                  text-anchor="middle"
-                  [attr.font-size]="n.labelSize"
-                  [attr.font-family]="FONT"
-                  [attr.font-weight]="n.selected ? 600 : 400"
-                  [attr.fill]="n.labelFill"
-                >
-                  {{ n.label }}
-                </text>
-              }
-            </g>
-          }
-        </g>
-
-        <rect
-          x="0"
-          y="0"
-          [attr.width]="VIEW_WIDTH"
-          [attr.height]="VIEW_HEIGHT"
-          fill="url(#tn-vignette)"
-          pointer-events="none"
-        />
-      </svg>
-    </div>
+    <div #container class="absolute inset-0 overflow-hidden" [style.background]="'#060912'"></div>
   `,
   styles: `
     :host {
@@ -176,239 +47,260 @@ const ZOOM_OUT_FACTOR = 0.926;
       inset: 0;
       display: block;
     }
-    .canvas {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      touch-action: none;
-      background: #060912;
-    }
-    svg {
-      display: block;
-    }
-    g.node {
-      cursor: pointer;
-      transition: opacity 200ms ease-out;
-      outline: none;
-    }
-    text {
-      pointer-events: none;
-      user-select: none;
-    }
   `,
 })
 export class NetworkGraphComponent {
-  protected readonly VIEW_WIDTH = VIEW_WIDTH;
-  protected readonly VIEW_HEIGHT = VIEW_HEIGHT;
-  protected readonly FONT = FONT;
-  protected readonly amber = C.amber;
-
   private readonly store = inject(AppStore);
-  private readonly svgRef = viewChild<ElementRef<SVGSVGElement>>('svg');
+  private readonly zone = inject(NgZone);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly containerEl = viewChild<ElementRef<HTMLDivElement>>('container');
 
-  // ── view / interaction state ───────────────────────────────────────
+  private graph: Graph | null = null;
+  private sigma: Sigma | null = null;
+  private renderFrameId = 0;
+  private layoutWorker: Worker | null = null;
 
-  private readonly _view = signal<ViewTransform>({ scale: 1, x: 0, y: 0 });
-  readonly view = this._view.asReadonly();
-
-  /** User-adjustable node spacing (0–100).  Maps to minGap 2–42. */
-  private readonly _spacing = signal<number>(50);
-  readonly spacing = this._spacing.asReadonly();
-
-  protected readonly hover = signal<string | null>(null);
-  protected readonly dragging = signal<boolean>(false);
-  private dragOrigin: { x: number; y: number; ox: number; oy: number } | null = null;
-  private pinchOrigin: { distance: number; scale: number } | null = null;
-  private readonly activePointers = new Map<number, { x: number; y: number }>();
-
-  // ── derived layout ─────────────────────────────────────────────────
-
-  protected readonly selectedId = this.store.selectedNodeId;
-  protected readonly visibleIds = this.store.visibleNodeIds;
-  protected readonly clusters = this.store.clusters;
-
-  protected readonly nodes = computed(() => {
-    // Map spacing (0–100) → minGap (2–42)
-    const gap = 2 + (this._spacing() / 100) * 40;
-    return layoutNodes(this.store.nodes(), this.store.clusters(), gap);
-  });
-  protected readonly edges = computed(() => layoutEdges(this.store.edges(), this.nodes()));
-  private readonly adjacency = computed(() => buildAdjacency(this.store.edges()));
-  private readonly clusterColorMap = computed<Map<string, string>>(() => {
-    const m = new Map<string, string>();
-    for (const c of this.store.clusters()) m.set(c.id, c.color);
-    return m;
-  });
-
-  // ── precomputed view-models ──────────────────────────────────
-  // All per-element presentation values are computed once per state
-  // change instead of via method calls in the template (which would run
-  // for every SVG element on every change-detection cycle).
-
-  protected readonly nodeVms = computed(() => {
-    const selected = this.selectedId();
-    const hover = this.hover();
-    const focus = hover ?? selected;
-    const adj = focus != null ? this.adjacency().get(focus) : undefined;
-    const filter = this.store.filterClusters();
-    const colors = this.clusterColorMap();
-
-    const isNeighbour = (id: string) => focus != null && (focus === id || !!adj?.has(id));
-
-    return this.nodes().map((n) => {
-      const filtered = filter.size > 0 && !filter.has(n.cluster);
-      const focused = selected === n.id || hover === n.id;
-      const showLabel = !filtered && (focus == null || isNeighbour(n.id));
-      return {
-        ...n,
-        selected: selected === n.id,
-        color: colors.get(n.cluster) ?? C.fg3,
-        opacity: filtered ? 0.08 : focus != null && !isNeighbour(n.id) ? 0.28 : 1,
-        haloRadius: n.r + (focused ? 12 : 8),
-        haloOpacity: focused ? 0.2 : 0.09,
-        showLabel,
-        labelSize: Math.max(9.5, Math.min(12, n.r * 0.62)),
-        labelFill: focused ? C.fg1 : C.fg2,
-      };
-    });
-  });
-
-  protected readonly edgeVms = computed(() => {
-    const focus = this.hover() ?? this.selectedId();
-    const filter = this.store.filterClusters();
-    const colors = this.clusterColorMap();
-
-    return this.edges().map((e) => {
-      const lit = focus != null && (focus === e.from.id || focus === e.to.id);
-      const faded = filter.size > 0 && (!filter.has(e.from.cluster) || !filter.has(e.to.cluster));
-      return {
-        key: e.key,
-        x1: e.from.cx,
-        y1: e.from.cy,
-        x2: e.to.cx,
-        y2: e.to.cy,
-        stroke: lit ? (colors.get(e.from.cluster) ?? C.fg3) : 'rgba(255,255,255,0.13)',
-        width: lit ? 1.4 : 1,
-        opacity: faded ? 0.04 : focus == null ? 0.5 : lit ? 0.65 : 0.1,
-      };
-    });
-  });
-
-  protected readonly layerTransform = computed(() => {
-    const v = this._view();
-    // Scale around the canvas centre so zoom feels anchored.
-    const tx = (VIEW_WIDTH * (1 - v.scale)) / 2 / v.scale;
-    const ty = (VIEW_HEIGHT * (1 - v.scale)) / 2 / v.scale;
-    return `translate(${v.x} ${v.y}) scale(${v.scale}) translate(${tx} ${ty})`;
-  });
-
-  // ── public zoom / spacing api (called by sibling overlays) ─────────
+  // ── public API (called by sibling overlays) ─────────────────────────
 
   zoom(factor: number): void {
-    this._view.update((v) => ({
-      ...v,
-      scale: clamp(v.scale * factor, MIN_SCALE, MAX_SCALE),
-    }));
+    this.sigma?.getCamera().animatedZoom(factor);
   }
 
-  /** Adjust node spacing by `delta` (clamped to 0–100). */
-  adjustSpacing(delta: number): void {
-    this._spacing.update((s) => clamp(s + delta, 0, 100));
+  zoomIn(): void {
+    this.zoom(ZOOM_IN_FACTOR);
+  }
+
+  zoomOut(): void {
+    this.zoom(ZOOM_OUT_FACTOR);
   }
 
   resetView(): void {
-    this._view.set({ scale: 1, x: 0, y: 0 });
-    this._spacing.set(50);
+    this.sigma?.getCamera().animatedReset({ duration: 300 });
     this.store.selectNode(null);
   }
 
-  // ── pointer / wheel handlers ───────────────────────────────────────
+  // ── lifecycle ───────────────────────────────────────────────────────
 
-  onWheel(ev: WheelEvent): void {
-    ev.preventDefault();
-    this.zoom(ev.deltaY < 0 ? ZOOM_IN_FACTOR : ZOOM_OUT_FACTOR);
+  constructor() {
+    afterNextRender(() => {
+      const ref = this.containerEl();
+      if (ref?.nativeElement) {
+        this.zone.runOutsideAngular(() => this.initSigma(ref.nativeElement));
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      cancelAnimationFrame(this.renderFrameId);
+      this.layoutWorker?.terminate();
+      this.layoutWorker = null;
+      this.sigma?.kill();
+      this.graph = null;
+      this.sigma = null;
+    });
   }
 
-  onPointerDown(ev: PointerEvent): void {
-    (ev.target as Element).setPointerCapture?.(ev.pointerId);
-    this.activePointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+  // ── sigma initialization ────────────────────────────────────────────
 
-    if (this.activePointers.size === 1) {
-      this.dragging.set(true);
-      const v = this._view();
-      this.dragOrigin = { x: ev.clientX, y: ev.clientY, ox: v.x, oy: v.y };
-    } else if (this.activePointers.size === 2) {
-      this.dragging.set(false);
-      this.dragOrigin = null;
-      const [a, b] = [...this.activePointers.values()];
-      this.pinchOrigin = {
-        distance: Math.hypot(a.x - b.x, a.y - b.y),
-        scale: this._view().scale,
-      };
+  private initSigma(container: HTMLDivElement): void {
+    const graph = new Graph({ multi: false, type: 'undirected' });
+    this.graph = graph;
+
+    const sigma = new Sigma(graph, container, {
+      labelRenderedSizeThreshold: LABEL_RENDERED_SIZE_THRESHOLD,
+      stagePadding: 40,
+      defaultNodeColor: C.fg3,
+      defaultEdgeColor: 'rgba(255,255,255,0.13)',
+      defaultEdgeType: 'line',
+      labelFont: 'Inter, system-ui, sans-serif',
+      labelColor: { color: C.fg2 },
+      labelSize: 12,
+      minCameraRatio: MIN_CAMERA_RATIO,
+      maxCameraRatio: MAX_CAMERA_RATIO,
+      hideEdgesOnMove: true,
+      hideLabelsOnMove: true,
+      autoCenter: true,
+    });
+    this.sigma = sigma;
+
+    // ── Event: node click → Angular zone ──────────────────────
+    sigma.on('clickNode', ({ node }) => {
+      this.zone.run(() => {
+        const current = this.store.selectedNodeId();
+        this.store.selectNode(current === node ? null : node);
+      });
+    });
+
+    sigma.on('doubleClickNode', ({ node }) => {
+      this.zone.run(() => {
+        this.store.selectNode(node);
+        this.store.setDetailView('slide');
+      });
+    });
+
+    sigma.on('clickStage', () => {
+      this.zone.run(() => this.store.selectNode(null));
+    });
+
+    // ── Populate the graph from store signals ─────────────────
+    // We use an effect-like pattern: re-sync graph when store data changes.
+    this.syncGraphToStore();
+
+    // ── Render loop: sync visual state from store → sigma ─────
+    const render = () => {
+      this.syncVisualState();
+      this.renderFrameId = requestAnimationFrame(render);
+    };
+    this.renderFrameId = requestAnimationFrame(render);
+  }
+
+  // ── graph ↔ store sync ──────────────────────────────────────────────
+
+  /** Full rebuild of graphology graph from store nodes + edges. */
+  private syncGraphToStore(): void {
+    const graph = this.graph;
+    if (!graph) return;
+
+    // Clear and rebuild
+    graph.clear();
+
+    const clusters = this.store.clusters();
+    const nodes = this.store.nodes();
+    const edges = this.store.edges();
+
+    const clusterColor = new Map(clusters.map((c) => [c.id, c.color]));
+
+    for (const n of nodes) {
+      graph.addNode(n.id, {
+        label: n.label,
+        size: Math.max(3, n.r * 0.8),
+        color: clusterColor.get(n.cluster) ?? C.fg3,
+        x: n.cx ?? Math.random() * 400 - 200,
+        y: n.cy ?? Math.random() * 400 - 200,
+        cluster: n.cluster,
+        isCentral: n.isCentral,
+      });
     }
+
+    for (const e of edges) {
+      if (graph.hasNode(e.source) && graph.hasNode(e.target)) {
+        graph.addEdge(e.source, e.target, {
+          size: 0.5,
+          color: 'rgba(255,255,255,0.13)',
+          kind: e.kind,
+        });
+      }
+    }
+
+    // Start force-directed layout in web worker
+    this.startLayout();
   }
 
-  onPointerMove(ev: PointerEvent): void {
-    if (!this.activePointers.has(ev.pointerId)) return;
-    this.activePointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+  /** Offloads ForceAtlas2 layout to a Web Worker. */
+  private startLayout(): void {
+    const graph = this.graph;
+    if (!graph) return;
 
-    if (this.activePointers.size === 2 && this.pinchOrigin) {
-      const [a, b] = [...this.activePointers.values()];
-      const d = Math.hypot(a.x - b.x, a.y - b.y);
-      const factor = d / Math.max(1, this.pinchOrigin.distance);
-      this._view.update((v) => ({
-        ...v,
-        scale: clamp(this.pinchOrigin!.scale * factor, MIN_SCALE, MAX_SCALE),
-      }));
+    // Stop previous worker if any
+    this.layoutWorker?.terminate();
+
+    try {
+      this.layoutWorker = new Worker(new URL('./layout.worker.ts', import.meta.url));
+    } catch {
+      // Worker creation failed (e.g., SSR or test environment) — skip layout
       return;
     }
 
-    if (this.dragging() && this.dragOrigin) {
-      this._view.update((v) => ({
-        ...v,
-        x: this.dragOrigin!.ox + (ev.clientX - this.dragOrigin!.x),
-        y: this.dragOrigin!.oy + (ev.clientY - this.dragOrigin!.y),
-      }));
-    }
+    // Serialize graph for the worker
+    const serialized = {
+      nodes: graph.mapNodes((node, attrs) => ({
+        key: node,
+        x: (attrs['x'] as number) ?? Math.random() * 400 - 200,
+        y: (attrs['y'] as number) ?? Math.random() * 400 - 200,
+        size: (attrs['size'] as number) ?? 5,
+      })),
+      edges: graph.mapEdges((_edge, _attrs, source, target) => ({
+        source,
+        target,
+        weight: 1,
+      })),
+    };
+
+    this.layoutWorker.onmessage = (ev: MessageEvent) => {
+      const msg = ev.data;
+      if ((msg.type === 'tick' || msg.type === 'done') && msg.positions && this.graph) {
+        for (const p of msg.positions) {
+          if (this.graph.hasNode(p.key)) {
+            this.graph.setNodeAttribute(p.key, 'x', p.x);
+            this.graph.setNodeAttribute(p.key, 'y', p.y);
+          }
+        }
+        this.sigma?.refresh();
+      }
+    };
+
+    this.layoutWorker.postMessage({
+      type: 'start',
+      graph: serialized,
+      settings: { gravity: 1, scalingRatio: 10, slowDown: 5, maxIterations: 200, tickEvery: 20 },
+    });
   }
 
-  onPointerUp(ev: PointerEvent): void {
-    this.activePointers.delete(ev.pointerId);
-    if (this.activePointers.size === 0) {
-      this.dragging.set(false);
-      this.dragOrigin = null;
-      this.pinchOrigin = null;
-    } else if (this.activePointers.size < 2) {
-      this.pinchOrigin = null;
-    }
+  /** Per-frame visual update based on store selection/filter state. */
+  private syncVisualState(): void {
+    const graph = this.graph;
+    const sigma = this.sigma;
+    if (!graph || !sigma) return;
+
+    const selectedId = this.store.selectedNodeId();
+    const filterClusters = this.store.filterClusters();
+    const hasFilter = filterClusters.size > 0;
+
+    // Batch attribute updates
+    graph.forEachNode((node, attrs) => {
+      const filtered = hasFilter && !filterClusters.has(attrs['cluster'] as string);
+      const isSelected = node === selectedId;
+
+      graph.setNodeAttribute(node, 'hidden', filtered);
+      graph.setNodeAttribute(
+        node,
+        'size',
+        isSelected ? (attrs['size'] as number) * 1.8 : (attrs['size'] as number),
+      );
+      graph.setNodeAttribute(node, 'color', isSelected ? C.amber : (attrs['color'] as string));
+      graph.setNodeAttribute(
+        node,
+        'label',
+        isSelected || !hasFilter ? (attrs['label'] as string) : '',
+      );
+    });
+
+    graph.forEachEdge((edge, _attrs, source, target) => {
+      const sHidden = graph.getNodeAttribute(source, 'hidden');
+      const tHidden = graph.getNodeAttribute(target, 'hidden');
+      const visible = !sHidden && !tHidden;
+      graph.setEdgeAttribute(edge, 'hidden', !visible);
+
+      if (visible && selectedId) {
+        const lit = source === selectedId || target === selectedId;
+        graph.setEdgeAttribute(
+          edge,
+          'color',
+          lit ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.06)',
+        );
+        graph.setEdgeAttribute(edge, 'size', lit ? 1.2 : 0.3);
+      }
+    });
+
+    // Refresh rendering
+    sigma.refresh();
   }
+
+  // ── keyboard ────────────────────────────────────────────────────────
 
   @HostListener('window:keydown.escape')
   onEscape(): void {
-    if (this.selectedId() != null) {
+    if (this.store.selectedNodeId() != null) {
       this.store.selectNode(null);
     }
   }
-
-  // ── node click / keyboard ───────────────────────────────────
-
-  onNodeClick(ev: MouseEvent, id: string): void {
-    ev.stopPropagation();
-    this.store.selectNode(this.selectedId() === id ? null : id);
-  }
-
-  onNodeKeySelect(ev: Event, id: string): void {
-    ev.preventDefault();
-    this.store.selectNode(this.selectedId() === id ? null : id);
-  }
-
-  // ── render helpers ─────────────────────────────────────────────────
-
-  protected clusterColor(clusterId: string): string {
-    return this.clusterColorMap().get(clusterId) ?? C.fg3;
-  }
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
 }

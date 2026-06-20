@@ -29,6 +29,7 @@ import nodesRouter from './routes/nodes.js';
 import docsRouter from './routes/docs.js';
 import waitlistRouter from './routes/waitlist.js';
 import authRouter from './routes/auth.js';
+import aiRouter from './routes/ai.js';
 
 export const app = express();
 
@@ -117,6 +118,7 @@ app.use('/api', clustersRouter);
 app.use('/api', nodesRouter);
 app.use('/api', docsRouter);
 app.use('/api', waitlistRouter);
+app.use('/api', aiRouter);
 // Auth router mounted at two paths:
 //   /api/auth  — for tests and direct Express access
 //   /          — for proxy-rewritten requests (proxy strips /api/auth)

@@ -2,12 +2,16 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import type {
+  AiActionRequest,
+  AiActionResponse,
+  ChatMessage,
   DataSource,
   DataSourceCreateInput,
   Doc,
   FetchSourceResult,
   JoinWaitlistResult,
   NetworkPayload,
+  NodeDetail,
   ReportsResponse,
   SearchResponse,
 } from './types';
@@ -172,5 +176,40 @@ export class ApiService {
 
   async joinWaitlist(email: string): Promise<JoinWaitlistResult> {
     return firstValueFrom(this.http.post<JoinWaitlistResult>(`${API}/waitlist`, { email }));
+  }
+
+  // ── GraphRAG / AI ─────────────────────────────────────────────────
+
+  async getNodeDetail(slug: string): Promise<NodeDetail> {
+    return firstValueFrom(
+      this.http.get<NodeDetail>(`${API}/nodes/${encodeURIComponent(slug)}/detail`),
+    );
+  }
+
+  async aiAction(input: AiActionRequest): Promise<AiActionResponse> {
+    return firstValueFrom(this.http.post<AiActionResponse>(`${API}/ai/action`, input));
+  }
+
+  /** Streaming chat — returns the raw response body for token-by-token rendering. */
+  async aiChat(
+    nodeSlug: string,
+    messages: ChatMessage[],
+    contextDepth = 2,
+  ): Promise<ReadableStream<Uint8Array> | null> {
+    const resp = await fetch(`${API}/ai/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nodeSlug, messages, contextDepth }),
+      credentials: 'include',
+    });
+    if (!resp.ok) return null;
+    return resp.body;
+  }
+
+  async vectorSearch(q: string, limit = 10): Promise<SearchResponse> {
+    const params = new URLSearchParams({ q, limit: String(limit) });
+    return firstValueFrom(
+      this.http.get<SearchResponse>(`${API}/search/vector?${params.toString()}`),
+    );
   }
 }

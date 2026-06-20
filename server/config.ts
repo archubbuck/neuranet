@@ -69,6 +69,21 @@ export default {
   },
   /** Node environment. */
   nodeEnv: process.env['NODE_ENV'] || 'development',
+  /** Community detection microservice URL. */
+  communityDetectionUrl: process.env['COMMUNITY_DETECTION_URL'] || 'http://localhost:8000',
+  /** AI / LLM configuration (Vercel AI SDK). */
+  ai: {
+    /** OpenAI API key for embeddings + chat. Required for AI features. */
+    openaiApiKey: process.env['OPENAI_API_KEY'] || '',
+    /** Embedding model name. */
+    embeddingModel: process.env['EMBEDDING_MODEL'] || 'text-embedding-3-small',
+    /** Chat model for inspector AI actions. */
+    chatModel: process.env['CHAT_MODEL'] || 'gpt-4o-mini',
+    /** Whether AI features are enabled (requires OPENAI_API_KEY). */
+    get enabled(): boolean {
+      return Boolean(process.env['OPENAI_API_KEY']);
+    },
+  },
   derivation: {
     /** Keywords extracted per uploaded document. */
     docKeywordCount: 4,

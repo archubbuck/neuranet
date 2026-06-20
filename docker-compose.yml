@@ -1,9 +1,10 @@
 # Local development Postgres — mirrors CI's postgres:16 service container.
+# Uses pgvector/pgvector for vector similarity search support.
 # Start: `docker compose up -d`
 # Stop:  `docker compose down`
 services:
   postgres:
-    image: postgres:16
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: neuranet_dev
@@ -16,6 +17,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  community-detection:
+    build: ./services/community-detection
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_URL: postgres://postgres:postgres@postgres:5432/neuranet_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   pgdata:

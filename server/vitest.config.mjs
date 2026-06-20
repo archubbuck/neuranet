@@ -6,6 +6,15 @@ import { defineConfig } from 'vitest/config';
 //
 // POSTGRES_URL: set in CI workflow or .env.local; falls back to the
 // docker-compose default for local dev (`docker compose up -d`).
+
+// Load .env.local so process.env picks up POSTGRES_URL before the config
+// is evaluated by worker forks.
+try {
+  process.loadEnvFile('.env.local');
+} catch {
+  /* optional */
+}
+
 export default defineConfig({
   test: {
     environment: 'node',
@@ -15,7 +24,7 @@ export default defineConfig({
     pool: 'forks',
     env: {
       POSTGRES_URL:
-        process.env['POSTGRES_URL'] || 'postgres://postgres:postgres@localhost:5432/neuranet_dev',
+        process.env['POSTGRES_URL'] || 'postgres://postgres:postgres@localhost:5433/neuranet_dev',
     },
   },
 });

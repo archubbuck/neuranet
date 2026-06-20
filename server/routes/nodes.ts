@@ -171,4 +171,17 @@ router.post(
   }),
 );
 
+router.get(
+  '/nodes/:slug/detail',
+  asyncHandler(async (req, res) => {
+    const slug = req.params['slug'] as string;
+    const detail = await nodesRepo.getNodeWithMetadata(slug);
+    if (!detail) {
+      res.status(404).json({ message: 'node not found' });
+      return;
+    }
+    res.json(detail);
+  }),
+);
+
 export default router;

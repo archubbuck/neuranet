@@ -12,6 +12,6 @@ export default defineConfig({
   out: './server/migrations/postgres',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env['POSTGRES_URL'] || 'postgres://localhost:5432/neuranet_dev',
+    url: process.env['POSTGRES_URL'] || 'postgres://postgres:postgres@localhost:5433/neuranet_dev',
   },
 });

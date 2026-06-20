@@ -15,6 +15,13 @@
       "when": 1781389421655,
       "tag": "0001_aspiring_owl",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781890105203,
+      "tag": "0002_smiling_christian_walker",
+      "breakpoints": true
     }
   ]
 }

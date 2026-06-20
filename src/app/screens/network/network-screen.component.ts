@@ -4,7 +4,7 @@ import { ViewportService } from '../../core/viewport.service';
 import { IconComponent } from '../../ui/primitives/icon.component';
 import { ClustersPanelComponent } from './clusters-panel.component';
 import { NetworkGraphComponent } from './network-graph.component';
-import { SlideInDetailComponent } from './slide-in-detail.component';
+import { InspectorPanelComponent } from './inspector-panel.component';
 import { StatsBarComponent } from './stats-bar.component';
 import { ZoomControlsComponent } from './zoom-controls.component';
 
@@ -21,7 +21,7 @@ import { ZoomControlsComponent } from './zoom-controls.component';
   imports: [
     ClustersPanelComponent,
     NetworkGraphComponent,
-    SlideInDetailComponent,
+    InspectorPanelComponent,
     StatsBarComponent,
     ZoomControlsComponent,
     IconComponent,
@@ -47,10 +47,10 @@ import { ZoomControlsComponent } from './zoom-controls.component';
 
           <app-stats-bar />
           <app-zoom-controls
-            (zoomIn)="graph.zoom(1.2)"
-            (zoomOut)="graph.zoom(0.83)"
-            (spreadOut)="graph.adjustSpacing(10)"
-            (tightenUp)="graph.adjustSpacing(-10)"
+            (zoomIn)="graph.zoomIn()"
+            (zoomOut)="graph.zoomOut()"
+            (spreadOut)="graph.zoomIn()"
+            (tightenUp)="graph.zoomOut()"
             (resetView)="graph.resetView()"
           />
         } @placeholder {
@@ -79,7 +79,7 @@ import { ZoomControlsComponent } from './zoom-controls.component';
           />
         }
 
-        <app-slide-in-detail />
+        <app-inspector-panel />
       </div>
     </div>
   `,

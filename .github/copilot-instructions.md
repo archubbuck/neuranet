@@ -25,3 +25,17 @@ relevant to your current task** (never preload all 24). Discover via
 `.github/SKILLS_INDEX.md`: `code-review-and-quality`, `test-driven-development`,
 `incremental-implementation`, `code-simplification`, `debugging-and-error-recovery`,
 and others in `.github/skills/`.
+
+## Design context
+
+| What | Where |
+|------|-------|
+| Product strategy (register, users, principles, anti-references) | `PRODUCT.md` |
+| Visual design system (colors, typography, elevation, components, do's/don'ts) | `DESIGN.md` |
+| Live variant mode (in-browser iteration, pre-configured) | `/impeccable live` |
+
+**Quick reference:** Neuranet is a **product** tool (design serves function).
+Dark-native observatory — tonal navy layers, single beacon-gold accent
+(`#FBBF24`, ≤10% of any screen), Space Grotesk + JetBrains Mono, square
+geometry (`rounded-none`), no decorative shadows. See `DESIGN.md` for
+the full system before generating new UI.

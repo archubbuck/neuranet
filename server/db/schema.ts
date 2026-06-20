@@ -5,6 +5,8 @@ import {
   real,
   boolean,
   timestamp,
+  jsonb,
+  vector,
   unique,
   primaryKey,
 } from 'drizzle-orm/pg-core';
@@ -15,6 +17,7 @@ export const docs = pgTable('docs', {
   title: text('title').notNull(),
   text: text('text').notNull(),
   status: text('status').notNull().default('done'),
+  embedding: vector('embedding', { dimensions: 1536 }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -41,6 +44,8 @@ export const derivedNodes = pgTable('derived_nodes', {
   depth: integer('depth').notNull().default(0),
   isCentral: boolean('is_central').notNull().default(false),
   sentiment: real('sentiment'),
+  embedding: vector('embedding', { dimensions: 1536 }),
+  metadata: jsonb('metadata').notNull().default({}),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -52,6 +57,8 @@ export const nodeLinks = pgTable(
     sourceSlug: text('source_slug').notNull(),
     targetSlug: text('target_slug').notNull(),
     linkKind: text('link_kind').notNull().default('related'),
+    weight: real('weight').notNull().default(1.0),
+    metadata: jsonb('metadata').notNull().default({}),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [unique('node_links_source_target').on(table.sourceSlug, table.targetSlug)],
@@ -68,6 +75,7 @@ export const docNodeLinks = pgTable(
       .notNull()
       .references(() => derivedNodes.slug),
     score: real('score').notNull(),
+    metadata: jsonb('metadata').notNull().default({}),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.docId, table.nodeSlug] })],

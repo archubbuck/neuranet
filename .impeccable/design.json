@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-20T00:00:00.000Z",
+  "title": "Design System: Neuranet",
+  "extensions": {
+    "colorMeta": {
+      "beacon-gold": {
+        "role": "primary",
+        "displayName": "Beacon Gold",
+        "canonical": "oklch(82% 0.18 85)",
+        "tonalRamp": ["#FBBF24", "#FCD34D", "#FDE68A", "#D97706", "#B45309"]
+      },
+      "deep-navy": {
+        "role": "neutral-bg",
+        "displayName": "Deep Navy",
+        "canonical": "oklch(15% 0.02 260)",
+        "tonalRamp": ["#06090F", "#090E1C", "#0B1120", "#0F1828", "#152035"]
+      },
+      "navy-surface": {
+        "role": "neutral-surface",
+        "displayName": "Navy Surface",
+        "canonical": "oklch(17% 0.02 260)",
+        "tonalRamp": []
+      },
+      "navy-elevated": {
+        "role": "neutral-elevated",
+        "displayName": "Navy Elevated",
+        "canonical": "oklch(21% 0.02 260)",
+        "tonalRamp": []
+      },
+      "navy-overlay": {
+        "role": "neutral-overlay",
+        "displayName": "Navy Overlay",
+        "canonical": "oklch(24% 0.02 260)",
+        "tonalRamp": []
+      },
+      "signal-white": {
+        "role": "neutral-text",
+        "displayName": "Signal White",
+        "canonical": "oklch(96% 0.005 260)",
+        "tonalRamp": []
+      },
+      "mute-slate": {
+        "role": "neutral-text-secondary",
+        "displayName": "Mute Slate",
+        "canonical": "oklch(72% 0.03 255)",
+        "tonalRamp": []
+      },
+      "emerald-signal": {
+        "role": "semantic-success",
+        "displayName": "Emerald Signal",
+        "canonical": "oklch(75% 0.15 160)",
+        "tonalRamp": []
+      },
+      "rose-alert": {
+        "role": "semantic-error",
+        "displayName": "Rose Alert",
+        "canonical": "oklch(65% 0.2 10)",
+        "tonalRamp": []
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Screen titles and hero headings. Appears once per screen." },
+      "body": { "displayName": "Body", "purpose": "All UI copy, navigation, forms. 13px Space Grotesk." },
+      "label": { "displayName": "Label / Data", "purpose": "Status badges, metric values, table data. 11px JetBrains Mono." }
+    },
+    "shadows": [
+      { "name": "modal-overlay", "value": "0 24px 64px rgba(0,0,0,0.65)", "purpose": "Modal container separation from page." },
+      { "name": "status-glow", "value": "0 0 4px rgba(52,211,153,0.4)", "purpose": "Status dot legibility for success/emerald state." },
+      { "name": "brand-glow", "value": "0 0 6px rgba(251,191,36,0.4)", "purpose": "Landing page logo mark presence." }
+    ],
+    "motion": [
+      { "name": "ease-out-standard", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Default state transitions: hover color, nav collapse." },
+      { "name": "ease-out-modal", "value": "cubic-bezier(0.25, 0, 0, 1)", "purpose": "Modal enter animation (scale+fade)." }
+    ],
+    "breakpoints": [
+      { "name": "narrow", "value": "460px", "purpose": "Phone: tightened padding, single-column." },
+      { "name": "mobile", "value": "760px", "purpose": "Tablet and below: collapsed sidebar, bottom tab nav." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary call-to-action. Beacon gold, square, used sparingly.",
+      "html": "<button class=\"ds-btn-primary\">Save Changes</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: #FBBF24; color: #06090F; border: none; border-radius: 0; padding: 8px 14px; font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.4; cursor: pointer; transition: background 150ms ease-out; } .ds-btn-primary:hover { background: #FCD34D; } .ds-btn-primary:disabled { opacity: 0.4; cursor: default; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Secondary action. Navy elevated background, subtle border.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: #0F1828; color: #F1F5F9; border: 1px solid rgba(255,255,255,0.09); border-radius: 0; padding: 8px 14px; font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.4; cursor: pointer; transition: background 150ms ease-out; } .ds-btn-secondary:hover { background: #152035; } .ds-btn-secondary:disabled { opacity: 0.4; cursor: default; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Minimal action. Transparent, muted text, reveals on hover.",
+      "html": "<button class=\"ds-btn-ghost\">Dismiss</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: transparent; color: #94A3B8; border: 1px solid transparent; border-radius: 0; padding: 8px 14px; font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.4; cursor: pointer; transition: background 150ms ease-out, color 150ms ease-out; } .ds-btn-ghost:hover { background: rgba(255,255,255,0.04); color: #F1F5F9; } .ds-btn-ghost:disabled { opacity: 0.4; cursor: default; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive action. Rose alert border and text.",
+      "html": "<button class=\"ds-btn-danger\">Delete Source</button>",
+      "css": ".ds-btn-danger { display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: transparent; color: #FB7185; border: 1px solid #FB7185; border-radius: 0; padding: 8px 14px; font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.4; cursor: pointer; transition: background 150ms ease-out; } .ds-btn-danger:hover { background: rgba(251,113,133,0.1); } .ds-btn-danger:disabled { opacity: 0.4; cursor: default; }"
+    },
+    {
+      "name": "Tabs",
+      "kind": "nav",
+      "refersTo": "tabs",
+      "description": "Underlined tab strip. Active tab gets beacon gold underline and text.",
+      "html": "<nav class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab active\" role=\"tab\" aria-selected=\"true\">Overview</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Documents</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Reports</button></nav>",
+      "css": ".ds-tabs { display: flex; gap: 2px; border-bottom: 1px solid rgba(255,255,255,0.05); } .ds-tab { display: inline-flex; align-items: center; gap: 7px; background: transparent; border: none; border-bottom: 2px solid transparent; color: #94A3B8; font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 13px; font-weight: 600; padding: 10px 14px; cursor: pointer; transition: color 150ms ease-out; } .ds-tab:hover { color: #F1F5F9; } .ds-tab.active { color: #FBBF24; border-bottom-color: #FBBF24; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "search-input",
+      "description": "Search/filter field with leading icon. Square, navy elevated.",
+      "html": "<div class=\"ds-search\"><span class=\"ds-search-icon\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#475569\" stroke-width=\"2\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"M21 21l-4.35-4.35\"/></svg></span><input type=\"search\" placeholder=\"Filter topics…\" class=\"ds-search-input\"></div>",
+      "css": ".ds-search { position: relative; width: 240px; } .ds-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); display: flex; pointer-events: none; } .ds-search-input { width: 100%; background: #0F1828; border: 1px solid rgba(255,255,255,0.09); border-radius: 0; color: #F1F5F9; font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 13px; padding: 8px 10px 8px 32px; outline: none; } .ds-search-input::placeholder { color: #475569; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "status-badge",
+      "description": "Colored dot + monospace label for status display.",
+      "html": "<span class=\"ds-status\"><span class=\"ds-status-dot success\"></span>Active</span>",
+      "css": ".ds-status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(255,255,255,0.04); border-radius: 0; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #94A3B8; white-space: nowrap; } .ds-status-dot { display: block; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: #475569; } .ds-status-dot.success { background: #34D399; box-shadow: 0 0 4px rgba(52,211,153,0.4); } .ds-status-dot.warning { background: #FBBF24; box-shadow: 0 0 5px rgba(251,191,36,0.5); } .ds-status-dot.error { background: #FB7185; box-shadow: 0 0 4px rgba(251,113,133,0.4); }"
+    },
+    {
+      "name": "Modal",
+      "kind": "custom",
+      "refersTo": "modal",
+      "description": "Square modal with header, scrollable body, optional footer. Deep shadow backdrop.",
+      "html": "<div class=\"ds-modal-backdrop\"><div class=\"ds-modal\"><div class=\"ds-modal-header\"><h3>Confirm Action</h3><button aria-label=\"Close\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M18 6L6 18M6 6l12 12\"/></svg></button></div><div class=\"ds-modal-body\">Are you sure?</div><div class=\"ds-modal-footer\"><button class=\"ds-btn-ghost\">Cancel</button><button class=\"ds-btn-primary\">Confirm</button></div></div></div>",
+      "css": ".ds-modal-backdrop { position: fixed; inset: 0; z-index: 5000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(6,9,15,0.6); backdrop-filter: blur(4px); } .ds-modal { width: 460px; max-width: 100%; max-height: 86vh; display: flex; flex-direction: column; background: #0B1120; border: 1px solid rgba(255,255,255,0.09); overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,0.65); animation: dsModalEnter 200ms ease-out; } .ds-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 15px 18px; border-bottom: 1px solid rgba(255,255,255,0.05); } .ds-modal-header h3 { margin: 0; font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 15px; font-weight: 600; color: #F1F5F9; letter-spacing: -0.01em; } .ds-modal-header button { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: transparent; border: none; color: #94A3B8; cursor: pointer; } .ds-modal-header button:hover { background: rgba(255,255,255,0.04); color: #F1F5F9; } .ds-modal-body { padding: 18px; overflow-y: auto; color: #F1F5F9; font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 13px; } .ds-modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 13px 18px; border-top: 1px solid rgba(255,255,255,0.05); } @keyframes dsModalEnter { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } } @media (prefers-reduced-motion: reduce) { .ds-modal { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Dark Observatory",
+    "overview": "Neuranet is a precision instrument for seeing structure in noise. The interface is not a dashboard to check — it's an observatory to dwell in. Every surface, every spacing decision, every color assignment serves the analyst's deep-focus session: reduce glare, surface signal, eliminate distraction.\n\nThe system is dark-native, flat, and typographic. It rejects the SaaS dashboard aesthetic (gradient cards, widget chrome, decorative dropshadows) in favor of tonal depth: four navy layers that rise toward the analyst without shadows, and a single beacon-gold accent used sparingly — ≤10% of any given screen — so its presence always means pay attention here.",
+    "keyCharacteristics": [
+      "Tonal elevation over shadow elevation — depth through background color, not drop-shadow",
+      "Single-accent restraint — beacon gold marks focus, selection, and primary action",
+      "Monospace data, sans-serif chrome — JetBrains Mono for values, Space Grotesk for labels",
+      "Square geometry throughout — rounded-none is the default",
+      "Information-dense without clutter — every pixel justifies its presence"
+    ],
+    "rules": [
+      { "name": "The Beacon Rule", "body": "Beacon Gold appears on ≤10% of any given screen. Primary buttons, the active nav indicator, and graph highlights share this one color. If you need a second accent, you need a different hierarchy, not a different hue.", "section": "colors" },
+      { "name": "The Observatory Rule", "body": "Background surfaces are navy-tinted toward cool blue, never warm. The observatory is dark and cool; warmth comes exclusively from the beacon gold accent.", "section": "colors" },
+      { "name": "The One Voice Rule", "body": "Space Grotesk at one optical size and JetBrains Mono at one optical size. No third font family. Hierarchy comes from size, color, and position.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "No surface carries a box-shadow at rest. Shadows appear only as a response to a specific functional need (modal separation, status legibility).", "section": "elevation" }
+    ],
+    "dos": [
+      "Use tonal elevation (bg-base → bg-surface → bg-elevated → bg-overlay) instead of box-shadows for depth",
+      "Keep beacon gold on ≤10% of any screen",
+      "Use JetBrains Mono for all data values, metrics, statuses, and timestamps",
+      "Maintain rounded-none as the default; only apply radius when there's a specific functional reason",
+      "Ensure body text meets ≥4.5:1 contrast against its background"
+    ],
+    "donts": [
+      "Don't use gradient text, glassmorphism, or decorative blurs",
+      "Don't add a second accent color — beacon gold is the only accent",
+      "Don't use border-left or border-right greater than 1px as a colored accent stripe",
+      "Don't introduce rounded corners on interactive elements",
+      "Don't add drop shadows to cards, buttons, or surfaces at rest",
+      "Don't use warm-tinted backgrounds (cream, sand, beige, warm gray)",
+      "Don't introduce additional font families beyond Space Grotesk and JetBrains Mono",
+      "Don't use SaaS marketing patterns: gradient heroes, stock illustrations, pricing tables",
+      "Don't add gamification elements: achievements, confetti, playful mascots"
+    ]
+  }
+}
